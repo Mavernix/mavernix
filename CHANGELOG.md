@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Sea Lion Dark's tool bar buttons (Settings' back, forward and Show All) have a bezel like the light theme's, from ProKit's dark segmented button, instead of Kvantum's flat stock look.
 - A window whose program fixes its size, such as Settings, can no longer be resized by its edges or maximized: no resize pointer at its edges, and its maximize button is disabled. Themes may draw a disabled button (`disabled`); Sea Lion's are Apple's own.
 ## 0.1.2 (2026-10-25)
 

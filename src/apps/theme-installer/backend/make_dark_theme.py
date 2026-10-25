@@ -83,10 +83,6 @@ GRADIENT_CONTRAST = 0.6
 PALE_TINT_SATURATION = 0.35
 PALE = 0.8
 
-# Left to the stock dark themes: ProKit has nothing like "tbsegments".
-CONTROL_TABLES_TO_STOCK = ["controls.tool_button"]
-
-
 def fail(message):
     sys.exit(f"make_dark_theme: {message}")
 
@@ -570,9 +566,6 @@ class ThemeText:
             fail(f"[{table}] {key} does not match {pattern}")
         lines[number] = changed
 
-    def remove(self, table):
-        self.tables = [entry for entry in self.tables if entry[0] != table]
-
     def apply_rule(self, table):
         """Turns every colour value of a table dark by dark_counterpart."""
         lines = self.lines_of(table)
@@ -715,8 +708,12 @@ def change_controls(theme, prokit):
     theme.set("controls.tabs", "slice", str(TAB_SLICE), note + " The pane under them stays the light theme's see-through darkening.")
     theme.set("controls.slider", "track_slice", str(SLIDER_TRACK_SLICE), note)
     theme.set("controls.progress_bar", "track_slice", str(PROGRESS_TRACK_SLICE), note)
-    for table in CONTROL_TABLES_TO_STOCK:
-        theme.remove(table)
+    # ProKit has no tool bar button ("tbsegments" in the light theme); its lone
+    # segmented button, which the tabs use, is the nearest: a rounded dark
+    # bezel, so the back and forward buttons keep one as in the light theme.
+    for key, picture in (("normal", "tab"), ("pressed", "tab-pressed"), ("disabled", "tab-disabled")):
+        theme.set("controls.tool_button", key, f'"images/controls/{picture}.png"', note)
+    theme.set("controls.tool_button", "slice", str(TAB_SLICE), note)
 
 
 def change_dialog_and_about(theme):
