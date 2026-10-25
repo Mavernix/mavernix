@@ -98,7 +98,7 @@ ThemePane::ThemePane(Choices& choices, QWidget* parent) : QWidget(parent)
     more->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     connect(more, &QPushButton::clicked, this, []() { QProcess::startDetached(installer_command, {}); });
     auto* more_note =
-        new QLabel(word("theme_more_note", "The Theme Installer makes more themes from an installer you own."));
+        new QLabel(word("theme_more_note", "The Theme Installer makes more themes from a Mac installer."));
     more_note->setWordWrap(true);
 
     auto* form = new QFormLayout(this);

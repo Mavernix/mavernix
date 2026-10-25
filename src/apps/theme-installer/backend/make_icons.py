@@ -355,7 +355,7 @@ def index_text(contexts_by_size):
     head = "\n".join([
         "[Icon Theme]",
         f"Name={ICON_THEME_NAME}",
-        "Comment=Sea Lion's icons, made by make_icons.py from an installer you own",
+        "Comment=Sea Lion's icons, made by make_icons.py",
         f"Inherits={','.join(INHERITS)}",
         f"Directories={','.join(directories)}",
     ])

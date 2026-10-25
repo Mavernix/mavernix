@@ -19,7 +19,7 @@ Out of the box it is calm and plain. If you still have an old installer of a cla
 | Mac OS X 10.3 Panther | | soon |
 | Mac OS 9 | | soon |
 
-Mavernix itself contains none of Apple's files; each look is made from your own copy.
+Mavernix ships none of Apple's files; each look is built from your copy of the installer.
 
 ## Install
 
@@ -45,4 +45,4 @@ Bug reports, themes and fixes to the docs are welcome, no C++ needed. See [CONTR
 
 GPL-3.0-or-later, see [LICENSE](LICENSE). Two compositor plugins are based on Wayfire's and keep its MIT license too (`src/compositor/*/LICENSE-wayfire`).
 
-Mavernix is not affiliated with or endorsed by Apple Inc. Mac and OS X are trademarks of Apple Inc. No Apple software or artwork is part of this project.
+Mavernix is not affiliated with or endorsed by Apple Inc. Mac and OS X are trademarks of Apple Inc.

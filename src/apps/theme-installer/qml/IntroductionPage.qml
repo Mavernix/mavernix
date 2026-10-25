@@ -22,9 +22,8 @@ Item {
 
         BodyText {
             text: window.words.introduction ??
-                "Each look below is made here, on this computer, from an installer you own, and is kept "
-                + "for your user only. None of them comes with this desktop; nothing is downloaded and "
-                + "nothing is sent anywhere."
+                "Each look below is built on this computer from an installer you provide. "
+                + "Nothing is downloaded."
         }
 
         // Each look: its name and whether it is installed, what it is, what it is made from.

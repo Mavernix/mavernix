@@ -576,8 +576,7 @@ class ThemeText:
 def change_theme_header(theme):
     theme.set("theme", "name", '"Sea Lion Dark"', "the name of this theme.")
     theme.set("theme", "description",
-              '"Sea Lion in the dark look of the professional programs, '
-              'made from an installer you own."',
+              '"Sea Lion in the dark look of the professional programs."',
               "see make_dark_theme.py.")
 
 

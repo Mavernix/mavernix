@@ -73,7 +73,7 @@ Open the window overview. Along its top are your desktops; move the pointer into
 
 ## The Sea Lion look
 
-Sea Lion recreates the desktop of OS X 10.9 Mavericks: window frames, panel and dock, menus, icons, sounds and desktop pictures, in a light and a dark version. None of it is part of Mavernix; the **Theme Installer** makes it on your computer from your own copy of the OS X installer, and keeps it for your user only. Nothing is downloaded, and nothing is sent anywhere. Please don't share the themes it makes: they contain Apple's artwork.
+Sea Lion recreates the desktop of OS X 10.9 Mavericks: window frames, panel and dock, menus, icons, sounds and desktop pictures, in a light and a dark version. It doesn't ship with Mavernix: the **Theme Installer** builds it on your computer from an OS X installer you provide. The themes contain Apple's artwork, so please don't share them.
 
 Supported installers:
 

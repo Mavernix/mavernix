@@ -695,11 +695,11 @@ def build_theme_text(colors, picture_size, status_icons, dialog_icons, banner_ba
 
     inactive_title_color = TITLE_COLOR + f"{round(TITLE_INACTIVE_OPACITY * 255):02x}"
 
-    return f"""# The Sea Lion theme, made by the Theme Installer from an installer you own.
+    return f"""# The Sea Lion theme, made by the Theme Installer.
 # docs/themes/ describes every key.
 [theme]
 name = "Sea Lion"
-description = "A classic look, made from an installer you own."
+description = "The look of OS X 10.9 Mavericks."
 format = 0
 
 [fonts]

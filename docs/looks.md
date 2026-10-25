@@ -1,6 +1,6 @@
 # Looks
 
-A *look* is what the Theme Installer can make: one or more themes and the desktops that use them, built from an installer the user owns. Each look is a folder in `src/apps/theme-installer/backend/looks/`:
+A *look* is what the Theme Installer can make: one or more themes and the desktops that use them, built from an installer the user provides. Each look is a folder in `src/apps/theme-installer/backend/looks/`:
 
 ```
 looks/sea-lion/
@@ -15,7 +15,7 @@ looks/sea-lion/
 ```toml
 name = "Sea Lion"
 description = "Window frames, panel and dock, … in a classic look, light and dark."
-source = "Apple's own OS X 10.9.5 installer"       # "Made from …" on the first page
+source = "the OS X 10.9.5 installer"             # "Made from …" on the first page
 drop_hint = "Install OS X Mavericks, its InstallESD.dmg, or a disk image made from them"
 licence_note = "…"                                 # optional, shown under the look
 

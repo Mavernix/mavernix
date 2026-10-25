@@ -6,9 +6,9 @@ Thank you for helping. A few things keep the project in shape.
 
 For anything larger than a fix, open an issue first and say what you have in mind; it saves work on both sides. [How it is put together](docs/architecture.md) is the map; [looks](docs/looks.md) explains what the Theme Installer makes, and [themes](docs/themes/README.md) the theme format.
 
-## Never commit other companies' files
+## Don't commit Apple's files
 
-Mavernix ships no Apple software or artwork, and must stay that way. Do not add to the repository, in any form:
+Mavernix ships no Apple software or artwork. Don't add to the repository:
 
 - an installer, disk image or anything unpacked from one;
 - a picture, icon, sound, font or desktop picture taken from such files, or a theme made from them (the Sea Lion themes the Theme Installer writes into `~/.local/share/mavernix/` included);

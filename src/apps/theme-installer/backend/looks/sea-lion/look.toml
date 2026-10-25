@@ -6,9 +6,9 @@
 name = "Sea Lion"
 description = "The desktop of OS X 10.9 Mavericks: window frames, panel and dock, menus, icons, sounds and desktop pictures, light and dark."
 # What it is made from, as the window names it, and what a drop may be.
-source = "Apple's own OS X 10.9.5 installer"
+source = "the OS X 10.9.5 installer"
 drop_hint = "Install OS X Mavericks, its InstallESD.dmg, or a disk image made from them"
-licence_note = "Apple's licence for OS X is for Apple's own computers. Whether you use its pictures and sounds on this one is your decision."
+licence_note = "It contains Apple's artwork, so please don't share the finished themes."
 
 # The themes it makes, and the desktops that use them; the first desktop is
 # the one "Use" switches to.
