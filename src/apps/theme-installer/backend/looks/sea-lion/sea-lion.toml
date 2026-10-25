@@ -30,8 +30,9 @@ logo_menu = [
 clock_format = "ddd h:mm AP"
 clock_menu_date_format = "dddd, MMMM d, yyyy"
 
+# The first menu opens from the desktop's name, plain's "Desktop" unless it
+# is changed in System Preferences, Desktop.
 [[desktop_menus.menus]]
-title = "Desktop"
 entries = [
     { label = "System Preferences…", command = ["mavernix-settings", "desktop"] },
     { separator = true },

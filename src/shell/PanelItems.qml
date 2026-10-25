@@ -37,7 +37,7 @@ Row {
     // The active window's application name, from its desktop entry if any.
     readonly property string activeApplicationName: {
         if (showsDesktopMenus) {
-            return desktopMenus.name ?? ""
+            return panel.shell?.desktopName ?? desktopMenus.name ?? ""
         }
         const window = ToplevelManager.activeToplevel
         if (window === null) {
@@ -104,11 +104,19 @@ Row {
 
     // If the first menu is titled like the application, it is the app's own
     // menu: its entries go under the app name title, and the row starts after it.
+    // The desktop's first menu is always its own, whatever it is called, so
+    // that renaming the desktop (Settings, Desktop) keeps it under the name.
     readonly property var applicationMenus:
         showsDesktopMenus ? desktopMenuItems : (panel.applicationMenu?.items ?? [])
-    readonly property var ownMenu:
-        applicationMenus.length > 0 && activeApplicationName !== ""
-            && applicationMenus[0].label === activeApplicationName ? applicationMenus[0] : null
+    readonly property var ownMenu: {
+        if (applicationMenus.length === 0 || activeApplicationName === "") {
+            return null
+        }
+        if (showsDesktopMenus || applicationMenus[0].label === activeApplicationName) {
+            return applicationMenus[0]
+        }
+        return null
+    }
     readonly property int firstOrdinaryMenu: ownMenu !== null ? 1 : 0
 
     SystemClock {

@@ -45,6 +45,9 @@ ShellRoot {
     // [desktop] picture: a full path, or a path inside the theme; empty for the
     // theme's background.
     readonly property string chosenPicture: userChoices.value("desktop", "picture") ?? ""
+    // The desktop's name in the panel while no window is active; Settings,
+    // Desktop changes it while the session runs.
+    readonly property string desktopName: userChoices.value("desktop_menus", "name") ?? ""
     // A chosen picture that failed to load; the theme's background is shown.
     property string unreadablePicture: ""
     readonly property var desktopFill: {

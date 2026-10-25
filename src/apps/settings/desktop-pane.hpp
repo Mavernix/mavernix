@@ -1,5 +1,6 @@
-// The desktop's pane: its picture (picture-chooser.hpp). Which theme is in
-// use is the theme's pane (theme-pane.hpp).
+// The desktop's pane: its picture (picture-chooser.hpp) and the name the menu
+// bar shows while no window is active. Which theme is in use is the theme's
+// pane (theme-pane.hpp).
 
 #pragma once
 

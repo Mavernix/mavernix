@@ -50,7 +50,8 @@ clock_format = "HH:mm"
 clock_menu_date_format = "d MMMM yyyy"
 
 # The desktop's own menus, shown in the panel while no window is active.
-# The first menu, if titled like `name`, opens from the name. An entry runs
+# The first menu opens from the name (Settings, Desktop changes it) and has
+# no title of its own. An entry runs
 # a `command` (asking first if it has a `confirm` table, as in logo_menu) or
 # one of the shell's `action`s: app_grid, window_overview, search,
 # notification_list, lock, empty_trash.
@@ -58,7 +59,6 @@ clock_menu_date_format = "d MMMM yyyy"
 name = "Desktop"
 
 [[desktop_menus.menus]]
-title = "Desktop"
 entries = [
     { label = "About This Computer", command = ["mavernix-about"] },
     { label = "Settings…", command = ["mavernix-settings", "desktop"] },
@@ -465,6 +465,7 @@ theme_more = "Get more themes…"
 theme_more_note = "The Theme Installer makes more themes from a Mac installer."
 desktop_title = "Desktop"
 desktop_picture = "Picture:"
+desktop_name = "Name in the menu bar:"
 desktop_picture_choose = "Choose a picture…"
 desktop_picture_default = "Use the default"
 trackpad_title = "Touchpad"

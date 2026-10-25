@@ -51,8 +51,7 @@ While no window is active, the panel shows the desktop's own name and menus, as 
 [desktop_menus]
 name = "Desktop"
 
-[[desktop_menus.menus]]
-title = "Desktop"          # titled like `name`: opens from the name itself
+[[desktop_menus.menus]]           # the first menu opens from the name itself: no title
 entries = [
     { label = "About This Computer", command = ["mavernix-about"] },
     { label = "Settings…", command = ["mavernix-settings", "desktop"] },
@@ -69,6 +68,8 @@ entries = [
 ```
 
 An entry runs a `command` (a leading `~` is your home folder; with a `confirm` table it asks first, as the logo's menu does) or one of the shell's `action`s: `app_grid`, `window_overview`, `search`, `notification_list`, `lock`, `empty_trash`. Without the table the panel stays empty while no window is active.
+
+The name can be changed in Settings, Desktop ("Name in the menu bar"), for example to "Finder"; the first menu stays under it.
 
 ## About This Computer
 
