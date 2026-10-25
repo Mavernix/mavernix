@@ -17,7 +17,7 @@ Out of the box it is calm and plain. If you still have an old installer of a cla
 |---|---|---|
 | OS X 10.9.5 Mavericks | Sea Lion, light and dark | supported |
 | Mac OS X 10.3 Panther | | soon |
-| Mac OS 9 | | soon |
+| Mac OS 9 | | maybe.. |
 
 Mavernix ships none of Apple's files; each look is built from your copy of the installer.
 
