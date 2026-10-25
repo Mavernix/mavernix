@@ -21,12 +21,14 @@ from PIL import Image
 
 # --- Window buttons -------------------------------------------------------------
 # Picture numbers in ArtFile.bin. The file's state names for the theme's states:
-# normal "active", hover "rollover", pressed "pressed", inactive "inactive".
+# normal "active", hover "rollover", pressed "pressed", inactive "inactive",
+# disabled "disabled" (a button that does nothing, as the zoom button of
+# System Preferences, which cannot change its size).
 BUTTON_PICTURES = {
-    "close":    {"normal": 2454, "hover": 2504, "pressed": 2501, "inactive": 2496},
-    "minimize": {"normal": 2467, "hover": 2586, "pressed": 2583, "inactive": 2573},
+    "close":    {"normal": 2454, "hover": 2504, "pressed": 2501, "inactive": 2496, "disabled": 2493},
+    "minimize": {"normal": 2467, "hover": 2586, "pressed": 2583, "inactive": 2573, "disabled": 2567},
     # The file calls this button "zoom"; the theme format calls it "maximize".
-    "maximize": {"normal": 2470, "hover": 2594, "pressed": 2591, "inactive": 2576},
+    "maximize": {"normal": 2470, "hover": 2594, "pressed": 2591, "inactive": 2576, "disabled": 2570},
 }
 
 # --- Title bar ------------------------------------------------------------------
@@ -696,7 +698,7 @@ def displayed_greys(pairs):
 
 
 def button_tables(picture_width):
-    """The four state lines for each of the three buttons."""
+    """The state lines for each of the three buttons."""
     lines = []
     for button, states in BUTTON_PICTURES.items():
         lines.append(f"[window.buttons.{button}]")

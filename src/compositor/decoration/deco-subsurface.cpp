@@ -662,6 +662,7 @@ class simple_decoration_node_t : public wf::scene::node_t, public wf::pointer_in
         {
             view->damage();
             size = dims;
+            layout.set_fixed_size(has_fixed_size(view));
             layout.resize(size.width, size.height);
             if (!view->toplevel()->current().fullscreen)
             {
@@ -670,6 +671,15 @@ class simple_decoration_node_t : public wf::scene::node_t, public wf::pointer_in
 
             view->damage();
         }
+    }
+
+    // A program fixes its window's size by giving the same least and largest
+    // size (Qt's setFixedSize); 0 means "no limit" for either.
+    static bool has_fixed_size(const std::shared_ptr<wf::toplevel_view_interface_t>& view)
+    {
+        const wf::dimensions_t least   = view->toplevel()->get_min_size();
+        const wf::dimensions_t largest = view->toplevel()->get_max_size();
+        return (least.width > 0) && (least.height > 0) && (least == largest);
     }
 
     void update_decoration_size()

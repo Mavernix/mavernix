@@ -71,6 +71,8 @@ normal   = { color = "#d0d0d0", radius = 3 }
 hover    = { color = "#b8b8b8", radius = 3 }
 pressed  = { color = "#a0a0a0", radius = 3 }
 inactive = { color = "#e0e0e0", radius = 3 }
+# On a window of fixed size, where it does nothing.
+disabled = { color = "#e8e8e8", radius = 3 }
 
 [window.frame]
 border_width = 1

@@ -338,7 +338,7 @@ button_theme_t read_button(const toml::table& buttons, const std::string& name,
 {
     const std::string key = "window.buttons." + name;
     const toml::table& button_table = require_table(buttons, name, "window.buttons");
-    reject_unknown_keys(button_table, key, {"normal", "hover", "pressed", "inactive"});
+    reject_unknown_keys(button_table, key, {"normal", "hover", "pressed", "inactive", "disabled"});
 
     button_theme_t button;
     // NORMAL is required: it is what every other state falls back to.
@@ -349,6 +349,7 @@ button_theme_t read_button(const toml::table& buttons, const std::string& name,
         {"hover", button_state_t::HOVER},
         {"pressed", button_state_t::PRESSED},
         {"inactive", button_state_t::INACTIVE},
+        {"disabled", button_state_t::DISABLED},
     };
     for (const auto& [state_name, state] : optional_states)
     {
@@ -385,6 +386,13 @@ title_align_t parse_align(const std::string& text)
 
 const fill_t& button_theme_t::look_for(button_state_t state) const
 {
+    // A button that does nothing is greyed: without a look of its own, it
+    // takes the one of a window in the background.
+    if ((state == button_state_t::DISABLED) && (looks.count(state) == 0))
+    {
+        state = button_state_t::INACTIVE;
+    }
+
     auto found = looks.find(state);
     if (found != looks.end())
     {

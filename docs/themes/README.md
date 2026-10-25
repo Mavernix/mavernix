@@ -98,19 +98,24 @@ normal   = { image = "images/close.png" }
 hover    = { image = "images/close-hover.png" }
 pressed  = { image = "images/close-pressed.png" }
 inactive = { image = "images/close-inactive.png" }   # window not focused
+disabled = { image = "images/close-disabled.png" }
 
 [window.buttons.minimize]
 normal   = { image = "images/minimize.png" }
 hover    = { image = "images/minimize-hover.png" }
 pressed  = { image = "images/minimize-pressed.png" }
 inactive = { image = "images/minimize-inactive.png" }
+disabled = { image = "images/minimize-disabled.png" }
 
 [window.buttons.maximize]
 normal   = { image = "images/maximize.png" }
 hover    = { image = "images/maximize-hover.png" }
 pressed  = { image = "images/maximize-pressed.png" }
 inactive = { image = "images/maximize-inactive.png" }
+disabled = { image = "images/maximize-disabled.png" }   # does nothing here; else `inactive`
 ```
+
+A button is `disabled` where it can do nothing: the maximize button of a window whose program fixed its size (its least and largest size are the same), which also has no edges to resize it by. Without the state it looks `inactive`.
 
 ## Fonts
 

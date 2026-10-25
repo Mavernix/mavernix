@@ -17,6 +17,7 @@ source from 2013. Desktop pictures, typeface and icons are linked, not copied.
 
 import argparse
 import colorsys
+import itertools
 import json
 import re
 import shutil
@@ -425,9 +426,10 @@ INACTIVE_BUTTON_GREY = 54
 
 
 def make_inactive_button_pictures(images_dir):
+    # A disabled button is as pale as an inactive one, and glares the same.
     for button in ("close", "minimize", "maximize"):
-        for suffix in ("", "@2x"):
-            path = images_dir / f"{button}-inactive{suffix}.png"
+        for state, suffix in itertools.product(("inactive", "disabled"), ("", "@2x")):
+            path = images_dir / f"{button}-{state}{suffix}.png"
             picture = Image.open(path).convert("RGBA")
             average = sum(ImageStat.Stat(picture.convert("RGB"), picture.getchannel("A")).mean) / 3
             factor = INACTIVE_BUTTON_GREY / average

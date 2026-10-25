@@ -26,13 +26,13 @@ button_type_t button_t::get_button_type() const
 
 void button_t::set_hover(bool is_hovered)
 {
-    this->is_hovered = is_hovered;
+    this->is_hovered = is_hovered && enabled;
     add_idle_damage();
 }
 
 void button_t::set_pressed(bool is_pressed)
 {
-    this->is_pressed = is_pressed;
+    this->is_pressed = is_pressed && enabled;
     add_idle_damage();
 }
 
@@ -45,8 +45,30 @@ void button_t::set_window_active(bool is_active)
     }
 }
 
+void button_t::set_enabled(bool is_enabled)
+{
+    if (this->enabled != is_enabled)
+    {
+        this->enabled = is_enabled;
+        this->is_hovered = this->is_hovered && is_enabled;
+        this->is_pressed = this->is_pressed && is_enabled;
+        add_idle_damage();
+    }
+}
+
+bool button_t::is_enabled() const
+{
+    return this->enabled;
+}
+
 themed::button_state_t button_t::current_state() const
 {
+    // A disabled button in a background window looks like the others there.
+    if (!enabled)
+    {
+        return is_window_active ? themed::button_state_t::DISABLED : themed::button_state_t::INACTIVE;
+    }
+
     // Pressing and hovering win over "window inactive": a button in a
     // background window still responds when the pointer is on it.
     if (is_pressed)

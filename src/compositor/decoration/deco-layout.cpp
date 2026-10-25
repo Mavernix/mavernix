@@ -102,6 +102,7 @@ wf::geometry_t decoration_layout_t::create_buttons(int width, int)
         this->layout_areas.push_back(std::make_unique<decoration_area_t>(
             button_geometry, damage_callback, theme));
         this->layout_areas.back()->as_button().set_button_type(type);
+        this->layout_areas.back()->as_button().set_enabled(!(fixed_size && (type == BUTTON_TOGGLE_MAXIMIZE)));
 
         button_x += looks.button_width + looks.button_spacing;
     }
@@ -149,7 +150,10 @@ void decoration_layout_t::resize(int width, int height)
 
     // Resize strips first: find_area_at takes the first match, so they win
     // over the title bar.
-    create_resize_areas(width, height);
+    if (!fixed_size)
+    {
+        create_resize_areas(width, height);
+    }
 
     if (this->titlebar_size > 0)
     {
@@ -307,7 +311,7 @@ decoration_layout_t::action_response_t decoration_layout_t::handle_press_event(
         {
             // "maximize", "minimize", or anything else for nothing.
             const std::string wanted = title_double_click;
-            if (wanted == "maximize")
+            if ((wanted == "maximize") && !fixed_size)
             {
                 return {DECORATION_ACTION_TOGGLE_MAXIMIZE, 0};
             }
@@ -328,7 +332,7 @@ decoration_layout_t::action_response_t decoration_layout_t::handle_press_event(
         if (begin_area && (begin_area->get_type() == DECORATION_AREA_BUTTON))
         {
             begin_area->as_button().set_pressed(false);
-            if (end_area && (begin_area == end_area))
+            if (end_area && (begin_area == end_area) && begin_area->as_button().is_enabled())
             {
                 switch (begin_area->as_button().get_button_type())
                 {
@@ -454,6 +458,20 @@ void decoration_layout_t::set_window_active(bool is_active)
             area->as_button().set_window_active(is_active);
         }
     }
+}
+
+void decoration_layout_t::set_fixed_size(bool is_fixed)
+{
+    if (this->fixed_size == is_fixed)
+    {
+        return;
+    }
+
+    // The areas are made anew: the resize strips come or go, and the
+    // maximize button is made with the new state.
+    this->fixed_size = is_fixed;
+    resize(frame_width, frame_height);
+    damage_callback({0.0, 0.0, (double)frame_width, (double)frame_height});
 }
 
 void decoration_layout_t::handle_focus_lost()

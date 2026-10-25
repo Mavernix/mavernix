@@ -49,6 +49,11 @@ class button_t
 
     void set_window_active(bool is_active);
 
+    /** A disabled button is drawn greyed and takes no hover or press. */
+    void set_enabled(bool is_enabled);
+
+    bool is_enabled() const;
+
     /** Geometry in logical coordinates. A no-op before set_button_type(). */
     void render(const scene::render_instruction_t& data, wf::geometry_t geometry);
 
@@ -65,6 +70,7 @@ class button_t
     bool is_hovered = false;
     bool is_pressed = false;
     bool is_window_active = true;
+    bool enabled = true;
 
     std::function<void()> damage_callback;
     wf::wl_idle_call idle_damage;

@@ -105,6 +105,13 @@ class decoration_layout_t
     /** Tell every button whether the window is the active one. */
     void set_window_active(bool is_active);
 
+    /**
+     * A window whose program fixes its size (its least and largest size are
+     * the same) has no edges to resize it by, and its maximize button is
+     * disabled, as on the original.
+     */
+    void set_fixed_size(bool is_fixed);
+
   private:
     const int titlebar_size;
     const int border_size;
@@ -124,6 +131,7 @@ class decoration_layout_t
 
     int frame_width  = 0;
     int frame_height = 0;
+    bool fixed_size  = false;
 
     void create_resize_areas(int width, int height);
 

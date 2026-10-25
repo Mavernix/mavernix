@@ -86,6 +86,7 @@ enum class button_state_t
     HOVER,
     PRESSED,
     INACTIVE, /** the button's window is not the active one */
+    DISABLED, /** the button does nothing: a maximize button on a window of fixed size */
 };
 
 /** One window button: a fill for each state. */
@@ -93,7 +94,7 @@ struct button_theme_t
 {
     std::map<button_state_t, fill_t> looks;
 
-    /** A state the theme leaves out looks like NORMAL. */
+    /** A state the theme leaves out looks like NORMAL; DISABLED like INACTIVE first. */
     const fill_t& look_for(button_state_t state) const;
 };
 
