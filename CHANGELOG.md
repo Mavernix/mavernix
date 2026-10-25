@@ -1,6 +1,14 @@
 # Changelog
 
-## 0.1.0 (unreleased)
+## 0.1.1 (2026-10-25)
+
+- The package brings what a fresh system lacks: the plain theme's icons and font, and the Theme Installer's tools; a missing icon theme falls back to an installed one.
+- foot is optional: the package no longer installs a terminal of its own.
+- The keyboard layout test passes in every locale, not only in C, so `makepkg` no longer stops at it.
+- Plainer wording in the Theme Installer and the docs.
+
+## 0.1.0
+
 
 The first public release.
 
