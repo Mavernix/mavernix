@@ -123,8 +123,13 @@ class TestKeyboard : public QObject
             KeyboardLayouts::read({rules.fileName(), QStringLiteral("/nonexistent")}, &error);
         QCOMPARE(error, QString());
         QCOMPARE(layouts.all().size(), 3);
-        QCOMPARE(layouts.describe(layouts.all().first()), QStringLiteral("English (US)"));
-        QCOMPARE(layouts.describe(layouts.all().last()), QStringLiteral("German"));
+        // Sorted the way the user's language sorts: whether "English (US)"
+        // comes before "English (US, intl., …)" depends on where the locale
+        // puts ")" and ",", so only the order itself is compared.
+        const QList<InputSource> all = layouts.all();
+        for (qsizetype i = 1; i < all.size(); ++i)
+            QVERIFY(layouts.describe(all[i - 1]).localeAwareCompare(layouts.describe(all[i])) <= 0);
+        QCOMPARE(layouts.describe(all.last()), QStringLiteral("German"));
         QCOMPARE(layouts.describe({QStringLiteral("us"), QStringLiteral("intl")}),
             QStringLiteral("English (US, intl., with dead keys)"));
         QCOMPARE(layouts.describe({QStringLiteral("xx"), QStringLiteral("yy")}), QStringLiteral("xx (yy)"));
