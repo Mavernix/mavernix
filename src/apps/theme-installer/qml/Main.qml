@@ -22,11 +22,12 @@ Window {
     readonly property var words: (settings.config.theme_installer ?? ({})).words ?? ({})
 
     // The installer chosen, or "" while there is none, and which look it
-    // makes: {look: id} or {problem: text}, worked out as soon as it is chosen.
+    // makes: {look: id} or {problem: text}, worked out by the job as soon as
+    // it is chosen ({} while it is being read).
     property string installer: givenInstaller
-    property var identified: ({})
-    onInstallerChanged: identified = installer !== "" ? job.identify(installer) : ({})
-    Component.onCompleted: installerChanged()
+    readonly property var identified: job.identifiedPath === installer ? job.identified : ({})
+    onInstallerChanged: job.identify(installer)
+    Component.onCompleted: job.identify(installer)
     readonly property var chosenLook: job.looks.find(look => look.id === identified.look) ?? null
 
     // The step shown: an index into `steps`.
@@ -52,13 +53,17 @@ Window {
         job.start(installer)
     }
 
-    // When an import ends, its outcome is the summary.
+    // When an import ends, its outcome is the summary; once the desktop is
+    // switched to the new look, the window has done its work.
     Connections {
         target: job
         function onStateChanged() {
             if (job.state !== "running" && job.state !== "idle") {
                 window.step = 3
             }
+        }
+        function onSwitched() {
+            window.close()
         }
     }
 
@@ -171,7 +176,7 @@ Window {
                 text: window.step === 2 ? (words.stop ?? "Stop")
                     : window.step === 3 && job.state === "done" ? (words.close ?? "Close")
                     : (words.go_back ?? "Go Back")
-                enabled: window.step === 2 ? window.importing : window.step > 0
+                enabled: window.step === 2 ? window.importing : window.step > 0 && !job.switching
                 onClicked: {
                     if (window.step === 2) {
                         job.stop()
@@ -192,21 +197,22 @@ Window {
                 width: Math.max(wantedWidth, backButton.wantedWidth)
                 text: window.step === 1 && window.chosenLook?.installed ? (words.reinstall_button ?? "Reinstall")
                     : window.step === 1 ? (words.install_button ?? "Install")
+                    : window.step === 3 && job.switching ? (words.switching ?? "Switching…")
                     : window.step === 3 && job.state === "done" ? (words.use_look ?? "Use %1").arg(window.chosenLook?.name ?? "")
                     : window.step === 3 ? (words.close ?? "Close")
                     : (words.continue_button ?? "Continue")
-                enabled: window.step === 0 ? job.missingPrograms.length === 0
-                    : window.step === 1 ? window.chosenLook !== null
+                enabled: window.step === 0 ? !job.checking && job.missingPrograms.length === 0
+                    : window.step === 1 ? window.chosenLook !== null && !job.identifying
                     : window.step === 2 ? false
-                    : true
+                    : !job.switching
                 onClicked: {
                     if (window.step === 0) {
                         window.step = 1
                     } else if (window.step === 1) {
                         window.startImport()
                     } else if (job.state === "done") {
+                        // The window closes once the switch has worked (onSwitched).
                         job.useDesktop(window.chosenLook.desktop)
-                        window.close()
                     } else {
                         window.close()
                     }

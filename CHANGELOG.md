@@ -3,6 +3,11 @@
 ## Unreleased
 
 - The Theme Installer accepts installers of other OS X 10.9 versions: only the artwork files it reads by position must be 10.9.5's, not the CoreUI library, whose colours are found by name.
+- Switching desktop while the session runs (the Theme Installer's Use button, Settings' Theme pane) wrote the new desktop but left the old panel and dock running until the next login: the shell inherited Wayfire's ignored SIGHUP.
+- Qt programs got Kvantum's own dark look instead of the theme's: Kvantum does not look for themes through `XDG_DATA_DIRS`, so the session links its theme into `~/.config/Kvantum/`.
+- Programs started on demand by D-Bus or systemd, such as Thunar's daemon, got no theme or icons: the session now hands them the look's environment and `XDG_DATA_DIRS`, updates it on a switch, and takes it back after the session.
+- The Theme Installer no longer freezes while it checks the computer, reads a dropped installer or switches desktop: each runs beside the window, with a busy bar, and reading an installer can be stopped. Use waits for the switch and says why it failed.
+- The Theme Installer reads the 5.3 GB installer image twice instead of eight times (its list of files is kept, and the parts come out in one pass); it needs 5 GB free while it runs instead of 4.5. One dated log holds the whole import, the sandboxed part included.
 
 ## 0.1.1 (2026-10-25)
 

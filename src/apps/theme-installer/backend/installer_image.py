@@ -3,9 +3,10 @@ only the files the theme needs.
 
 The installer comes as "Install OS X Mavericks.app", its InstallESD.dmg, or a
 disk image of either. Inside are BaseSystem.dmg and Packages/NAME.pkg (xar
-archives whose "Payload" is a bzip2-compressed cpio archive). Each part is
-copied out, mined for the files in needed-files.txt and deleted, so at most
-one part is on disk at a time. Nothing from the installer is ever run.
+archives whose "Payload" is a bzip2-compressed cpio archive). 7-Zip reads the
+whole of a disk image each time it opens one, so the parts are copied out
+together, in one pass; each is then mined for the files in needed-files.txt
+and deleted. Nothing from the installer is ever run.
 
 The files taken are checked, not the parts around them: a part's bytes change
 when it is signed anew, its files do not. A file the generators read by
@@ -14,6 +15,8 @@ file may differ, and the theme is then made from what the installer has.
 """
 
 import hashlib
+import os
+import re
 import shutil
 import subprocess
 import threading
@@ -58,6 +61,14 @@ def payload_decompressor():
 
 # How much is read at a time when copying or checking a part.
 CHUNK_BYTES = 4 * 1024 * 1024
+
+# 7-Zip's progress for copying files out of an image: first "N% Open" while it
+# reads the whole image, then "N% ..." while it writes the files.
+SEVEN_ZIP_PROGRESS = re.compile(rb"^\s*(\d+)%( Open)?")
+
+# Share of copying the parts spent opening the image, by the bytes each
+# reads: the image (5.3 GB) and then the parts (4.4 GB).
+OPEN_SHARE = 0.55
 
 
 class InstallerProblem(Exception):
@@ -122,10 +133,13 @@ def differing_files(files, root):
     return differing
 
 
-def find_installer(source, work, report):
+def find_installer(source, work, report, known_listing=None):
     """Where the installer's parts are: (the archive holding them, {part:
     Member}). An archive that holds InstallESD.dmg only, as the .app does
-    or a disk image made of the .app, is opened one level deeper."""
+    or a disk image made of the .app, is opened one level deeper.
+
+    `known_listing(path)` gives an image's list of files when it was listed
+    before (or None), saving a full read of it."""
     source = Path(source)
     if source.is_dir():
         inside_app = source / "Contents" / "SharedSupport" / "InstallESD.dmg"
@@ -134,7 +148,9 @@ def find_installer(source, work, report):
                                "it has no Contents/SharedSupport/InstallESD.dmg.")
         source = inside_app
 
-    members = list_archive(source)
+    members = known_listing(source) if known_listing else None
+    if members is None:
+        members = list_archive(source)
     parts = match_parts(members)
     if parts:
         return source, parts
@@ -180,6 +196,44 @@ def copy_member(archive, member, destination, report):
             raise InstallerProblem(f"{archive.name} is damaged or incomplete: 7-Zip could not copy {member.path} "
                                f"out of it ({errors.strip()}). Download the installer again.")
     return destination
+
+
+def copy_members(archive, members, destination, report):
+    """Copies files out of an archive in one pass into `destination`, by their
+    paths in it; returns {member path: copied file}."""
+    destination.mkdir(parents=True, exist_ok=True)
+    reader = subprocess.Popen(
+        ["7z", "x", "-y", WITHOUT_STREAMS, "-bsp1", "-bso0", "-bse2", f"-o{destination}", str(archive),
+         *[member.path for member in members]],
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    errors = []
+    reading_errors = threading.Thread(target=lambda: errors.append(reader.stderr.read()))
+    reading_errors.start()
+
+    # The progress line is rewritten in place with backspaces.
+    unread = b""
+    while chunk := os.read(reader.stdout.fileno(), 4096):
+        *pieces, unread = re.split(rb"[\b\r\n]+", unread + chunk)
+        for piece in pieces:
+            found = SEVEN_ZIP_PROGRESS.match(piece)
+            if not found:
+                continue
+            fraction = int(found.group(1)) / 100
+            report.fraction(fraction * OPEN_SHARE if found.group(2) else OPEN_SHARE + fraction * (1 - OPEN_SHARE))
+    reading_errors.join()
+    message = b"".join(errors).decode(errors="replace").strip()
+    if reader.wait() != 0:
+        raise InstallerProblem(f"{archive.name} is damaged or incomplete: 7-Zip could not copy the installer's "
+                               f"parts out of it ({message or 'no reason given'}). Download the installer again.")
+
+    copied = {}
+    for member in members:
+        path = destination / member.path
+        if not path.is_file() or path.stat().st_size != member.size:
+            raise InstallerProblem(f"{archive.name} is damaged or incomplete: {member.path} did not come out whole. "
+                                   "Download the installer again.")
+        copied[member.path] = path
+    return copied
 
 
 def take_files_from_base_system(image, paths, root, report):

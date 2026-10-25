@@ -51,6 +51,7 @@ int main(int argc, char** argv)
     const QVariantMap settings = read_settings();
     const QString given = argc > 1 ? QFileInfo(QString::fromLocal8Bit(argv[1])).absoluteFilePath() : QString();
 
+    // The check runs beside the window; the first page says it is checking.
     ImportJob job;
     job.check();
 

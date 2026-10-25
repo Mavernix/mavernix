@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Restores the environment of the user's background services after the
 # session, so a Plasma session started next does not inherit our
-# XDG_CONFIG_DIRS and DCONF_PROFILE. at_login.py starts it as its own
+# XDG_CONFIG_DIRS, DCONF_PROFILE, look and the like (at_login.py's
+# SESSION_SETTINGS_FOR_SERVICES). at_login.py starts it as its own
 # systemd service, since it must outlive the session.
 #
 #   after-session COMPOSITOR_PID NAME[=VALUE]...   (bare NAME: remove it)

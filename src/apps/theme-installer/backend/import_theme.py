@@ -16,17 +16,20 @@ look's themes into ~/.local/share/mavernix/themes/ and its desktops into
 ~/.local/share/mavernix/config/, where the session finds them.
 
 What it is doing is reported on standard output, one JSON object per line,
-for the import window to show (see Report below). The work that reads the
-installer runs in a sandbox when bubblewrap is installed: no network, and the
-whole file system read-only except the import's own two folders.
+for the import window to show (see Report below), and written to
+~/.cache/mavernix/theme-installer.log. The work that reads the installer runs
+in a sandbox when bubblewrap is installed: no network, and the whole file
+system read-only except the import's own two folders.
 """
 
+import hashlib
 import json
 import os
 import shutil
 import signal
 import subprocess
 import sys
+import threading
 import time
 import tomllib
 from pathlib import Path
@@ -38,8 +41,8 @@ BACKEND_DIR = Path(__file__).resolve().parent
 
 LOOKS_DIR = BACKEND_DIR / "looks"
 
-# Share of each part's unpacking time spent copying it out; the rest is
-# taking the files, which decompresses the whole payload.
+# Share of unpacking spent copying the parts out of the image; the rest is
+# taking the files from them, which decompresses each whole payload.
 COPY_SHARE = 0.3
 
 # The steps of an import, as the window lists them, with a rough share of the
@@ -66,10 +69,15 @@ REQUIRED_PROGRAMS = [
 ]
 SANDBOX_PROGRAM = ("bwrap", "bubblewrap", "keeps the installer's files away from the rest of the system")
 
-# Free space needed: the largest installer part (3.2 GB) with room to unpack
-# it, and the finished themes.
-WORK_SPACE_BYTES = 4_500_000_000
+# Free space needed: the installer's parts, copied out together (4.4 GB), with
+# room for the files taken from them; and the finished themes.
+WORK_SPACE_BYTES = 5_000_000_000
+TAKEN_FILES_BYTES = 300_000_000
 THEME_SPACE_BYTES = 500_000_000
+
+# How many images' lists of files are kept (listings/), so that the import
+# does not read an image again only to list it.
+KEPT_LISTINGS = 4
 
 # The least time between two progress reports.
 REPORT_INTERVAL_S = 0.2
@@ -96,9 +104,17 @@ class Report:
         if self.quiet:
             return
         print(json.dumps(event), flush=True)
-        if self.log and event["event"] in ("stage", "detail", "note", "error", "done"):
-            self.log.write(f"{time.strftime('%H:%M:%S')} {json.dumps(event)}\n")
-            self.log.flush()
+        if event["event"] in ("stage", "detail", "note", "error", "done"):
+            self.write_log(json.dumps(event))
+
+    def write_log(self, text):
+        """Adds lines to the log only, not to what the window is told."""
+        if not self.log:
+            return
+        stamp = time.strftime("%Y-%m-%d %H:%M:%S")
+        for line in text.rstrip("\n").split("\n"):
+            self.log.write(f"{stamp} {line}\n")
+        self.log.flush()
 
     def plan(self):
         self.send(event="plan", stages=[{"id": i, "label": label, "weight": w} for i, label, w in STAGES])
@@ -165,18 +181,28 @@ def holds(paths, suffix):
     return any(path == suffix or path.endswith("/" + suffix) for path in paths)
 
 
-def identify(source):
+def look_image(source, look):
+    """The image of `look`'s installer in SOURCE: SOURCE, or the image inside
+    a program folder."""
+    return source / look["inside_program"] if source.is_dir() else source
+
+
+def identify(source, list_image=installer_image.list_archive):
     """The id of the look whose installer SOURCE is. Reads only the image's
-    list of files, so it answers within a second or two."""
+    list of files (with `list_image`); 7-Zip still reads the whole image for
+    that, which takes minutes from a slow disk."""
     source = Path(source)
+    listed = {}
     for look_id, look in read_looks().items():
-        image = source / look["inside_program"] if source.is_dir() else source
+        image = look_image(source, look)
         if not image.is_file():
             continue
-        try:
-            paths = [member.path for member in installer_image.list_archive(image)]
-        except InstallerProblem:
-            continue
+        if image not in listed:
+            try:
+                listed[image] = [member.path for member in list_image(image)]
+            except InstallerProblem:
+                listed[image] = []
+        paths = listed[image]
         if all(holds(paths, suffix) for suffix in look["recognise"]) or holds(paths, look["wrapped_in"]):
             return look_id
     raise InstallerProblem(f"{source.name} is not an installer the Theme Installer knows. "
@@ -191,11 +217,68 @@ def themes_dir():
     return user_folder("XDG_DATA_HOME", ".local/share") / "mavernix" / "themes"
 
 
+def cache_dir():
+    return user_folder("XDG_CACHE_HOME", ".cache") / "mavernix"
+
+
+def log_path():
+    return cache_dir() / "theme-installer.log"
+
+
+def listings_dir():
+    return cache_dir() / "listings"
+
+
+def listing_file(image):
+    """Where the list of files of `image` is kept: named after the image's
+    path, size and time of change, so a changed image is listed anew."""
+    image = Path(image).resolve()
+    status = image.stat()
+    key = f"{image}\0{status.st_size}\0{status.st_mtime_ns}"
+    return listings_dir() / (hashlib.sha256(key.encode(errors="surrogateescape")).hexdigest() + ".json")
+
+
+class NotListedYet(Exception):
+    """An image whose list of files is not kept."""
+
+
+def known_listing(image):
+    """The kept list of files of `image`, or None."""
+    try:
+        with open(listing_file(image)) as file:
+            return [installer_image.Member(path, size) for path, size in json.load(file)]
+    except (OSError, ValueError):
+        return None
+
+
+def kept_listing(image):
+    """known_listing, for identify: raises NotListedYet instead of None."""
+    members = known_listing(image)
+    if members is None:
+        raise NotListedYet(image)
+    return members
+
+
+def keep_listing(image, members):
+    """Keeps the list of files of `image`; only the newest few are kept."""
+    folder = listings_dir()
+    folder.mkdir(parents=True, exist_ok=True)
+    target = listing_file(image)
+    partial = target.with_suffix(".partial")
+    partial.write_text(json.dumps([[member.path, member.size] for member in members]))
+    partial.rename(target)
+    for old in sorted(folder.glob("*.json"), key=lambda path: path.stat().st_mtime_ns, reverse=True)[KEPT_LISTINGS:]:
+        old.unlink(missing_ok=True)
+
+
 def run_tool(tool, *arguments):
     """Runs one of the decoders or generators beside this file."""
     result = subprocess.run([sys.executable, str(BACKEND_DIR / tool), *map(str, arguments)],
                             capture_output=True, text=True, cwd=BACKEND_DIR)
     if result.returncode != 0:
+        # The whole message goes to the log (the outer process keeps this
+        # one's error output); the window shows its end.
+        print(f"{tool} failed:\n{result.stderr}", file=sys.stderr, flush=True)
         last_lines = "\n".join(result.stderr.strip().split("\n")[-5:])
         raise InstallerProblem(f"{tool} failed:\n{last_lines}")
 
@@ -209,17 +292,24 @@ def unpack(archive, parts, work, look_dir, report, check):
     files = installer_image.needed_files(look_dir)
     sizes = {name: parts[name].size for name in installer_image.PART_ORDER}
     total = sum(sizes.values())
+    check_space(work, total + TAKEN_FILES_BYTES, "the installer's parts")
+
+    report.detail(f"Copying the installer's parts out of {archive.name}")
+    report.within(0, COPY_SHARE)
+    copies = installer_image.copy_members(archive, [parts[name] for name in installer_image.PART_ORDER],
+                                          work / "parts", report)
+    # An image taken out of another is no longer needed.
+    nested = work / "InstallESD.dmg"
+    if nested.exists():
+        nested.unlink()
+
     done = 0
     differing = []
     for name in installer_image.PART_ORDER:
-        share = sizes[name] / total
-        start = done / total
-        part_file = work / Path(parts[name].path).name
-        report.detail(f"Copying {part_file.name}")
-        report.within(start, start + share * COPY_SHARE)
-        installer_image.copy_member(archive, parts[name], part_file, report)
+        start = COPY_SHARE + (1 - COPY_SHARE) * done / total
+        report.within(start, start + (1 - COPY_SHARE) * sizes[name] / total)
+        part_file = copies[parts[name].path]
         report.detail(f"Taking the theme's files from {part_file.name}")
-        report.within(start + share * COPY_SHARE, start + share)
         if name == "BaseSystem":
             installer_image.take_files_from_base_system(part_file, list(files[name]), root, report)
         else:
@@ -228,9 +318,7 @@ def unpack(archive, parts, work, look_dir, report, check):
         if check:
             differing += installer_image.differing_files(files[name], root)
         done += sizes[name]
-    nested = work / "InstallESD.dmg"
-    if nested.exists():
-        nested.unlink()
+    shutil.rmtree(work / "parts")
     if differing:
         verb = "differs" if len(differing) == 1 else "differ"
         report.send(event="note", text=f"{len(differing)} of the theme's pictures, icons or sounds {verb} "
@@ -252,7 +340,7 @@ def build(source, work, staging, look_dir, report):
     """Everything that reads the installer, up to the finished themes in
     STAGING. This is the part that runs in the sandbox."""
     report.stage("open")
-    archive, parts = installer_image.find_installer(source, work, report)
+    archive, parts = installer_image.find_installer(source, work, report, known_listing)
     report.fraction(1)
 
     report.stage("unpack")
@@ -348,10 +436,15 @@ def sandbox_works():
     return trial.returncode == 0
 
 
-def sandboxed(command, writable):
+def sandboxed(command, writable, readable=()):
     """`command` inside bubblewrap: the file system read-only except the
-    folders in `writable`, no network, and ended when this process ends."""
+    folders in `writable`, no network, and ended when this process ends.
+    /tmp is empty inside, so what is read from there is named in `readable`
+    (and this program's own folder is, for a copy run from there)."""
     sandbox = ["bwrap", "--ro-bind", "/", "/", "--dev", "/dev", "--proc", "/proc", "--tmpfs", "/tmp"]
+    for path in [BACKEND_DIR, *readable]:
+        if Path(path).exists():
+            sandbox += ["--ro-bind", str(path), str(path)]
     for folder in writable:
         sandbox += ["--bind", str(folder), str(folder)]
     sandbox += ["--unshare-all", "--die-with-parent", "--new-session"]
@@ -366,29 +459,109 @@ def check_space(folder, needed_bytes, purpose):
                                f"in {folder}, and there are {free / 1e9:.1f} GB.")
 
 
-def run_inside(arguments, writable, capture=False):
-    """Runs this program with `arguments`, in the sandbox when there is one;
-    true if it succeeded. With `capture`, returns its output instead (or None)."""
+def inside_command(arguments, writable, readable=()):
+    """This program with `arguments`, in the sandbox when there is one."""
     command = [sys.executable, str(Path(__file__).resolve())] + [str(argument) for argument in arguments]
     if sandbox_works():
-        command = sandboxed(command, writable)
-    result = subprocess.run(command, capture_output=capture, text=capture)
+        command = sandboxed(command, writable, readable)
+    return command
+
+
+def run_inside(arguments, writable, readable=(), capture=False):
+    """Runs this program with `arguments`, in the sandbox when there is one;
+    true if it succeeded. With `capture`, returns its output instead (or None)."""
+    result = subprocess.run(inside_command(arguments, writable, readable), capture_output=capture, text=capture)
     if capture:
-        return result.stdout if result.returncode == 0 else None
+        if result.returncode != 0:
+            print(result.stderr, file=sys.stderr, end="", flush=True)
+            return None
+        return result.stdout
     return result.returncode == 0
 
 
+def relay_inside(arguments, writable, readable, report):
+    """Runs this program with `arguments` like run_inside, passing what it
+    reports on through `report`, so that it reaches the log too; true if it
+    succeeded. Its error output goes to the log."""
+    process = subprocess.Popen(inside_command(arguments, writable, readable),
+                               stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    errors = []
+
+    def log_errors():
+        for line in process.stderr:
+            errors.append(line)
+            report.write_log(f"import: {line}")
+
+    logging = threading.Thread(target=log_errors, daemon=True)
+    logging.start()
+    told_why = False
+    try:
+        for line in process.stdout:
+            try:
+                event = json.loads(line)
+            except ValueError:
+                report.write_log(f"import: {line}")
+                continue
+            told_why = told_why or event.get("event") == "error"
+            report.send(**event)
+        logging.join()
+        succeeded = process.wait() == 0
+    finally:
+        # Stopped from the window: without a sandbox nothing else ends it.
+        if process.poll() is None:
+            process.terminate()
+            process.wait()
+    if not succeeded and not told_why:
+        last = errors[-1].strip() if errors else f"it ended with status {process.returncode}"
+        report.send(event="error", message=f"The import stopped unexpectedly: {last}\n"
+                                           f"The whole message is in {log_path()}.")
+    return succeeded
+
+
 def identify_outside(source):
-    """{"look": id} or {"problem": message} for SOURCE, worked out in the sandbox."""
-    answer = run_inside(["identify-inside", Path(source).resolve()], [], capture=True)
+    """{"look": id} or {"problem": message} for SOURCE. An image listed before
+    is recognised from its kept list of files; any other is listed in the
+    sandbox, and its list is kept for the import."""
+    source = Path(source).resolve()
+    try:
+        return {"look": identify(source, kept_listing)}
+    except NotListedYet:
+        pass
+    except InstallerProblem as problem:
+        return {"problem": str(problem)}
+    answer = run_inside(["identify-inside", source], [], readable=[source], capture=True)
     if answer is None:
-        return {"problem": "The Theme Installer could not read the file."}
-    return json.loads(answer)
+        return {"problem": f"The Theme Installer could not read the file. What went wrong is in {log_path()}."}
+    answer = json.loads(answer)
+    for image, members in answer.pop("listings", {}).items():
+        try:
+            keep_listing(image, [installer_image.Member(path, size) for path, size in members])
+        except OSError as problem:
+            print(f"import_theme: could not keep the list of files of {image}: {problem}", file=sys.stderr)
+    return answer
+
+
+def identify_inside(source):
+    """identify, with the lists of files read on the way, for the outer
+    process to keep."""
+    listings = {}
+
+    def list_image(image):
+        members = installer_image.list_archive(image)
+        listings[str(Path(image).resolve())] = [[member.path, member.size] for member in members]
+        return members
+
+    try:
+        answer = {"look": identify(source, list_image)}
+    except InstallerProblem as problem:
+        answer = {"problem": str(problem)}
+    answer["listings"] = listings
+    return answer
 
 
 def import_installer(source, report):
     """The whole import: build in the sandbox (when there is one), then install."""
-    work = user_folder("XDG_CACHE_HOME", ".cache") / "mavernix" / "import"
+    work = cache_dir() / "import"
     staging = themes_dir() / ".import"
     check_space(work.parent, WORK_SPACE_BYTES, "the installer's parts")
     check_space(themes_dir(), THEME_SPACE_BYTES, "the themes")
@@ -397,6 +570,7 @@ def import_installer(source, report):
         folder.mkdir(parents=True)
 
     try:
+        report.write_log(f"import of {source} into {themes_dir()}")
         if not sandbox_works():
             report.detail("No sandbox (bubblewrap is missing or cannot run here): "
                           "the installer is read without one")
@@ -404,7 +578,8 @@ def import_installer(source, report):
         if "problem" in identified:
             raise InstallerProblem(identified["problem"])
         look = read_looks()[identified["look"]]
-        if not run_inside(["build", source, work, staging, look["folder"]], [work, staging]):
+        if not relay_inside(["build", source, work, staging, look["folder"]], [work, staging],
+                            [source, listings_dir()], report):
             return False
         install(staging, look, report)
     finally:
@@ -426,18 +601,16 @@ def main():
         print(json.dumps(identify_outside(sys.argv[2])))
         return
     if command == "identify-inside":
-        try:
-            print(json.dumps({"look": identify(sys.argv[2])}))
-        except InstallerProblem as problem:
-            print(json.dumps({"problem": str(problem)}))
+        print(json.dumps(identify_inside(sys.argv[2])))
         return
     if command == "fingerprint":
-        work = user_folder("XDG_CACHE_HOME", ".cache") / "mavernix" / "fingerprint"
+        work = cache_dir() / "fingerprint"
         check_space(work.parent, WORK_SPACE_BYTES, "the installer's parts")
         shutil.rmtree(work, ignore_errors=True)
         work.mkdir(parents=True)
         try:
-            ok = run_inside(["fingerprint-inside", Path(sys.argv[2]).resolve(), work], [work])
+            source = Path(sys.argv[2]).resolve()
+            ok = run_inside(["fingerprint-inside", source, work], [work], readable=[source])
         finally:
             shutil.rmtree(work, ignore_errors=True)
         sys.exit(0 if ok else 1)
@@ -457,11 +630,10 @@ def main():
             source, work, staging, look_dir = map(Path, sys.argv[2:6])
             build(source, work, staging, look_dir, report)
         else:
-            log = user_folder("XDG_CACHE_HOME", ".cache") / "mavernix" / "theme-installer.log"
-            log.parent.mkdir(parents=True, exist_ok=True)
-            report = Report(log)
+            log_path().parent.mkdir(parents=True, exist_ok=True)
+            report = Report(log_path())
             report.plan()
-            if not import_installer(Path(sys.argv[2]), report):
+            if not import_installer(Path(sys.argv[2]).resolve(), report):
                 sys.exit(1)
     except InstallerProblem as problem:
         report.send(event="error", message=str(problem))

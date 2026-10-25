@@ -1,6 +1,6 @@
 // The last page: how the import ended. Done: the look is ready, and Use
-// switches to it. Failed: why, in the back end's words. Stopped: nothing
-// was changed.
+// switches to it (or says why it could not). Failed: why, in the back end's
+// words. Stopped: nothing was changed.
 
 import QtQuick
 import "../../../shell" as Shell
@@ -45,6 +45,16 @@ Item {
             secondary: true
             horizontalAlignment: Text.AlignHCenter
             text: job.notes.join("\n")
+        }
+        // While the desktop is being switched to the look, and why it was not.
+        BusyBar {
+            visible: job.switching
+        }
+        BodyText {
+            visible: outcome === "done" && job.switchProblem !== ""
+            horizontalAlignment: Text.AlignHCenter
+            color: ThemeValues.color(window.looks.stage_failed_color)
+            text: job.switchProblem
         }
     }
 }

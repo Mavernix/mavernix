@@ -11,6 +11,8 @@ state_dir=$(dirname "${DESKTOP_SHELL_SETTINGS:?run-shell: DESKTOP_SHELL_SETTINGS
 # shellcheck source=/dev/null
 source "$state_dir/desktop.env"
 
-# `exec` keeps this pid for the shell, so a switch can signal it.
+# `exec` keeps this pid for the shell, so a switch can signal it. Wayfire
+# ignores SIGHUP and its children inherit that; bash cannot undo an ignore it
+# was started with, so env restores the default, or the shell would never end.
 echo $$ > "$state_dir/shell.pid"
-exec qs -p "$shell_dir"
+exec env --default-signal=HUP qs -p "$shell_dir"

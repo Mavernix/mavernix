@@ -101,7 +101,9 @@ write_application_themes() {
         echo "configure-desktop: could not write the themes for applications (message above)." >&2
         echo "configure-desktop: the desktop starts anyway; applications keep their own look." >&2
         rm -rf "$app_theme"
+        return 0
     fi
+    link_kvantum_theme
 }
 
 # The theme's values into the session's dconf database; open GTK programs
@@ -205,6 +207,60 @@ write_environment() {
     } > "$state_dir/desktop.env"
 }
 
+# The names in desktop.env, which the session hands on to services started
+# on demand (at_login.py at login, tell_services after a switch).
+desktop_environment_names=(GTK_THEME QT_STYLE_OVERRIDE QT_QPA_SYSTEM_ICON_THEME)
+
+# Kvantum finds a theme only in its own folders (~/.config/Kvantum, ~/.themes,
+# ~/.local/share/themes, /usr/share/themes), not through XDG_DATA_DIRS, and
+# without it falls back to a dark look of its own. One link in the user's
+# Kvantum folder, which always points into the session's state, fixes that.
+link_kvantum_theme() {
+    local kvantum_theme="$app_theme/share/themes/DesktopTheme/Kvantum"
+    local link="${XDG_CONFIG_HOME:-$HOME/.config}/Kvantum/DesktopTheme"
+    # A desktop nested in another one (a test, the container) must not take
+    # the link from the user's real session.
+    if [[ ! -d "$kvantum_theme" || -n "${DESKTOP_NESTED:-}" ]]; then
+        return 0
+    fi
+    if [[ -e "$link" && ! -L "$link" ]]; then
+        echo "configure-desktop: $link is a folder of the user's own, so Qt programs get Kvantum's default look; move it away to get the desktop's." >&2
+        return 0
+    fi
+    mkdir -p "$(dirname "$link")"
+    ln -sfn "$kvantum_theme" "$link"
+}
+
+# After a switch: services started on demand from now on (a file manager
+# opened from the dock, the portal) get the new desktop's look. Programs
+# already running keep theirs. Not when nested in another desktop, whose
+# services these are.
+tell_services() {
+    if [[ -n "${DESKTOP_NESTED:-}" ]] || ! command -v dbus-update-activation-environment > /dev/null; then
+        return 0
+    fi
+    (
+        # shellcheck source=/dev/null
+        source "$state_dir/desktop.env"
+        local -a set_names=() unset_names=()
+        local name
+        for name in "${desktop_environment_names[@]}"; do
+            if [[ -v $name ]]; then
+                export "${name?}"
+                set_names+=("$name")
+            else
+                unset_names+=("$name")
+            fi
+        done
+        if (( ${#set_names[@]} )); then
+            dbus-update-activation-environment --systemd "${set_names[@]}" || true
+        fi
+        if (( ${#unset_names[@]} )); then
+            systemctl --user unset-environment "${unset_names[@]}" 2> /dev/null || true
+        fi
+    )
+}
+
 configure_everything() {
     write_shell_settings
     write_compositor_settings
@@ -252,6 +308,7 @@ switch)
     write_current
     remember_choice "$name"
     configure_everything
+    tell_services
     restart_shell
     ;;
 choices)

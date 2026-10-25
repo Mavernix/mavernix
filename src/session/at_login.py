@@ -17,8 +17,18 @@ import sys
 
 ENVIRONMENT_FOR_SERVICES = ["WAYLAND_DISPLAY", "DISPLAY", "XDG_CURRENT_DESKTOP", "XDG_SESSION_TYPE"]
 
-# Taken back out after the session (after-session).
-SESSION_SETTINGS_FOR_SERVICES = ["XDG_CONFIG_DIRS", "DCONF_PROFILE"]
+# Taken back out after the session (after-session). Without the look's names
+# and XDG_DATA_DIRS (the theme's icons, the toolkit themes) a program started
+# on demand, such as the file manager, gets the stock look. configure-desktop
+# updates the look's names on a switch.
+SESSION_SETTINGS_FOR_SERVICES = ["XDG_CONFIG_DIRS", "XDG_DATA_DIRS", "DCONF_PROFILE",
+                                 "GTK_THEME", "QT_STYLE_OVERRIDE", "QT_QPA_SYSTEM_ICON_THEME"]
+
+# File managers that stay running as services between windows (Thunar's
+# daemon, Nautilus): one started before the session keeps its look and finds
+# none of the theme's icons. They come back on demand.
+EARLY_FILE_MANAGER_SERVICES = ["thunar.service", "dbus-*-org.xfce.Thunar@*.service",
+                               "dbus-*-org.gnome.Nautilus@*.service"]
 
 # Sends the login to the wallet that KDE's PAM module started. Run here, not
 # via dex, because programs started earlier would hit a still-closed wallet.
@@ -60,9 +70,10 @@ def arrange_taking_settings_back():
     before = services_environment()
     settings = []
     for name in SESSION_SETTINGS_FOR_SERVICES:
-        # A value naming our state folder is left over from a crashed session.
+        # A value naming our state folder or toolkit theme is left over from
+        # a crashed session.
         value = before.get(name)
-        if value is None or "/mavernix/" in value:
+        if value is None or "/mavernix/" in value or value == "DesktopTheme":
             settings.append(name)
         else:
             settings.append(f"{name}={value}")
@@ -104,6 +115,7 @@ def tell_services():
     if "--systemd" in command:
         restart_early_portals()
         stop_early_kde_service()
+        stop_early_file_managers()
 
 
 def restart_early_portals():
@@ -128,6 +140,12 @@ def stop_early_kde_service():
     """
     subprocess.run(["systemctl", "--user", "stop", "dbus-*-org.kde.kded6@*.service"],
                    capture_output=True)
+
+
+def stop_early_file_managers():
+    """Stops file managers kept running from before the session (see
+    EARLY_FILE_MANAGER_SERVICES). At login none has a window of this session."""
+    subprocess.run(["systemctl", "--user", "stop"] + EARLY_FILE_MANAGER_SERVICES, capture_output=True)
 
 
 def start(command):

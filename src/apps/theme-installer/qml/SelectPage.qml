@@ -9,6 +9,8 @@ import "../../../shell/ThemeValues.js" as ThemeValues
 Item {
     readonly property string heading: window.words.select_heading ?? "Select the Installer"
     readonly property var chosen: window.installer !== "" ? job.describe(window.installer) : ({})
+    // Whether the chosen file is still being read to see which look it makes.
+    readonly property bool reading: job.identifying && job.identifiedPath === window.installer
 
     // The first local path among dropped addresses, or "".
     function droppedPath(drop) {
@@ -33,7 +35,8 @@ Item {
     Shell.Fill {
         id: well
         anchors { top: parent.top; left: parent.left; right: parent.right }
-        height: window.looks.drop_well_height
+        // Taller than the theme says when the words about the file need it.
+        height: Math.max(window.looks.drop_well_height, wellContent.implicitHeight + 2 * window.looks.pane_padding)
         fill: dropArea.containsDrag || window.installer !== "" ? window.looks.drop_well_ready : window.looks.drop_well
         themeDirectory: window.themeDirectory
 
@@ -50,6 +53,7 @@ Item {
         }
 
         Column {
+            id: wellContent
             anchors.centerIn: parent
             width: parent.width - 2 * window.looks.pane_padding
             spacing: window.looks.paragraph_gap
@@ -79,9 +83,26 @@ Item {
                     : job.looks.length === 1 ? job.looks[0].drop_hint
                     : (window.words.drop_hint ?? "An installer for one of the looks on the first page")
             }
+            // While the chosen file is read: that it is, and that it can take a while.
+            BodyText {
+                visible: reading
+                horizontalAlignment: Text.AlignHCenter
+                font.bold: true
+                text: window.words.reading ?? "Reading the installer…"
+            }
+            BusyBar {
+                visible: reading
+            }
+            BodyText {
+                visible: reading
+                horizontalAlignment: Text.AlignHCenter
+                secondary: true
+                text: window.words.reading_note ??
+                    "A large image on a slow disk can take a few minutes. You can choose another file meanwhile."
+            }
             // What the chosen file makes, or why it makes nothing.
             BodyText {
-                visible: window.installer !== ""
+                visible: window.installer !== "" && !reading
                 horizontalAlignment: Text.AlignHCenter
                 font.bold: window.chosenLook !== null
                 color: ThemeValues.color(window.chosenLook !== null ? window.looks.stage_done_color
@@ -91,14 +112,28 @@ Item {
                     ? (window.words.makes_installed ?? "Makes %1, which is installed already; installing it again replaces it.").arg(window.chosenLook.name)
                     : (window.words.makes ?? "Makes %1.").arg(window.chosenLook.name)
             }
-            Shell.PushButton {
+            Row {
                 anchors.horizontalCenter: parent.horizontalCenter
-                looks: window.theme.dialog
-                fonts: window.fonts
-                themeDirectory: window.themeDirectory
-                width: wantedWidth
-                text: chosen.name !== undefined ? (window.words.change ?? "Change…") : (window.words.choose ?? "Choose…")
-                onClicked: chooser.open()
+                spacing: window.theme.dialog.button_spacing ?? 8
+
+                Shell.PushButton {
+                    looks: window.theme.dialog
+                    fonts: window.fonts
+                    themeDirectory: window.themeDirectory
+                    width: wantedWidth
+                    text: chosen.name !== undefined ? (window.words.change ?? "Change…") : (window.words.choose ?? "Choose…")
+                    onClicked: chooser.open()
+                }
+                // Stops reading the file; the well is empty again.
+                Shell.PushButton {
+                    visible: reading
+                    looks: window.theme.dialog
+                    fonts: window.fonts
+                    themeDirectory: window.themeDirectory
+                    width: wantedWidth
+                    text: window.words.stop ?? "Stop"
+                    onClicked: window.installer = ""
+                }
             }
         }
     }
@@ -107,7 +142,7 @@ Item {
         anchors { top: well.bottom; topMargin: window.looks.paragraph_gap }
         secondary: true
         text: window.words.select_note ??
-            "The import takes a few minutes and needs about 4.5 GB of free space while it runs."
+            "The import takes a few minutes and needs about 5 GB of free space while it runs."
     }
 
     Platform.FileDialog {

@@ -26,6 +26,16 @@ Item {
                 + "Nothing is downloaded."
         }
 
+        // While the back end looks at what this computer has.
+        BodyText {
+            visible: job.checking && job.looks.length === 0
+            secondary: true
+            text: window.words.checking ?? "Checking this computer…"
+        }
+        BusyBar {
+            visible: job.checking && job.looks.length === 0
+        }
+
         // Each look: its name and whether it is installed, what it is, what it is made from.
         Repeater {
             model: job.looks
@@ -65,7 +75,7 @@ Item {
 
         // What has to be installed first, if anything.
         Shell.Fill {
-            visible: missing.length > 0 || !job.sandbox
+            visible: !job.checking && (job.checkProblem !== "" || missing.length > 0 || !job.sandbox)
             width: parent.width
             height: noteText.implicitHeight + 2 * window.looks.pane_padding
             fill: window.looks.note
@@ -77,6 +87,9 @@ Item {
                 y: window.looks.pane_padding
                 width: parent.width - 2 * window.looks.pane_padding
                 text: {
+                    if (job.checkProblem !== "") {
+                        return job.checkProblem
+                    }
                     if (missing.length > 0) {
                         const packages = missing.map(entry => entry.package)
                         const programs = missing.map(entry => `${entry.program} (${entry.purpose})`)
