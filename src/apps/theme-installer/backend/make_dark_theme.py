@@ -434,6 +434,30 @@ def make_inactive_button_pictures(images_dir):
             Image.merge("RGBA", (red, green, blue, alpha)).save(path)
 
 
+# The About picture's system name under the logo: one dark grey, below the
+# first empty rows. It is painted in the rule's dark counterpart of that
+# grey; the logo above it is left as it is.
+ABOUT_WORDMARK_COLOUR = "#262626"
+
+
+def make_about_picture(images_dir):
+    colour = parse_colour(dark_counterpart(ABOUT_WORDMARK_COLOUR, "about.heading_color"))[:3]
+    for suffix in ("", "@2x"):
+        path = images_dir / f"about{suffix}.png"
+        picture = Image.open(path).convert("RGBA")
+        alpha = picture.getchannel("A")
+        first_row = alpha.getbbox()[1]
+        empty_row = next((row for row in range(first_row, picture.height)
+                          if alpha.crop((0, row, picture.width, row + 1)).getbbox() is None), None)
+        if empty_row is None:
+            fail(f"{path} has no empty rows between the logo and the name")
+        name = picture.crop((0, empty_row, picture.width, picture.height))
+        painted = Image.new("RGBA", name.size, colour)
+        painted.putalpha(name.getchannel("A"))
+        picture.paste(painted, (0, empty_row))
+        picture.save(path)
+
+
 # --- Colours: the rule for our own programs ---------------------------------------
 def parse_colour(text):
     digits = text.lstrip("#")
@@ -835,6 +859,7 @@ def build(work_dir, light_dir, output_dir):
     make_other_control_pictures(prokit, images_dir / "controls")
     make_panel_pictures(prokit, images_dir, light_dir / "images")
     make_inactive_button_pictures(images_dir)
+    make_about_picture(images_dir)
 
     theme = ThemeText((light_dir / "theme.toml").read_text())
     theme.preamble = [
