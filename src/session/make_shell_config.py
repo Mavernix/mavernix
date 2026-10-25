@@ -34,7 +34,7 @@ from pathlib import Path
 
 from make_wayfire_config import load_toml, system_keyboard
 from paths import EXTENSIONS_DIR
-from themes import find_theme
+from themes import find_theme, usable_icon_theme
 from user_choices import choices_path, default_desktop_path, desktop_names, load_desktop_config, with_user_choices
 
 
@@ -122,7 +122,7 @@ def main():
             "commands": default_config.get("commands", {}),
         },
         "system_keyboard": system_keyboard(),
-        "theme": load_toml(theme_dir / "theme.toml"),
+        "theme": usable_icon_theme(load_toml(theme_dir / "theme.toml"), theme_dir),
         "theme_directory": str(theme_dir),
         "user_choices_file": str(choices_path(arguments.config)),
         "desktop": arguments.config.stem,

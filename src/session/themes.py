@@ -27,6 +27,10 @@ from toml_text import toml_text
 THEME_FILE = "theme.toml"
 FORMAT_KEYS_FILE = DATA_DIR / "theme-keys.json"
 
+# Icon themes tried, in order, when the one a theme names is not installed.
+# hicolor is the base every system has; it holds only programs' own icons.
+FALLBACK_ICON_THEMES = ["Adwaita", "breeze", "Papirus", "hicolor"]
+
 
 def fail(message):
     sys.exit(f"themes: {message}")
@@ -112,6 +116,36 @@ def joined(base, upper, tables, path=""):
         else:
             result[key] = value
     return result
+
+
+def icon_theme_folders(theme_dir):
+    """Where icon themes are looked for, as the icon theme specification
+    lists them, and the theme's own share/icons/."""
+    data_home = os.environ.get("XDG_DATA_HOME") or Path.home() / ".local" / "share"
+    data_dirs = (os.environ.get("XDG_DATA_DIRS") or "/usr/local/share:/usr/share").split(":")
+    folders = [Path.home() / ".icons", Path(data_home) / "icons"]
+    folders += [Path(folder) / "icons" for folder in data_dirs if folder]
+    folders.append(Path(theme_dir) / "share" / "icons")
+    return folders
+
+
+def usable_icon_theme(theme, theme_dir):
+    """`theme` with its [icons] theme replaced by an installed one if the one
+    it names is missing, so that programs do not show empty squares."""
+    wanted = theme.get("icons", {}).get("theme")
+    if wanted is None:
+        return theme
+    folders = icon_theme_folders(theme_dir)
+
+    def installed(name):
+        return any((folder / name / "index.theme").is_file() for folder in folders)
+
+    if installed(wanted):
+        return theme
+    usable = next((name for name in FALLBACK_ICON_THEMES if installed(name)), "hicolor")
+    print(f"themes: the icon theme \"{wanted}\" is not installed; using \"{usable}\" instead",
+          file=sys.stderr)
+    return dict(theme, icons=dict(theme["icons"], theme=usable))
 
 
 def link_files(layers, target):

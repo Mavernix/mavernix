@@ -16,6 +16,8 @@
 | Kvantum | 1.1.8 | `kvantum` | draws Qt applications in the theme's look |
 | PipeWire and WirePlumber | | `pipewire` `wireplumber` | the desktop's sounds |
 | GSettings schemas | 51.0 | `gsettings-desktop-schemas` | the look of GTK applications |
+| Adwaita icons, DejaVu fonts, foot | | `adwaita-icon-theme` `adwaita-icon-theme-legacy` `ttf-dejavu` `foot` | the plain theme's icons and type (without the icons, the desktop falls back to Breeze, Papirus or hicolor), and the terminal the dock and Super+Enter open |
+| 7-Zip, cpio, bzip2 and lbzip2, libicns, FFmpeg, Poppler, bubblewrap | | `7zip` `cpio` `bzip2` `lbzip2` `libicns` `ffmpeg` `poppler` `bubblewrap` | the Theme Installer: reading the installer, converting icons, sounds and drawings, its sandbox |
 | Meson, Ninja, a C++17 compiler, GLM, Vulkan headers | Meson 1.12.1 | `base-devel` `meson` `ninja` `glm` `vulkan-headers` | building (GLM and the Vulkan headers for Wayfire's own headers) |
 
 On Arch, all of it at once:
@@ -27,20 +29,20 @@ sudo pacman -S --needed base-devel meson ninja wayfire glm vulkan-headers tomlpl
 
 # to run
 sudo pacman -S --needed quickshell python python-pillow qt6-svg kvantum \
-    pipewire wireplumber gsettings-desktop-schemas gvfs
+    pipewire wireplumber gsettings-desktop-schemas gvfs \
+    adwaita-icon-theme adwaita-icon-theme-legacy ttf-dejavu foot \
+    7zip cpio bzip2 lbzip2 libicns ffmpeg poppler bubblewrap
 ```
 
 Optional, each passed over if it is not installed:
 
 | Package | For |
 |---|---|
-| `foot` | the terminal Super+Enter opens |
 | `grim`, `slurp`, `wl-clipboard` | pictures of the screen |
 | `brightnessctl`, `playerctl` | a laptop's brightness and media keys |
 | `network-manager-applet` | choosing a wireless network |
 | `dex` | starting the programs in `~/.config/autostart` |
 | `xdg-desktop-portal`, `xdg-desktop-portal-gtk`, `xdg-desktop-portal-wlr` | file choosers and screen sharing for browsers and sandboxed programs |
-| `7zip`, `cpio`, `bzip2`, `libicns`, `ffmpeg`, `poppler`, `bubblewrap`, `lbzip2` | the Theme Installer (see [using the desktop](usage.md#the-sea-lion-look)) |
 
 ## On Arch Linux
 

@@ -28,6 +28,8 @@ import tomllib
 import xml.etree.ElementTree as ElementTree
 from pathlib import Path
 
+from themes import usable_icon_theme
+
 try:
     from PIL import Image
 except ImportError:
@@ -903,7 +905,7 @@ def main():
     if not theme_file.is_file():
         fail(f"{theme_file} does not exist")
     with open(theme_file, "rb") as file:
-        theme = tomllib.load(file)
+        theme = usable_icon_theme(tomllib.load(file), arguments.theme)
 
     if "controls" not in theme:
         print(f"{theme_file} has no [controls] table; applications keep their own look")

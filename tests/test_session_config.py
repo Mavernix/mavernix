@@ -170,6 +170,19 @@ class TestThemes(SessionTestCase):
         self.assertEqual((joined / "images" / "trash-full.svg").read_text(), "<svg/>")
         self.assertTrue((joined / "images" / "app-grid.svg").is_file())
 
+    def test_a_missing_icon_theme_is_replaced_by_an_installed_one(self):
+        self.user_theme("odd-icons", 'based_on = "plain"\n[icons]\ntheme = "NoSuchIcons"\n')
+        icons = self.home / "data-dir" / "icons" / "breeze"
+        icons.mkdir(parents=True)
+        (icons / "index.theme").write_text("[Icon Theme]\nName=Breeze\n")
+        self.environment["XDG_DATA_DIRS"] = str(self.home / "data-dir")
+        config = self.home / "odd-icons.toml"
+        config.write_text((CONFIG_DIR / "plain.toml").read_text().replace('theme = "plain"', 'theme = "odd-icons"'))
+
+        written = self.home / "odd-icons.json"
+        self.run_script("make_shell_config.py", config, written)
+        self.assertEqual(json.loads(written.read_text())["theme"]["icons"]["theme"], "breeze")
+
 
 if __name__ == "__main__":
     unittest.main()
