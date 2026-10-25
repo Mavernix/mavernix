@@ -9,6 +9,16 @@ theme = "Adwaita"         # the name of an icon theme
 
 Applications and the desktop's own parts (the dock) take icons by name from this icon theme. It may be one installed on the system, or one the desktop theme brings along: a theme's `share/` folder is added to the folders where programs look such things up, so `share/icons/NAME/` is found. A theme without this table uses the system's icons.
 
+## Mouse pointers
+
+```toml
+[cursors]
+theme = "Adwaita"         # the name of a cursor theme
+size = 24                 # its size at a screen scale of 1, in pixels
+```
+
+The mouse pointer everywhere: over the desktop and its parts (the compositor's), in GTK programs (dconf's `cursor-theme`) and in programs that draw their own (`XCURSOR_THEME`, `XCURSOR_SIZE`). Like the icon theme, it may be installed on the system or come with the desktop theme as `share/icons/NAME/cursors/`: the session puts the theme's `share/icons` first in `XCURSOR_PATH`. A cursor theme and an icon theme may share one folder and one name. A theme without this table gets the system's pointers.
+
 ## Controls inside applications
 
 How buttons, checkboxes and the like look in ordinary applications. No program of the desktop draws these; `src/session/make_app_theme.py` translates this table into themes for the applications' toolkits (Kvantum for Qt, CSS for GTK). A theme without this table leaves applications alone. What the table does not describe keeps a stock look.

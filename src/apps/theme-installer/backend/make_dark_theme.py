@@ -772,6 +772,9 @@ def change_lock(theme, prokit):
 def change_icons(theme):
     theme.set("icons", "theme", f'"{ICON_THEME}"',
               "Sea Lion's icons, with Breeze's dark set for the one-colour icons (see the generator).")
+    # The pointers come with the linked folders; only this theme's share/ is
+    # searched, so they are named by this theme's name too.
+    theme.set("cursors", "theme", f'"{ICON_THEME}"', "Sea Lion's pointers, through the linked cursors folder.")
 
 
 LINKED = ["fonts", "wallpapers"]

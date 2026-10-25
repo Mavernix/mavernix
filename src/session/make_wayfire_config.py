@@ -329,6 +329,9 @@ def yes_or_no(value):
     return "true" if value else "false"
 
 
+# The pointers' size when the theme names none, as Wayfire's own default.
+DEFAULT_CURSOR_SIZE = 24
+
 # [input] keyboard_switch_key -> XKB option.
 LAYOUT_SWITCH_OPTIONS = {
     "ctrl_space": "grp:ctrl_space_toggle",
@@ -369,11 +372,15 @@ def keyboard_lines(config):
     return [f"xkb_{name} = {value}" for name, value in values.items()]
 
 
-def input_section(config):
-    """Keyboard and touchpad settings, from the config's [input] table."""
+def input_section(config, theme):
+    """Keyboard and touchpad settings, from the config's [input] table, and
+    the theme's mouse pointers ([cursors]; else the system's)."""
     wishes = config.get("input", {})
     lines = ["[input]"]
     lines += keyboard_lines(config)
+    cursors = theme.get("cursors", {})
+    lines.append(f"cursor_theme = {cursors.get('theme', 'default')}")
+    lines.append(f"cursor_size = {cursors.get('size', DEFAULT_CURSOR_SIZE)}")
     if "key_repeat_delay_ms" in wishes:
         lines.append(f"kb_repeat_delay = {wishes['key_repeat_delay_ms']}")
     if "key_repeat_per_second" in wishes:
@@ -714,7 +721,7 @@ def main():
     if shortcuts:
         sections.append(shortcuts)
     sections.append(window_overview_section(config, theme))
-    sections.append(input_section(config))
+    sections.append(input_section(config, theme))
     sections.append(idle_section(config))
     sections += display_sections(config)
     gestures, gesture_plugins = gesture_section(config, theme)

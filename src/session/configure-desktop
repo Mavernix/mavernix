@@ -204,12 +204,16 @@ write_environment() {
         environment_line QT_STYLE_OVERRIDE "$qt_style"
         # For Qt programs; GTK reads the icon theme from dconf.
         environment_line QT_QPA_SYSTEM_ICON_THEME "$(setting theme icons theme "")"
+        # The mouse pointers, for programs that draw their own (the
+        # compositor's come from session.ini, GTK's from dconf).
+        environment_line XCURSOR_THEME "$(setting theme cursors theme "")"
+        environment_line XCURSOR_SIZE "$(setting theme cursors size "")"
     } > "$state_dir/desktop.env"
 }
 
 # The names in desktop.env, which the session hands on to services started
 # on demand (at_login.py at login, tell_services after a switch).
-desktop_environment_names=(GTK_THEME QT_STYLE_OVERRIDE QT_QPA_SYSTEM_ICON_THEME)
+desktop_environment_names=(GTK_THEME QT_STYLE_OVERRIDE QT_QPA_SYSTEM_ICON_THEME XCURSOR_THEME XCURSOR_SIZE)
 
 # Kvantum finds a theme only in its own folders (~/.config/Kvantum, ~/.themes,
 # ~/.local/share/themes, /usr/share/themes), not through XDG_DATA_DIRS, and

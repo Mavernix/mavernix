@@ -24,8 +24,8 @@ depends=(
   'kvantum'
   'gsettings-desktop-schemas'
   'gvfs'
-  # The plain theme's icons and font.
-  'adwaita-icon-theme' 'adwaita-icon-theme-legacy' 'ttf-dejavu'
+  # The plain theme's icons, pointers and font.
+  'adwaita-icon-theme' 'adwaita-icon-theme-legacy' 'adwaita-cursors' 'ttf-dejavu'
   # The Theme Installer: unpacking the installer, converting icons, sounds
   # and drawings, and its sandbox.
   '7zip' 'cpio' 'bzip2' 'lbzip2' 'libicns' 'ffmpeg' 'poppler' 'bubblewrap'

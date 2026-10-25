@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Mouse pointers as part of a theme (`[cursors]`), for the compositor, GTK and other programs; Sea Lion's are made from the installer's own (the arrow, text beam and spinning wait cursor from CoreGraphics, the rest from HIServices' drawings).
 - The Theme Installer accepts installers of other OS X 10.9 versions: only the artwork files it reads by position must be 10.9.5's, not the CoreUI library, whose colours are found by name.
 - Switching desktop while the session runs (the Theme Installer's Use button, Settings' Theme pane) wrote the new desktop but left the old panel and dock running until the next login: the shell inherited Wayfire's ignored SIGHUP.
 - Qt programs got Kvantum's own dark look instead of the theme's: Kvantum does not look for themes through `XDG_DATA_DIRS`, so the session links its theme into `~/.config/Kvantum/`.

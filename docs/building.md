@@ -31,7 +31,7 @@ sudo pacman -S --needed base-devel meson ninja wayfire glm vulkan-headers tomlpl
 # to run
 sudo pacman -S --needed quickshell python python-pillow qt6-svg kvantum \
     pipewire wireplumber gsettings-desktop-schemas gvfs \
-    adwaita-icon-theme adwaita-icon-theme-legacy ttf-dejavu \
+    adwaita-icon-theme adwaita-icon-theme-legacy adwaita-cursors ttf-dejavu \
     7zip cpio bzip2 lbzip2 libicns ffmpeg poppler bubblewrap
 ```
 
@@ -43,6 +43,7 @@ Optional, each passed over if it is not installed:
 | `brightnessctl`, `playerctl` | a laptop's brightness and media keys |
 | `network-manager-applet` | choosing a wireless network |
 | `dex` | starting the programs in `~/.config/autostart` |
+| `pciutils` | the graphics card's name in About This Computer |
 | `xdg-desktop-portal`, `xdg-desktop-portal-gtk`, `xdg-desktop-portal-wlr` | file choosers and screen sharing for browsers and sandboxed programs |
 
 ## On Arch Linux

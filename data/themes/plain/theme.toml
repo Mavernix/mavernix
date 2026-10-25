@@ -88,6 +88,12 @@ color_inactive = "#00000030"
 # the shell among them, find only the icons each program installs itself.
 theme = "Adwaita"
 
+[cursors]
+# Named, not left out, so a switch from a desktop with pointers of its own
+# brings the stock ones back in programs started afterwards.
+theme = "Adwaita"
+size = 24
+
 [controls]
 # Applications keep a stock look: only the colours are set here.
 kvantum_base = "KvFlatLight"

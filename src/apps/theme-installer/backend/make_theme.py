@@ -1326,6 +1326,11 @@ longest_ms = {DOCK_BOUNCE_LONGEST_MS}
 [icons]
 theme = "SeaLion"
 
+# Made by make_cursors.py into the icon theme's folder.
+[cursors]
+theme = "SeaLion"
+size = 24
+
 [controls]
 kvantum_base = "KvMojaveLight"
 window_color = "{CONTROL_WINDOW_COLOR}"

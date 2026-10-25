@@ -127,7 +127,7 @@ export DCONF_PROFILE="$dconf_profile"
 } > "$state_dir/current"
 
 # Keep the values from before the session, for desktops that set none.
-for name in GTK_THEME QT_STYLE_OVERRIDE QT_QPA_SYSTEM_ICON_THEME; do
+for name in GTK_THEME QT_STYLE_OVERRIDE QT_QPA_SYSTEM_ICON_THEME XCURSOR_THEME XCURSOR_SIZE; do
     if [[ -v $name ]]; then
         export "DESKTOP_BEFORE_$name=${!name}"
     fi
@@ -194,6 +194,10 @@ export PATH="$state_dir/bin:$PATH"
 
 # The theme's own share/ folder (an icon theme).
 add_data_dir "$state_dir/theme-share"
+
+# Where programs find mouse pointers: the theme's own first, then the usual
+# places (libXcursor's list, which XCURSOR_PATH replaces rather than extends).
+export XCURSOR_PATH="$state_dir/theme-share/icons:${XCURSOR_PATH:-$HOME/.local/share/icons:$HOME/.icons:/usr/share/icons:/usr/share/pixmaps}"
 
 # Our compositor plugins: their libraries and their option XML files.
 export WAYFIRE_PLUGIN_PATH="$compositor_plugin_dir"

@@ -53,6 +53,7 @@ STAGES = [
     ("decode", "Reading the artwork", 8),
     ("theme", "Building the theme", 6),
     ("icons", "Converting the icons", 8),
+    ("cursors", "Drawing the mouse pointers", 2),
     ("sounds", "Converting the sounds", 2),
     ("dark", "Building the dark theme", 3),
     ("install", "Installing", 2),
@@ -366,6 +367,7 @@ def build(source, work, staging, look_dir, report):
     for stage_id, detail, tool, arguments in [
         ("theme", "Window frames, the panel, the dock, menus and the programs", "make_theme.py", [work, light]),
         ("icons", "Icons for files, folders and programs", "make_icons.py", [work, light]),
+        ("cursors", "The arrow, the text beam, the hands and the other pointers", "make_cursors.py", [work, light]),
         ("sounds", "The alert and event sounds", "make_sounds.py", [work, light]),
         ("dark", "The dark variant", "make_dark_theme.py", [work, light, dark]),
     ]:

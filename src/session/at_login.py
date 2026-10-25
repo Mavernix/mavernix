@@ -18,11 +18,12 @@ import sys
 ENVIRONMENT_FOR_SERVICES = ["WAYLAND_DISPLAY", "DISPLAY", "XDG_CURRENT_DESKTOP", "XDG_SESSION_TYPE"]
 
 # Taken back out after the session (after-session). Without the look's names
-# and XDG_DATA_DIRS (the theme's icons, the toolkit themes) a program started
-# on demand, such as the file manager, gets the stock look. configure-desktop
-# updates the look's names on a switch.
-SESSION_SETTINGS_FOR_SERVICES = ["XDG_CONFIG_DIRS", "XDG_DATA_DIRS", "DCONF_PROFILE",
-                                 "GTK_THEME", "QT_STYLE_OVERRIDE", "QT_QPA_SYSTEM_ICON_THEME"]
+# and XDG_DATA_DIRS (the theme's icons and pointers, the toolkit themes) a
+# program started on demand, such as the file manager, gets the stock look.
+# configure-desktop updates the look's names on a switch.
+SESSION_SETTINGS_FOR_SERVICES = ["XDG_CONFIG_DIRS", "XDG_DATA_DIRS", "DCONF_PROFILE", "XCURSOR_PATH",
+                                 "GTK_THEME", "QT_STYLE_OVERRIDE", "QT_QPA_SYSTEM_ICON_THEME",
+                                 "XCURSOR_THEME", "XCURSOR_SIZE"]
 
 # File managers that stay running as services between windows (Thunar's
 # daemon, Nautilus): one started before the session keeps its look and finds

@@ -69,11 +69,30 @@ def wanted_interface_values(theme):
     icon_theme = theme.get("icons", {}).get("theme")
     if icon_theme:
         values["icon-theme"] = icon_theme
+    cursors = theme.get("cursors", {})
+    if cursors.get("theme"):
+        values["cursor-theme"] = cursors["theme"]
+    if cursors.get("size"):
+        values["cursor-size"] = str(cursors["size"])
     font = theme.get("fonts", {}).get("interface")
     if font and font.get("family") and font.get("size"):
         points = round(font["size"] * POINTS_PER_PIXEL, 2)
         values["font-name"] = f"{font['family']} {points:g}"
     return values
+
+
+# Keys a theme may leave out that must not keep the last desktop's value:
+# the session's database outlives a switch.
+RESET_WHEN_UNSET = ["cursor-theme", "cursor-size"]
+
+
+def reset_values(schema, keys):
+    for key in keys:
+        try:
+            subprocess.run(["gsettings", "reset", schema, key], capture_output=True,
+                           timeout=WRITE_TIME_LIMIT_SECONDS)
+        except subprocess.TimeoutExpired:
+            return
 
 
 def write_values(schema, values):
@@ -104,8 +123,10 @@ def main():
         say("gsettings is not installed (package glib2); GTK programs keep the user's own settings")
         return
     if not buttons_only:
-        if not write_values(INTERFACE_SCHEMA, wanted_interface_values(settings["theme"])):
+        wanted = wanted_interface_values(settings["theme"])
+        if not write_values(INTERFACE_SCHEMA, wanted):
             return
+        reset_values(INTERFACE_SCHEMA, [key for key in RESET_WHEN_UNSET if key not in wanted])
     write_values(WINDOW_BUTTONS_SCHEMA, wanted_window_button_values(settings["config"]))
 
 
