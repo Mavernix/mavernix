@@ -9,6 +9,10 @@
   <a href="docs/building.md">Install</a> · <a href="docs/usage.md">Use</a> · <a href="docs/themes/README.md">Themes</a> · <a href="CONTRIBUTING.md">Contribute</a>
 </p>
 
+<p align="center">
+  <a href="https://discord.gg/9JC4cWKzjT"><img src="https://img.shields.io/badge/Discord-Join-5865F2?logo=discord&logoColor=white" alt="Join the Discord"></a>
+</p>
+
 Mavernix is a desktop for Linux with a menu bar, a dock, and windows with proper shadows.
 
 Out of the box it is calm and plain. If you still have an old installer of a classic system lying around, the Theme Installer turns it into a full look on your own computer:
