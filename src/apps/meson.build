@@ -6,3 +6,4 @@ mavernix_bindir = mavernix_libdir / 'bin'
 
 subdir('theme-installer')
 subdir('settings')
+subdir('about')

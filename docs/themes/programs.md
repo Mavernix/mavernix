@@ -1,4 +1,4 @@
-# Settings and the Theme Installer
+# Settings, the Theme Installer and About This Computer
 
 ## Settings window
 
@@ -74,3 +74,62 @@ summary_mark_size = 44          # the large mark on the last page
 button_bar_height = 56
 disabled_button_opacity = 0.45  # how faint a button is that cannot be pressed
 ```
+
+## About This Computer
+
+The window that says what the computer is (`src/apps/about/`): from the top, a picture or a heading, one line about the system, a button, rows of a label and a fact, a second button, closing lines. The window is as high as what it shows; the config's `[about]` decides the rows, the words and whether a button with nothing to do is kept (`docs/configuration.md`).
+
+```toml
+[fonts]
+about_heading = { family = "DejaVu Sans", size = 24, bold = true }   # the heading, where there is no picture
+about_version = { family = "DejaVu Sans", size = 12 }                # the line under it
+about_label   = { family = "DejaVu Sans", size = 12, bold = true }   # a row's label
+about_value   = { family = "DejaVu Sans", size = 12 }                # a row's fact
+about_button  = { family = "DejaVu Sans", size = 12 }
+about_footer  = { family = "DejaVu Sans", size = 11 }                # the closing lines
+
+[about]
+width = 380
+background = "#f4f4f4"
+text_color = "#202020"
+version_color = "#707070"        # optional; text_color if left out
+footer_color = "#707070"         # optional; text_color if left out
+# Optional: a picture at the top, centred. Without one the config's heading
+# is written there, its box beginning at heading_top.
+picture = "images/about.png"
+picture_size = [214, 124]
+picture_top = 29
+heading_top = 28
+# Where the boxes begin, counted from the window's top: the line about the
+# system, the first button, the first row.
+version_top = 66
+update_button_top = 98
+rows_top = 150
+# A row begins row_pitch after the one before and is row_height high. The
+# labels end in one column, the facts begin row_gap after it, and both
+# columns together stand in the window's middle. A fact that would come
+# nearer than side_margin to the window's side is cut short.
+row_pitch = 24
+row_height = 16
+row_gap = 8
+side_margin = 24
+# From the last row's end to the second button, from that button (or,
+# without it, the last row) to the closing lines, from line to line, and
+# from the last line's end to the window's.
+more_button_gap = 18
+footer_gap = 18
+footer_pitch = 16
+bottom_gap = 18
+# The buttons, as in [dialog]: fills, a height, the least width, the room
+# beside the words; optionally the row the words stand on.
+button_height = 28
+button_width = 120
+button_padding = 16
+button = { color = "#ffffff", radius = 4, border = { color = "#b0b0b0", width = 1 } }
+button_pressed = { color = "#e0e0e0", radius = 4, border = { color = "#b0b0b0", width = 1 } }
+button_disabled = { color = "#f4f4f4", radius = 4, border = { color = "#d0d0d0", width = 1 } }
+button_disabled_text_color = "#a0a0a0"
+button_text_baseline_row = 16
+```
+
+Without the first button (the config has nothing for it to start and does not keep idle buttons) the rows begin at `update_button_top`.

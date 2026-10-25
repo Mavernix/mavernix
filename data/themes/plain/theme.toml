@@ -12,6 +12,14 @@ interface    = { family = "DejaVu Sans", size = 13 }
 # the theme installer's page headings and its text.
 theme_installer_heading = { family = "DejaVu Sans", size = 17, bold = true }
 theme_installer_text    = { family = "DejaVu Sans", size = 13 }
+# The About This Computer window: the heading where there is no picture, the
+# line under it, a row's label and fact, the buttons, the closing lines.
+about_heading = { family = "DejaVu Sans", size = 24, bold = true }
+about_version = { family = "DejaVu Sans", size = 12 }
+about_label   = { family = "DejaVu Sans", size = 12, bold = true }
+about_value   = { family = "DejaVu Sans", size = 12 }
+about_button  = { family = "DejaVu Sans", size = 12 }
+about_footer  = { family = "DejaVu Sans", size = 11 }
 window_title = { family = "DejaVu Sans", size = 13 }
 menu         = { family = "DejaVu Sans", size = 13 }
 panel        = { family = "DejaVu Sans", size = 13 }
@@ -258,6 +266,34 @@ stage_done_color = "#3a8a3a"
 stage_failed_color = "#c03030"
 button_bar_height = 56
 disabled_button_opacity = 0.45
+
+[about]
+# The About This Computer window: the system's name in large type, a line
+# about it, rows of facts, two buttons, closing lines.
+width = 380
+background = "#f4f4f4"
+text_color = "#202020"
+version_color = "#707070"
+footer_color = "#707070"
+heading_top = 28
+version_top = 66
+update_button_top = 98
+rows_top = 150
+row_pitch = 24
+row_height = 16
+row_gap = 8
+side_margin = 24
+more_button_gap = 18
+footer_gap = 18
+footer_pitch = 16
+bottom_gap = 18
+button_height = 28
+button_width = 120
+button_padding = 16
+button = { color = "#ffffff", radius = 4, border = { color = "#b0b0b0", width = 1 } }
+button_pressed = { color = "#e0e0e0", radius = 4, border = { color = "#b0b0b0", width = 1 } }
+button_disabled = { color = "#f4f4f4", radius = 4, border = { color = "#d0d0d0", width = 1 } }
+button_disabled_text_color = "#a0a0a0"
 
 [settings.overview]
 # The settings window's first page: the icon grid and its group stripes.

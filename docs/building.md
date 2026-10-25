@@ -43,7 +43,7 @@ Optional, each passed over if it is not installed:
 | `brightnessctl`, `playerctl` | a laptop's brightness and media keys |
 | `network-manager-applet` | choosing a wireless network |
 | `dex` | starting the programs in `~/.config/autostart` |
-| `pciutils` | the graphics card's name in About This Computer |
+| `hwdata` | the graphics card's name in About This Computer |
 | `xdg-desktop-portal`, `xdg-desktop-portal-gtk`, `xdg-desktop-portal-wlr` | file choosers and screen sharing for browsers and sandboxed programs |
 
 ## On Arch Linux

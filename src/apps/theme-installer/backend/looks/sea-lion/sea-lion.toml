@@ -17,6 +17,8 @@ left = ["logo", "app_name", "menus"]
 right = ["tray", "bluetooth", "volume", "network", "battery", "clock", "search", "notifications"]
 quit_label = "Quit %1"
 logo_menu = [
+    { label = "About This PC", command = ["mavernix-about"] },
+    { separator = true },
     { label = "System Preferences…", command = ["mavernix-settings"] },
     { separator = true },
     { label = "Sleep", command = ["systemctl", "suspend"] },
@@ -327,3 +329,39 @@ remaining_label = "%1 Remaining"
 on_battery_label = "Power Source: Battery"
 on_adapter_label = "Power Source: Power Adapter"
 show_percentage_label = "Show Percentage"
+
+[about]
+# The About This Computer window (mavernix-about): the original's About This
+# Mac, on a PC. Its name is the window's title and the program's name in the
+# dock.
+name = "About This PC"
+# The line under the picture: one of these at a time, a press on it shows
+# the next. In braces, facts about the machine: {os_name}, {os_version},
+# {kernel}, {host_name}, {computer}, {processor}, {memory}, {graphics},
+# {startup_disk}. A line that asks for a fact this machine does not tell
+# is left out (a system without version numbers has no {os_version}).
+# (OS X shows its version, then its build, then the serial number.)
+version_lines = ["{os_name}", "Version {os_version}", "Kernel {kernel}", "{host_name}"]
+# The rows, by the facts' names, and the rows the second button adds
+# while it has no program to start (`more_command`). OS X has Processor,
+# Memory and Startup Disk, and its second button opens a program with
+# everything else; the further rows stand in for that program.
+rows = ["processor", "memory", "startup_disk"]
+more_rows = ["graphics", "computer"]
+# What the two buttons start: a program with its arguments. The second
+# one without a program shows `more_rows` instead. OS X keeps a button
+# that has nothing to start, greyed.
+keep_idle_buttons = true
+# update_command = ["…"]
+# more_command = ["…"]
+# The closing lines, with facts in braces as above.
+footer = ["Mavernix", "A desktop for Linux, after OS X 10.9"]
+
+[about.words]
+processor = "Processor"
+memory = "Memory"
+startup_disk = "Startup Disk"
+graphics = "Graphics"
+computer = "Computer"
+update = "Software Update…"
+more = "More Info…"

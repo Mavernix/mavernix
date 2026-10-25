@@ -45,6 +45,7 @@ optdepends=(
   'playerctl: media keys'
   'network-manager-applet: choosing a wireless network'
   'dex: starting the programs in ~/.config/autostart'
+  "hwdata: the graphics card's name in About This Computer"
   'xdg-desktop-portal-gtk: file choosers for sandboxed programs'
   'xdg-desktop-portal-wlr: screen sharing'
 )

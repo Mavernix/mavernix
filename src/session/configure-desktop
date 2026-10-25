@@ -156,6 +156,7 @@ write_program_entries() {
     write_program_entry settings Settings preferences-system "Settings;"
     write_program_entry theme-installer "Theme Installer" system-software-install "System;" \
         "application/x-apple-diskimage;application/x-iso9660-image;application/x-cd-image;" "%f"
+    write_program_entry about "About This Computer" computer "System;"
 }
 
 # The theme's share/ folder (an icon theme) behind a fixed link, so a switch

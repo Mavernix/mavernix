@@ -54,6 +54,7 @@ name = "Desktop"
 [[desktop_menus.menus]]
 title = "Desktop"          # titled like `name`: opens from the name itself
 entries = [
+    { label = "About This Computer", command = ["mavernix-about"] },
     { label = "Settings…", command = ["mavernix-settings", "desktop"] },
     { separator = true },
     { label = "Empty Wastebasket…", action = "empty_trash" },
@@ -68,6 +69,40 @@ entries = [
 ```
 
 An entry runs a `command` (a leading `~` is your home folder; with a `confirm` table it asks first, as the logo's menu does) or one of the shell's `action`s: `app_grid`, `window_overview`, `search`, `notification_list`, `lock`, `empty_trash`. Without the table the panel stays empty while no window is active.
+
+## About This Computer
+
+`mavernix-about` opens a small window that says what the computer is: its processor, memory, startup disk, graphics and model, and the system's name and version. Plain's Desktop menu opens it, and Sea Lion's logo menu as "About This PC". What it shows and every word are `[about]`; how it looks is the theme's `[about]` (`docs/themes/programs.md`).
+
+```toml
+[about]
+name = "About This Computer"           # the window's title, and its name in the dock
+heading = "{os_name}"                  # in large type, where the theme has no picture
+# Under it, one at a time; a press shows the next. A line that asks for a
+# fact the computer does not tell is left out.
+version_lines = ["Version {os_version}", "Kernel {kernel}", "{host_name}"]
+rows = ["processor", "memory", "startup_disk"]
+more_rows = ["graphics", "computer"]   # shown by the second button while it has no program
+keep_idle_buttons = false              # true keeps a button with nothing to start, greyed
+# update_command = ["…"]               # what the first button starts
+# more_command = ["…"]                 # what the second button starts
+footer = ["Mavernix"]
+
+[about.words]
+processor = "Processor"
+memory = "Memory"
+startup_disk = "Startup Disk"
+graphics = "Graphics"
+computer = "Computer"
+update = "Update…"
+more = "More…"
+
+# A fact fixed instead of asked of the computer:
+# [about.values]
+# computer = "My own build"
+```
+
+The facts, in braces in the lines: `{os_name}`, `{os_version}`, `{kernel}`, `{host_name}`, `{computer}`, `{processor}`, `{memory}`, `{graphics}`, `{startup_disk}`. They are read from files any user may read (`/proc`, `/sys`, udev's notes, `/etc/os-release`, the `hwdata` list of graphics cards); `mavernix-about --facts` prints what it finds.
 
 ## Living beside another desktop
 

@@ -232,6 +232,10 @@ CONTROL_PICTURES = {
     "button-disabled": "pushbutton-clear-disabled-regular",
     "button-default": "pushbutton-blue-regular",
     "button-default-pressed": "pushbutton-blue-pressed-regular",
+    # The small size, which the About window's buttons have.
+    "button-small": "pushbutton-clear-small",
+    "button-small-pressed": "pushbutton-clear-pressed-small",
+    "button-small-disabled": "pushbutton-clear-disabled-small",
     "checkbox-off": "checkbox-active-clear-off-regular",
     "checkbox-off-pressed": "checkbox-clear-off-pressed-regular",
     "checkbox-off-disabled": "checkbox-clear-disabled-off-regular",
@@ -277,6 +281,9 @@ CONTROL_BUTTON_SLICE = [12, 20, 8, 20]   # top, right, bottom, left
 CONTROL_BUTTON_BOX_SLICE = [5, 20, 5, 20]
 CONTROL_BUTTON_BOX_PICTURES = ["button", "button-pressed", "button-disabled", "button-default",
                                "button-default-pressed"]
+# The small push button: drawn at its own height, it stretches sideways
+# only, between end caps of 17 (the art file's columns).
+ABOUT_BUTTON_SLICE = [0, 17, 0, 17]
 CONTROL_INDICATOR_SIZE = [18, 18]        # checkbox and radio pictures
 # The slices below (top, right, bottom, left) keep borders, rounded corners
 # and shadow room at their size; the pop-up's right slice keeps its arrows.
@@ -343,6 +350,11 @@ DIALOG_PICTURES = {
     "system-suspend": "Sleep.tiff",
 }
 DIALOG_ICON_SIZE = 64
+
+# The About window's picture, the logo over the system's name, in the same
+# folder: one file holding it at 428 by 248 and at 214 by 124.
+ABOUT_PICTURE = "MacOSX.tiff"
+ABOUT_PICTURE_SIZE = (214, 124)
 
 
 # --- Notifications -------------------------------------------------------------
@@ -580,6 +592,22 @@ def make_dialog_pictures(root, images_dir):
     return icons
 
 
+def copy_about_picture(root, images_dir):
+    """Writes the About window's picture at both densities, unchanged."""
+    source = root / DIALOG_PICTURES_DIR / ABOUT_PICTURE
+    if not source.is_file():
+        fail(f"{source} is missing")
+    pictures = Image.open(source)
+    width, height = ABOUT_PICTURE_SIZE
+    wanted = {(width, height): "about.png", (2 * width, 2 * height): "about@2x.png"}
+    for frame in range(getattr(pictures, "n_frames", 1)):
+        pictures.seek(frame)
+        if pictures.size in wanted:
+            pictures.convert("RGBA").save(images_dir / wanted.pop(pictures.size))
+    if wanted:
+        fail(f"{source} does not hold the picture at {sorted(wanted)}")
+
+
 def tiff_frame(source, width):
     """The picture of the given width out of a TIFF file that holds several."""
     if not source.is_file():
@@ -721,6 +749,11 @@ dialog_title = {{ family = "{TITLE_FONT_FAMILY}", size = 13, bold = true }}
 dialog_text  = {{ family = "{TITLE_FONT_FAMILY}", size = 11 }}
 theme_installer_heading = {{ family = "{TITLE_FONT_FAMILY}", size = 15, bold = true }}
 theme_installer_text    = {{ family = "{TITLE_FONT_FAMILY}", size = 13 }}
+about_version = {{ family = "{TITLE_FONT_FAMILY}", size = 12 }}
+about_label   = {{ family = "{TITLE_FONT_FAMILY}", size = 11, bold = true }}
+about_value   = {{ family = "{TITLE_FONT_FAMILY}", size = 11 }}
+about_button  = {{ family = "{TITLE_FONT_FAMILY}", size = 11 }}
+about_footer  = {{ family = "{TITLE_FONT_FAMILY}", size = 10 }}
 program_switcher = {{ family = "{TITLE_FONT_FAMILY}", size = 12, bold = true }}
 desktop_icon = {{ family = "{TITLE_FONT_FAMILY}", size = 12, bold = true }}
 banner_title = {{ family = "{TITLE_FONT_FAMILY}", size = 13, bold = true }}
@@ -849,6 +882,35 @@ top_share = 0.22
 
 [dialog.icons]
 {status_icon_lines(dialog_icons)}
+
+[about]
+width = 307
+background = "{CONTROL_WINDOW_COLOR}"
+text_color = "#000000"
+version_color = "#808080"
+footer_color = "#5f5f5f"
+picture = "images/about.png"
+picture_size = [{ABOUT_PICTURE_SIZE[0]}, {ABOUT_PICTURE_SIZE[1]}]
+picture_top = 29
+version_top = 148
+update_button_top = 169
+rows_top = 209
+row_pitch = 29
+row_height = 14
+row_gap = 9
+side_margin = 20
+more_button_gap = 7
+footer_gap = 10
+footer_pitch = 13
+bottom_gap = 13
+button_height = 27
+button_width = 133
+button_padding = 17
+button_text_baseline_row = 16
+button = {{ image = "images/controls/button-small.png", slice = {ABOUT_BUTTON_SLICE} }}
+button_pressed = {{ image = "images/controls/button-small-pressed.png", slice = {ABOUT_BUTTON_SLICE} }}
+button_disabled = {{ image = "images/controls/button-small-disabled.png", slice = {ABOUT_BUTTON_SLICE} }}
+button_disabled_text_color = "#00000060"
 
 [theme_installer]
 width = 640
@@ -1524,6 +1586,7 @@ def main():
     status_icons = make_status_pictures(root, images_dir)
     make_volume_display_pictures(root, images_dir)
     dialog_icons = make_dialog_pictures(root, images_dir)
+    copy_about_picture(root, images_dir)
     banner_backgrounds = copy_notification_pictures(root, images_dir)
     copy_notification_list_pictures(root, images_dir)
     status_icons["preferences-system-notifications"] = "images/notifications/list-status.png"

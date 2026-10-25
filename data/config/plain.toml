@@ -60,6 +60,7 @@ name = "Desktop"
 [[desktop_menus.menus]]
 title = "Desktop"
 entries = [
+    { label = "About This Computer", command = ["mavernix-about"] },
     { label = "Settings…", command = ["mavernix-settings", "desktop"] },
     { separator = true },
     { label = "Empty Wastebasket…", action = "empty_trash" },
@@ -326,6 +327,42 @@ sort_by_name = "Sort by Name"
 sort_by_kind = "Sort by Kind"
 sort_by_modified = "Sort by Date Modified"
 sort_by_added = "Sort by Date Added"
+
+[about]
+# The About This Computer window (mavernix-about). Its name is the window's
+# title and the program's name in the dock.
+name = "About This Computer"
+# In large type at the top, when the theme has no picture for the place.
+# In braces, facts about the machine: {os_name}, {os_version}, {kernel},
+# {host_name}, {computer}, {processor}, {memory}, {graphics},
+# {startup_disk}. A line that asks for a fact this machine does not tell
+# is left out.
+heading = "{os_name}"
+# The line under it: one of these at a time, a press shows the next.
+version_lines = ["Version {os_version}", "Kernel {kernel}", "{host_name}"]
+# The rows, by the facts' names, and the rows the second button adds
+# while it has no program to start (`more_command`).
+rows = ["computer", "processor", "memory", "graphics", "startup_disk"]
+more_rows = []
+# What the two buttons start: a program with its arguments. A button
+# with nothing to do is left out (`keep_idle_buttons = true` keeps it,
+# greyed).
+# update_command = ["…"]
+# more_command = ["…"]
+footer = ["Mavernix"]
+
+[about.words]
+processor = "Processor"
+memory = "Memory"
+startup_disk = "Disk"
+graphics = "Graphics"
+computer = "Computer"
+update = "Update…"
+more = "More…"
+
+# A fact can be fixed here instead of asked of the machine:
+# [about.values]
+# computer = "My own build"
 
 [extensions]
 # Extensions switched on, from ~/.config/mavernix/extensions/ or

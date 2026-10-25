@@ -57,7 +57,7 @@ DESKTOP_PICTURE = "wallpapers/Galaxy.jpg"
 # Turned dark by dark_counterpart(). Overlays that are already dark are left
 # out: the rule would turn their white text dark.
 RULE_TABLES = [
-    "dialog", "settings.overview", "search", "search.clear_button", "search.box", "theme_installer",
+    "dialog", "about", "settings.overview", "search", "search.clear_button", "search.box", "theme_installer",
     "lock.box", "lock.field",
 ]
 
@@ -172,13 +172,32 @@ DIALOG_BUTTON_HEIGHT = 25
 # which starts on the picture's 3rd row.
 DIALOG_BUTTON_TEXT_ROW = 3 + 14
 
+# The About window's small button (PushButton_SM_HUD), drawn at its own
+# height, stretching sideways only; its label on the 13th row of the body.
+SMALL_BUTTON_SLICE = [0, BUTTON_CAP, 0, BUTTON_CAP]
+SMALL_BUTTON_HEIGHT = 22
+SMALL_BUTTON_TEXT_ROW = 3 + 12
+# The About window places its buttons by their pictures' top rows, and its
+# closing lines under the second button's picture. ProKit's small body
+# starts one row nearer its picture's top than the light one's, and its
+# picture is 5 rows shorter, so the light theme's places (169, 7 and 10)
+# take one row more before each button and 5 more after the second, to keep
+# the buttons' bodies and the closing lines on the same rows.
+ABOUT_UPDATE_BUTTON_TOP = 170
+ABOUT_MORE_BUTTON_GAP = 8
+ABOUT_FOOTER_GAP = 14
+
 
 def make_button_pictures(prokit, controls_dir):
-    for suffix, key in BUTTON_STATES.items():
-        single = prokit.picture("PushButton_RG_HUD.psd", 1, value=0, **key)
-        double = prokit.picture("PushButton_RG_HUD.psd", 2, value=0, **key)
-        double = widen_middle(double, single.width * 2, BUTTON_CAP * 2, BUTTON_CAP * 2)
-        save_pair(single, double, controls_dir / f"button{suffix}.png")
+    for size_name, source in (("button", "PushButton_RG_HUD.psd"), ("button-small", "PushButton_SM_HUD.psd")):
+        for suffix, key in BUTTON_STATES.items():
+            # The About window's small buttons are never default buttons.
+            if size_name == "button-small" and "default" in suffix:
+                continue
+            single = prokit.picture(source, 1, value=0, **key)
+            double = prokit.picture(source, 2, value=0, **key)
+            double = widen_middle(double, single.width * 2, BUTTON_CAP * 2, BUTTON_CAP * 2)
+            save_pair(single, double, controls_dir / f"{size_name}{suffix}.png")
 
     plain = Image.open(controls_dir / "button.png")
     first_row, last_row = plain.getchannel("A").getbbox()[1::2]
@@ -698,14 +717,25 @@ def change_controls(theme, prokit):
         theme.remove(table)
 
 
-def change_dialog(theme):
+def change_dialog_and_about(theme):
     for key in ("button", "button_pressed", "button_default", "button_default_pressed"):
         theme.substitute("dialog", key, r"slice = \[[^\]]*\]", f"slice = {BUTTON_SLICE}",
                          "PROKIT, the picture is ProKit's PushButton_RG_HUD; its caps are 14 wide.")
+    for key in ("button", "button_pressed", "button_disabled"):
+        theme.substitute("about", key, r"slice = \[[^\]]*\]", f"slice = {SMALL_BUTTON_SLICE}",
+                         "PROKIT, the picture is ProKit's PushButton_SM_HUD; its caps are 14 wide.")
     theme.set("dialog", "button_height", str(DIALOG_BUTTON_HEIGHT),
               "PROKIT, the height of PushButton_RG_HUD, drawn at its own size.")
     theme.set("dialog", "button_text_baseline_row", str(DIALOG_BUTTON_TEXT_ROW),
               "PROKIT, the 15th row of the button's visible body, which starts on the picture's 3rd.")
+    theme.set("about", "button_height", str(SMALL_BUTTON_HEIGHT),
+              "PROKIT, the height of PushButton_SM_HUD, drawn at its own size.")
+    theme.set("about", "button_text_baseline_row", str(SMALL_BUTTON_TEXT_ROW),
+              "PROKIT, the 13th row of the button's visible body, which starts on the picture's 3rd.")
+    note = "PROKIT, so that the shorter picture's body stays on the light theme's rows (see ABOUT_UPDATE_BUTTON_TOP)."
+    theme.set("about", "update_button_top", str(ABOUT_UPDATE_BUTTON_TOP), note)
+    theme.set("about", "more_button_gap", str(ABOUT_MORE_BUTTON_GAP), note)
+    theme.set("about", "footer_gap", str(ABOUT_FOOTER_GAP), note)
 
 
 def change_desktop(theme):
@@ -819,7 +849,7 @@ def build(work_dir, light_dir, output_dir):
     change_menu(theme, prokit)
     change_dock(theme)
     change_controls(theme, prokit)
-    change_dialog(theme)
+    change_dialog_and_about(theme)
     change_desktop(theme)
     change_programs(theme)
     change_banner(theme, prokit)
