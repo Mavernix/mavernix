@@ -50,7 +50,7 @@ optdepends=(
   'xdg-desktop-portal-wlr: screen sharing'
 )
 source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
-sha256sums=('SKIP')
+sha256sums=('d0558a9d4c6002388ed842ece2173f83cf3a881fd490066d21dadd57ca98ef52')
 
 build() {
   arch-meson "$pkgname-$pkgver" build
