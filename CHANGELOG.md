@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- The Theme Installer accepts installers of other OS X 10.9 versions: only the artwork files it reads by position must be 10.9.5's, not the CoreUI library, whose colours are found by name.
+
 ## 0.1.1 (2026-10-25)
 
 - The package brings what a fresh system lacks: the plain theme's icons and font, and the Theme Installer's tools; a missing icon theme falls back to an installed one.

@@ -29,10 +29,12 @@ PARTS = {
     "MediaFiles": "Packages/MediaFiles.pkg",
 }
 
-# Files the decoders read by picture number, offset or symbol: in another
-# version the same numbers would name other pictures and colours.
+# Files the decoders read by picture number or offset: in another version the
+# same numbers would name other pictures. (CoreUI's colour table is found by
+# its symbol's name, so another build of the library is read correctly; the
+# library of 10.9.0, build 13A603, differs from 10.9.5's and gives the same
+# 386 colours.)
 DECODED_BY_POSITION = {
-    "System/Library/PrivateFrameworks/CoreUI.framework/Versions/A/CoreUI",
     "System/Library/PrivateFrameworks/CoreUI.framework/Versions/A/Resources/ArtFile.bin",
     "System/Library/PrivateFrameworks/CoreUI.framework/Versions/A/Resources/ArtFile200.bin",
     "System/Library/PrivateFrameworks/CoreUI.framework/Versions/A/Resources/SArtFile.bin",

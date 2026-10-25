@@ -80,7 +80,7 @@ Supported installers:
 | OS X | Build | What you can give the Theme Installer |
 |---|---|---|
 | 10.9.5 | 13F34 | `Install OS X Mavericks.app`, the `InstallESD.dmg` inside it, or a disk image (`.dmg`, `.iso`) made from either |
-| 10.9 to 10.9.4 | | untested: they work if the artwork files Sea Lion decodes are the same as 10.9.5's, and are refused otherwise ([looks](looks.md) says how a version is added) |
+| 10.9 to 10.9.4 | | should work: the artwork files Sea Lion decodes are the same as 10.9.5's in 10.9 (13A603); not yet tried with Apple's own installer of these versions |
 
 Modified installers, such as those of hackintosh distributions, are refused.
 
