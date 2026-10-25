@@ -23,13 +23,13 @@ Mavernix ships none of Apple's files; each look is built from your copy of the i
 
 ## Install
 
-Mavernix is built and tested on Arch Linux. The dependencies are listed in [docs/building.md](docs/building.md).
+Mavernix is built and tested on Arch Linux. It is in the AUR as [`mavernix`](https://aur.archlinux.org/packages/mavernix):
 
 ```sh
-meson setup build && meson compile -C build && sudo meson install -C build
+yay -S mavernix
 ```
 
-Then pick Mavernix at your login screen.
+Then pick Mavernix at your login screen. To build it yourself instead, see [docs/building.md](docs/building.md).
 
 You can also try it without installing: `dev/run-in-container` runs it in a Podman container.
 

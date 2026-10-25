@@ -48,7 +48,7 @@ Optional, each passed over if it is not installed:
 
 ## On Arch Linux
 
-`packaging/arch/PKGBUILD` builds a release into a package:
+The AUR has the latest release as [`mavernix`](https://aur.archlinux.org/packages/mavernix) (`yay -S mavernix`, or `paru`). Its `PKGBUILD` is `packaging/arch/PKGBUILD`, which also builds a release from a copy of this repository:
 
 ```sh
 cd packaging/arch
