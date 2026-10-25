@@ -1,10 +1,11 @@
 # Changelog
 
-## Unreleased
+## 0.1.3 (2026-10-25)
 
 - The desktop's name in the menu bar ("Desktop") can be changed in Settings, Desktop, for example to "Finder"; it changes at once, and the desktop's first menu stays under it.
 - Sea Lion Dark's tool bar buttons (Settings' back, forward and Show All) have a bezel like the light theme's, from ProKit's dark segmented button, instead of Kvantum's flat stock look.
 - A window whose program fixes its size, such as Settings, can no longer be resized by its edges or maximized: no resize pointer at its edges, and its maximize button is disabled. Themes may draw a disabled button (`disabled`); Sea Lion's are Apple's own.
+
 ## 0.1.2 (2026-10-25)
 
 - Mouse pointers as part of a theme (`[cursors]`), for the compositor, GTK and other programs; Sea Lion's are made from the installer's own (the arrow, text beam and spinning wait cursor from CoreGraphics, the rest from HIServices' drawings).
