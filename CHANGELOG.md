@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.4 (2026-10-25)
+
+- Sea Lion Dark's About This PC shows "OS X" under the logo in light grey; it was the light theme's dark grey, nearly lost on the dark window. Import the theme again to get the new picture.
+- The battery menu's Show Percentage is kept between sessions, in the user's choices, instead of going back to the config's setting at the next login.
+
 ## 0.1.3 (2026-10-25)
 
 - The desktop's name in the menu bar ("Desktop") can be changed in Settings, Desktop, for example to "Finder"; it changes at once, and the desktop's first menu stays under it.

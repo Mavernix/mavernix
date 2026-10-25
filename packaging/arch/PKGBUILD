@@ -7,7 +7,7 @@
 # After a new release is tagged: set pkgver, then `updpkgsums`.
 
 pkgname=mavernix
-pkgver=0.1.3
+pkgver=0.1.4
 pkgrel=1
 pkgdesc='A lightweight Wayland desktop session with a classic look'
 arch=('x86_64')
