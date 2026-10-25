@@ -13,10 +13,11 @@ RUN pacman -Syu --noconfirm --needed \
 
 # Running: the shell, the session bus, Python with Pillow for the toolkit
 # themes, Kvantum, GTK's schemas, GVfs for the wastebasket, the plain theme's
-# icons and font, and a terminal and editor for the dock.
+# icons, pointers and font, a terminal and editor for the dock, and a file
+# manager to drag files from (the dock and the desktop take drops).
 RUN pacman -S --noconfirm --needed \
         quickshell dbus python python-pillow kvantum gsettings-desktop-schemas gvfs \
-        adwaita-icon-theme ttf-dejavu foot featherpad \
+        adwaita-icon-theme adwaita-cursors ttf-dejavu foot featherpad thunar \
         qt6-multimedia-ffmpeg qt6-svg \
     && pacman -Scc --noconfirm
 
