@@ -20,6 +20,8 @@ PanelWindow {
     // The shell's root, which items can ask to `run(action)`.
     property var shell: null
     property var extensions: null
+    // The shell's UserChoices, for what the user changes from the panel; may be null.
+    property var choices: null
     // A panel end's items: the config's, with extensions' items added on the
     // inner side; an item the config lists itself stays where it is.
     function itemsAt(end) {

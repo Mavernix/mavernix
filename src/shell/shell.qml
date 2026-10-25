@@ -162,6 +162,7 @@ ShellRoot {
         outputVolume: outputVolume
         shell: shell
         extensions: extensions
+        choices: userChoices
         // Out of sight while a full-screen overlay covers the screen.
         concealed: appGrid.open || windowOverview.showing
     }

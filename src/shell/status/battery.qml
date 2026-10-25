@@ -32,9 +32,10 @@ StatusItem {
     // Settings and wording: [status.battery].
     readonly property var wishes: (panel.settings.config.status ?? ({})).battery ?? ({})
 
-    // Starts as the config says; the menu toggles it until the next restart
-    // (the shell never writes the config file).
-    property bool showsPercentage: wishes.show_percentage ?? false
+    // As the config says, until the menu changes it; the change is kept in
+    // the user's choices ([status.battery] there holds only this).
+    readonly property var kept: panel.choices?.value("status", "battery") ?? wishes
+    readonly property bool showsPercentage: kept.show_percentage ?? false
     text: showsPercentage ? Math.round(percent) + "%" : ""
 
     readonly property bool charged: present && battery.state === UPowerDeviceState.FullyCharged
@@ -81,7 +82,7 @@ StatusItem {
     ]
     onChosen: id => {
         if (id === 3) {
-            showsPercentage = !showsPercentage
+            panel.choices?.set("status", "battery", { show_percentage: !showsPercentage })
         }
     }
 }
