@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.2 (2026-10-25)
 
 - Mouse pointers as part of a theme (`[cursors]`), for the compositor, GTK and other programs; Sea Lion's are made from the installer's own (the arrow, text beam and spinning wait cursor from CoreGraphics, the rest from HIServices' drawings).
 - An About This Computer window (`mavernix-about`), in plain's Desktop menu and as "About This PC" in Sea Lion's logo menu: Sea Lion's is laid out as the original's, with its picture and small buttons, plain's is the system's name in large type; the processor, memory, startup disk, graphics and model, from files any user may read.
