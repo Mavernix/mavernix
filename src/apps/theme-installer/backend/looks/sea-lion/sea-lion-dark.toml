@@ -1,0 +1,6 @@
+# The Sea Lion desktop with the dark Sea Lion theme. Everything else, and what
+# you change while using it (the dock, the desktop picture, the settings), is
+# shared with sea-lion.toml (src/session/user_choices.py).
+
+based_on = "sea-lion"
+theme = "sea-lion-dark"

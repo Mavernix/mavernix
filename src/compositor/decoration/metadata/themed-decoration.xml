@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="themed-decoration">
+		<_short>Themed Decoration</_short>
+		<_long>Window frames drawn from a theme directory. Looks come from the theme; the options here are behaviour only.</_long>
+		<category>Effects</category>
+		<option name="theme" type="string">
+			<_short>Theme directory</_short>
+			<_long>Full path of the theme directory to use. It must contain a theme.toml; see docs/themes/.</_long>
+			<default></default>
+		</option>
+		<option name="button_order" type="string">
+			<_short>Order of window buttons</_short>
+			<_long>Which window buttons to show, from left to right: any of close, minimize, maximize.</_long>
+			<default>close minimize maximize</default>
+		</option>
+		<option name="button_side" type="string">
+			<_short>Side of window buttons</_short>
+			<_long>Which end of the title bar the buttons sit at: left or right.</_long>
+			<default>left</default>
+		</option>
+		<option name="title_double_click" type="string">
+			<_short>Double press on the title bar</_short>
+			<_long>What pressing a window's title bar twice in quick succession does: maximize (and back), minimize, or none.</_long>
+			<default>maximize</default>
+		</option>
+		<option name="resize_grip" type="int">
+			<_short>Resize strip</_short>
+			<_long>How far outside a window's edge a press still takes hold of the edge to resize it. Below 0 for the theme's own value.</_long>
+			<default>-1</default>
+		</option>
+		<option name="ignore_views" type="string">
+			<_short>Decoration disabled for specified window types</_short>
+			<_long>Disables window decoration for windows matching the specified criteria.</_long>
+			<default>none</default>
+		</option>
+		<option name="joined_views" type="string">
+			<_short>Windows whose tool bar joins the title bar</_short>
+			<_long>Windows matching these criteria have a tool bar of their own directly under the title bar; the title bar then takes the theme's joined look, so that the two look like one piece.</_long>
+			<default>none</default>
+		</option>
+		<option name="forced_views" type="string">
+			<_short>Force decorations for specified window types</_short>
+			<_long>Forces window decoration for windows matching the specified criteria, overriding client decoration preference.</_long>
+			<default>none</default>
+		</option>
+	</plugin>
+</wayfire>

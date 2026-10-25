@@ -1,0 +1,209 @@
+#!/usr/bin/env bash
+# Starts the desktop: writes the compositor's and the shell's settings from a
+# desktop config and its theme, then becomes the compositor, which in turn
+# starts the shell.
+#
+#   start-desktop [NAME]
+#
+# NAME is an installed desktop config or a config file's path; without it,
+# pick_desktop.py chooses.
+#
+# Optional environment:
+#   DESKTOP_STATE_DIR      generated settings and logs
+#                          (default: $XDG_RUNTIME_DIR/mavernix)
+#   DESKTOP_EXTRA_INI      a file of further compositor settings to append
+#   DESKTOP_EXTRA_PLUGINS  further compositor plugins to load, space-separated
+set -euo pipefail
+
+# shellcheck source=paths.sh.in
+source "$(dirname "$(readlink -f "$0")")/paths.sh"
+
+name=${1:-}
+if [[ -z "$name" ]]; then
+    name=$(python3 "$session_dir/pick_desktop.py")
+fi
+
+if [[ -f "$name" ]]; then
+    config=$name
+elif ! config=$(find_desktop_config "$name"); then
+    echo "start-desktop: no desktop config \"$name\"" >&2
+    echo "start-desktop: the desktops are the .toml files in $user_config_dir/ and $config_dir/" >&2
+    exit 1
+fi
+
+state_dir=${DESKTOP_STATE_DIR:-${XDG_RUNTIME_DIR:?start-desktop: XDG_RUNTIME_DIR is not set; a login session sets it}/mavernix}
+mkdir -p "$state_dir"
+
+# Runs a command under a full-screen notice (a bare compositor showing
+# notice/), which stays until a key is pressed if the command fails. Started
+# from a login screen nobody reads stderr, and the screen would stay black.
+#
+#   show_notice HEADING FAILED_HEADING EXPLANATION COMMAND [ARGUMENTS...]
+show_notice() {
+    local heading=$1 failed_heading=$2 explanation=$3
+    shift 3
+    local notice_settings="$state_dir/notice.ini"
+    local compositor_pid_file="$state_dir/notice.pid"
+    # Test plugins load here too, so dev/run-in-container can close a notice.
+    local test_plugins=""
+    if [[ -n "${DESKTOP_EXTRA_PLUGINS:-}" ]]; then
+        test_plugins="ipc $DESKTOP_EXTRA_PLUGINS"
+    fi
+    cat > "$notice_settings" <<NOTICE
+# Written by start-desktop: a compositor that shows only a notice,
+# and is ended when the notice has ended.
+[core]
+plugins = autostart $test_plugins
+
+[autostart]
+autostart_wf_shell = false
+notice = sh -c 'qs -p "$session_dir/notice"; kill "\$(cat "$compositor_pid_file")"'
+NOTICE
+
+    # One environment variable per word of the command.
+    local -a command_environment=("NOTICE_COMMAND=$1")
+    shift
+    local number=1 argument
+    for argument in "$@"; do
+        command_environment+=("NOTICE_ARGUMENT_$number=$argument")
+        number=$((number + 1))
+    done
+
+    env "NOTICE_HEADING=$heading" "NOTICE_FAILED_HEADING=$failed_heading" \
+        "NOTICE_EXPLANATION=$explanation" \
+        "NOTICE_FAILED_EXPLANATION=Press any key or the pointer's button to go back to the login screen." \
+        "${command_environment[@]}" \
+        wayfire -c "$notice_settings" > "$state_dir/notice.log" 2>&1 &
+    echo $! > "$compositor_pid_file"
+    wait $! || true
+}
+
+# Whether somebody reads this script's output. greetd connects a graphical
+# session to its virtual console, where nobody reads it, so a /dev/ttyN
+# counts only for a console login; a terminal window always counts.
+at_a_terminal() {
+    [[ -t 2 ]] || return 1
+    local terminal
+    terminal=$(readlink -f /proc/self/fd/2)
+    if [[ "$terminal" == /dev/tty[0-9]* && "${XDG_SESSION_TYPE:-tty}" != tty ]]; then
+        return 1
+    fi
+    return 0
+}
+
+# From a login screen, keep messages in a file and show them on failure.
+if ! at_a_terminal; then
+    start_messages="$state_dir/start-messages.log"
+    : > "$start_messages"
+    exec 2>> "$start_messages"
+    trap 'status=$?
+          if (( status != 0 )); then
+              show_notice "" "The desktop could not start" "" \
+                  sh -c "cat \"$start_messages\"; exit 1"
+          fi' EXIT
+fi
+
+# Nested in another graphical session (at_login.py then does nothing).
+if [[ -n "${WAYLAND_DISPLAY:-}${DISPLAY:-}" ]]; then
+    export DESKTOP_NESTED=1
+fi
+
+# The helpers' log, since the compositor discards its children's output.
+: > "$state_dir/login.log"
+
+# A dconf database of our own, so GTK and the portal follow the theme without
+# touching Plasma's "user" database (write_interface_settings.py). No hyphen:
+# dconf names a D-Bus object after the database, and D-Bus forbids hyphens.
+dconf_profile="$state_dir/dconf-profile"
+echo "user-db:mavernix" > "$dconf_profile"
+export DCONF_PROFILE="$dconf_profile"
+
+# configure-desktop works from this file, at login and on every switch.
+{
+    echo "# Written by start-desktop; configure-desktop reads it."
+    printf 'config=%q\n' "$config"
+    printf 'extra_ini=%q\n' "${DESKTOP_EXTRA_INI:-}"
+    printf 'extra_plugins=%q\n' "${DESKTOP_EXTRA_PLUGINS:-}"
+} > "$state_dir/current"
+
+# Keep the values from before the session, for desktops that set none.
+for name in GTK_THEME QT_STYLE_OVERRIDE QT_QPA_SYSTEM_ICON_THEME; do
+    if [[ -v $name ]]; then
+        export "DESKTOP_BEFORE_$name=${!name}"
+    fi
+done
+
+"$session_dir/configure-desktop" all "$state_dir"
+# shellcheck source=/dev/null
+source "$state_dir/desktop.env"
+
+# The session's programs find the state folder through this.
+export DESKTOP_SHELL_SETTINGS="$state_dir/shell.json"
+
+# Puts a folder first in XDG_DATA_DIRS unless it is there already: a folder
+# listed twice makes the shell's dock tiles flicker on every rescan.
+add_data_dir() {
+    case ":${XDG_DATA_DIRS:-}:" in
+        *":$1:"*) return ;;
+    esac
+    export XDG_DATA_DIRS="$1:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
+}
+
+# Puts a folder first in XDG_CONFIG_DIRS (XDG_CONFIG_HOME still wins).
+add_config_dir() {
+    export XDG_CONFIG_DIRS="$1:${XDG_CONFIG_DIRS:-/etc/xdg}"
+}
+
+# configure-desktop's folders are listed even when empty: the environment is
+# fixed at login, and a later desktop switch may fill them.
+add_data_dir "$state_dir/app-theme/share"
+add_config_dir "$state_dir/app-theme/xdg"
+
+# Session-only settings for the portal and KDE's kded, which would otherwise
+# follow Plasma's when it is installed; the user's Plasma settings stay as
+# they are.
+session_settings="$state_dir/settings"
+rm -rf "$session_settings"
+mkdir -p "$session_settings/xdg-desktop-portal"
+ln -s "$session_dir/portals/wayfire-portals.conf" "$session_settings/xdg-desktop-portal/wayfire-portals.conf"
+ln -s "$session_dir/kded6rc" "$session_settings/kded6rc"
+add_config_dir "$session_settings"
+
+add_config_dir "$state_dir/default-programs"
+add_data_dir "$state_dir/share"
+
+export PATH="$program_dir:$PATH"
+
+export PATH="$session_dir/bin:$PATH"
+
+# Written here because it names the shell's place.
+mkdir -p "$state_dir/bin"
+cat > "$state_dir/bin/mavernix-sound" <<SCRIPT
+#!/bin/sh
+# Written by start-desktop. Plays the desktop's sound for an event,
+# by the event's name: mavernix-sound trash-empty
+if [ \$# -ne 1 ]; then
+    echo "usage: mavernix-sound EVENT   (the events are listed in docs/sound-packs.md)" >&2
+    exit 2
+fi
+exec qs -p "$shell_dir" ipc call sounds play "\$1"
+SCRIPT
+chmod +x "$state_dir/bin/mavernix-sound"
+
+export PATH="$state_dir/bin:$PATH"
+
+# The theme's own share/ folder (an icon theme).
+add_data_dir "$state_dir/theme-share"
+
+# Our compositor plugins: their libraries and their option XML files.
+export WAYFIRE_PLUGIN_PATH="$compositor_plugin_dir"
+export WAYFIRE_PLUGIN_XML_PATH="$compositor_metadata_dir"
+
+export QML_IMPORT_PATH="$qml_module_dir${QML_IMPORT_PATH:+:$QML_IMPORT_PATH}"
+
+export XDG_CURRENT_DESKTOP=wayfire
+
+# The compositor replaces this process (exec below); stopping this PID logs out.
+export DESKTOP_SESSION_PID=$$
+
+exec wayfire -c "$state_dir/session.ini" > "$state_dir/session.log" 2>&1

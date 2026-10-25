@@ -1,0 +1,23 @@
+# The Sea Lion look: what the Theme Installer says about it, how it recognises
+# the installer it is made from, and what it installs. Its other files:
+# needed-files.txt (what is taken from the installer) and the desktop
+# configs named in `desktops`.
+
+name = "Sea Lion"
+description = "The desktop of OS X 10.9 Mavericks: window frames, panel and dock, menus, icons, sounds and desktop pictures, light and dark."
+# What it is made from, as the window names it, and what a drop may be.
+source = "Apple's own OS X 10.9.5 installer"
+drop_hint = "Install OS X Mavericks, its InstallESD.dmg, or a disk image made from them"
+licence_note = "Apple's licence for OS X is for Apple's own computers. Whether you use its pictures and sounds on this one is your decision."
+
+# The themes it makes, and the desktops that use them; the first desktop is
+# the one "Use" switches to.
+themes = ["sea-lion", "sea-lion-dark"]
+desktops = ["sea-lion", "sea-lion-dark"]
+
+# The installer is recognised by these files inside the dropped image, or
+# inside `wrapped_in` within it (an image of the installer program), or in
+# `inside_program` when a program folder is dropped.
+recognise = ["BaseSystem.dmg", "Packages/Essentials.pkg"]
+wrapped_in = "InstallESD.dmg"
+inside_program = "Contents/SharedSupport/InstallESD.dmg"

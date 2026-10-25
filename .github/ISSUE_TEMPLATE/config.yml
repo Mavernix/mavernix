@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: A security problem
+    url: https://github.com/Mavernix/mavernix/security/advisories/new
+    about: Report it privately, not as an issue (SECURITY.md).

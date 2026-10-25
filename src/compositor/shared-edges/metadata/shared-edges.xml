@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="shared-edges">
+		<_short>Shared Edges</_short>
+		<_long>Dragging the edge two tiled windows share makes one grow as the other shrinks.</_long>
+		<category>Window Management</category>
+		<option name="enabled" type="bool">
+			<_short>Enabled</_short>
+			<_long>Whether dragging the edge between tiled windows resizes both. If not, only the dragged window is resized, and it stops being tiled.</_long>
+			<default>true</default>
+		</option>
+		<option name="tolerance" type="int">
+			<_short>Tolerance</_short>
+			<_long>How many pixels apart two windows' edges may be and still count as one shared edge.</_long>
+			<default>4</default>
+			<min>0</min>
+			<max>50</max>
+		</option>
+		<option name="min_size" type="int">
+			<_short>Least size</_short>
+			<_long>How many pixels wide or high a window may be made by dragging a shared edge, whatever the window itself allows.</_long>
+			<default>120</default>
+			<min>1</min>
+		</option>
+	</plugin>
+</wayfire>

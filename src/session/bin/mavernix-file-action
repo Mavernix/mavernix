@@ -1,0 +1,58 @@
+#!/bin/sh
+# File actions `gio` cannot do in one call, named by the desktop config's
+# [desktop_files] table.
+#
+#   mavernix-file-action new-folder FOLDER NAME    a folder NAME in FOLDER ("NAME 2" if taken)
+#   mavernix-file-action move-into FOLDER FILE...  move the files into FOLDER
+#   mavernix-file-action duplicate FILE...         a copy beside each file ("letter copy.txt")
+set -eu
+
+# A path in FOLDER for NAME + EXTENSION that is not taken yet: NAME, then
+# "NAME 2", "NAME 3" and so on.
+free_path() {
+    folder=$1 name=$2 extension=$3
+    candidate="$folder/$name$extension"
+    number=2
+    while [ -e "$candidate" ]; do
+        candidate="$folder/$name $number$extension"
+        number=$((number + 1))
+    done
+    printf '%s\n' "$candidate"
+}
+
+action=${1:-}
+[ $# -gt 0 ] && shift
+case "$action" in
+new-folder)
+    [ $# -eq 2 ] || { echo "usage: mavernix-file-action new-folder FOLDER NAME" >&2; exit 2; }
+    gio mkdir "$(free_path "$1" "$2" "")"
+    ;;
+move-into)
+    [ $# -ge 2 ] || { echo "usage: mavernix-file-action move-into FOLDER FILE..." >&2; exit 2; }
+    folder=$1
+    shift
+    gio move "$@" "$folder/"
+    ;;
+duplicate)
+    [ $# -ge 1 ] || { echo "usage: mavernix-file-action duplicate FILE..." >&2; exit 2; }
+    for file in "$@"; do
+        folder=$(dirname "$file")
+        name=$(basename "$file")
+        # Keep the extension last ("letter copy.txt"); folders and dotfiles
+        # have none.
+        base=$name
+        extension=""
+        stem=${name%.*}
+        if [ ! -d "$file" ] && [ "$stem" != "$name" ] && [ -n "$stem" ]; then
+            base=$stem
+            extension=.${name##*.}
+        fi
+        # cp, not gio copy: gio cannot copy a folder.
+        cp -a "$file" "$(free_path "$folder" "$base copy" "$extension")"
+    done
+    ;;
+*)
+    echo "usage: mavernix-file-action new-folder|move-into|duplicate ..." >&2
+    exit 2
+    ;;
+esac

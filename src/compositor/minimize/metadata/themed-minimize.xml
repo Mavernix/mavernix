@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="themed-minimize">
+		<_short>Themed Minimize</_short>
+		<_long>Adds the effects "genie" and "scale" for minimising and restoring windows to the animate plugin. Choose one with animate's minimize_animation option.</_long>
+		<category>Effects</category>
+		<option name="genie_duration" type="animation">
+			<_short>Genie duration</_short>
+			<_long>How long the genie effect takes. The curve should be linear: the effect does its own easing.</_long>
+			<default>500ms linear</default>
+		</option>
+		<option name="scale_duration" type="animation">
+			<_short>Scale duration</_short>
+			<_long>How long the scale effect takes. The curve should be linear: the effect does its own easing.</_long>
+			<default>200ms linear</default>
+		</option>
+	</plugin>
+</wayfire>

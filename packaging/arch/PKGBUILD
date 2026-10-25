@@ -1,0 +1,72 @@
+# Maintainer: pruefsumme <194605914+pruefsumme@users.noreply.github.com>
+#
+# Builds Mavernix for Arch Linux from a release on GitHub.
+#
+#   makepkg -si
+#
+# After a new release is tagged: set pkgver, then `updpkgsums`.
+
+pkgname=mavernix
+pkgver=0.1.0
+pkgrel=1
+pkgdesc='A lightweight Wayland desktop session with a classic look'
+arch=('x86_64')
+url='https://github.com/Mavernix/mavernix'
+license=('GPL-3.0-or-later' 'MIT')
+# The compositor plugins load only into the Wayfire release they were built
+# against, hence the upper bound.
+depends=(
+  'wayfire>=0.11.0' 'wayfire<0.12'
+  'quickshell'
+  'qt6-base' 'qt6-declarative' 'qt6-multimedia' 'qt6-wayland' 'qt6-svg'
+  'librsvg' 'glib2' 'tomlplusplus'
+  'python' 'python-pillow'
+  'kvantum'
+  'gsettings-desktop-schemas'
+  'gvfs'
+)
+makedepends=('meson' 'ninja' 'glm' 'vulkan-headers')
+optdepends=(
+  "pipewire: sound, and the panel's volume item"
+  'wireplumber: sound'
+  "networkmanager: the panel's network item"
+  "bluez: the panel's Bluetooth item"
+  "upower: the panel's battery item"
+  'foot: the terminal Super+Enter opens'
+  'grim: pictures of the screen'
+  'slurp: pictures of a part of the screen'
+  'wl-clipboard: pictures of the screen into the clipboard'
+  'brightnessctl: brightness keys'
+  'playerctl: media keys'
+  'network-manager-applet: choosing a wireless network'
+  'dex: starting the programs in ~/.config/autostart'
+  'xdg-desktop-portal-gtk: file choosers for sandboxed programs'
+  'xdg-desktop-portal-wlr: screen sharing'
+  '7zip: the Theme Installer'
+  'cpio: the Theme Installer'
+  'bzip2: the Theme Installer'
+  'libicns: the Theme Installer'
+  'ffmpeg: the Theme Installer'
+  'poppler: the Theme Installer'
+  "bubblewrap: the Theme Installer's sandbox"
+  'lbzip2: a faster Sea Lion import'
+)
+source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('SKIP')
+
+build() {
+  arch-meson "$pkgname-$pkgver" build
+  meson compile -C build
+}
+
+check() {
+  meson test -C build --print-errorlogs
+}
+
+package() {
+  meson install -C build --destdir "$pkgdir"
+
+  # Two compositor plugins began as Wayfire's code, under the MIT licence.
+  install -Dm644 "$pkgname-$pkgver/src/compositor/decoration/LICENSE-wayfire" \
+    "$pkgdir/usr/share/licenses/$pkgname/LICENSE-wayfire"
+}

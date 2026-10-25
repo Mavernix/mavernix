@@ -1,0 +1,32 @@
+# C++ layout (clang-format). CI checks it; the two plugins derived from Wayfire
+# keep Wayfire's own layout, see .clang-format-ignore.
+BasedOnStyle: LLVM
+IndentWidth: 4
+ColumnLimit: 120
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterClass: true
+  AfterControlStatement: Always
+  AfterEnum: true
+  AfterFunction: true
+  AfterNamespace: true
+  AfterStruct: true
+  BeforeElse: true
+  BeforeCatch: true
+  BeforeLambdaBody: false
+  SplitEmptyFunction: false
+LambdaBodyIndentation: OuterScope
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortLambdasOnASingleLine: All
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortBlocksOnASingleLine: Never
+PointerAlignment: Left
+ReferenceAlignment: Left
+AccessModifierOffset: -2
+SpaceBeforeParens: ControlStatements
+SortIncludes: Never
+ReflowComments: false
+AlignAfterOpenBracket: DontAlign
+ContinuationIndentWidth: 4
+BinPackArguments: true
+BinPackParameters: true

@@ -1,0 +1,6 @@
+[lint]
+select = ["E9", "F", "B"]
+ignore = [
+    "B023",
+    "B905",
+]

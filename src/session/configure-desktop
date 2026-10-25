@@ -1,0 +1,271 @@
+#!/usr/bin/env bash
+# Writes everything of a session that depends on which desktop it is: shell
+# and compositor settings, toolkit themes, GTK settings, default programs,
+# desktop entries and the shell's environment.
+#
+#   configure-desktop all STATE_DIR          at login (start-desktop)
+#   configure-desktop switch STATE_DIR NAME  switch desktop and restart the shell
+#   configure-desktop choices STATE_DIR      after a settings change: compositor
+#                                            settings and GTK window buttons only
+#
+# File names in STATE_DIR never change, so the session's environment stays
+# valid across switches. Open programs keep the look they started with.
+set -euo pipefail
+
+# shellcheck source=paths.sh.in
+source "$(dirname "$(readlink -f "$0")")/paths.sh"
+
+usage() {
+    echo "usage: configure-desktop all STATE_DIR | switch STATE_DIR NAME | choices STATE_DIR" >&2
+    exit 2
+}
+
+verb=${1:-}
+state_dir=${2:-}
+[[ -n "$verb" && -n "$state_dir" ]] || usage
+
+# The desktop's config and test additions, set at login and by a switch.
+current_file="$state_dir/current"
+read_current() {
+    if [[ ! -f "$current_file" ]]; then
+        echo "configure-desktop: $current_file is missing; start-desktop writes it at login." >&2
+        echo "configure-desktop: is $state_dir the folder of a running session?" >&2
+        exit 1
+    fi
+    # shellcheck source=/dev/null
+    source "$current_file"
+}
+
+write_current() {
+    {
+        echo "# Written by configure-desktop and start-desktop."
+        printf 'config=%q\n' "$config"
+        printf 'extra_ini=%q\n' "$extra_ini"
+        printf 'extra_plugins=%q\n' "$extra_plugins"
+    } > "$current_file"
+}
+
+shell_settings="$state_dir/shell.json"
+compositor_settings="$state_dir/session.ini"
+login_log="$state_dir/login.log"
+app_theme="$state_dir/app-theme"
+
+# A value of the shell's settings file by a path of keys; the last argument
+# is the default: setting config settings name Settings
+setting() {
+    python3 -c "
+import json, sys
+value = json.load(open(sys.argv[1]))
+*keys, default = sys.argv[2:]
+for key in keys:
+    value = value.get(key, {}) if isinstance(value, dict) else {}
+print(value if value not in ({}, None) else default)" "$shell_settings" "$@"
+}
+
+# Prints yes or no for a boolean config key: config_flag TABLE KEY DEFAULT
+config_flag() {
+    python3 -c "
+import json, sys
+table, key, default = sys.argv[2:5]
+value = json.load(open(sys.argv[1]))['config'].get(table, {}).get(key, default == 'yes')
+print('yes' if value else 'no')" "$shell_settings" "$1" "$2" "$3"
+}
+
+write_shell_settings() {
+    python3 "$session_dir/make_shell_config.py" "$config" "$shell_settings"
+}
+
+write_compositor_settings() {
+    local -a arguments=(
+        "$config" "$compositor_settings"
+        # The shell, restarted if it dies.
+        --autostart "shell=$session_dir/keep-running $session_dir/run-shell >> $login_log 2>&1"
+        --autostart "at_login=python3 $session_dir/at_login.py $shell_settings >> $login_log 2>&1"
+    )
+    if [[ -n "$extra_ini" ]]; then
+        arguments+=(--extra "$extra_ini")
+    fi
+    if [[ -n "$extra_plugins" ]]; then
+        arguments+=(--extra-plugins "$extra_plugins")
+    fi
+    python3 "$session_dir/make_wayfire_config.py" "${arguments[@]}"
+}
+
+# Toolkit themes from the desktop theme (none without [controls]). Failing
+# here must not stop the desktop; applications then keep their own look.
+write_application_themes() {
+    local theme_directory
+    theme_directory=$(setting theme_directory "")
+    rm -rf "$app_theme"
+    if ! python3 "$session_dir/make_app_theme.py" "$theme_directory" "$app_theme"; then
+        echo "configure-desktop: could not write the themes for applications (message above)." >&2
+        echo "configure-desktop: the desktop starts anyway; applications keep their own look." >&2
+        rm -rf "$app_theme"
+    fi
+}
+
+# The theme's values into the session's dconf database; open GTK programs
+# follow at once.
+write_interface_settings() {
+    export DCONF_PROFILE="$state_dir/dconf-profile"
+    if ! python3 "$session_dir/write_interface_settings.py" "$shell_settings" "$@"; then
+        echo "configure-desktop: could not write the theme's settings for GTK (message above); GTK programs keep the user's own." >&2
+    fi
+}
+
+write_default_programs() {
+    local default_programs="$state_dir/default-programs"
+    rm -rf "$default_programs"
+    if ! python3 "$session_dir/make_default_programs.py" "$shell_settings" "$default_programs"; then
+        echo "configure-desktop: could not write the choice of programs for files (message above)." >&2
+        echo "configure-desktop: files are opened by the system's own order." >&2
+    fi
+}
+
+# A desktop entry for one of the desktop's own programs (mavernix-FOLDER),
+# if it was built; the config's [FOLDER] name and icon override the defaults.
+#
+#   write_program_entry FOLDER DEFAULT_NAME DEFAULT_ICON CATEGORIES [MIME_TYPES [ARGUMENT]]
+write_program_entry() {
+    local folder=$1 default_name=$2 default_icon=$3 categories=$4
+    local mime_types=${5:-} argument=${6:-}
+    local program="$program_dir/mavernix-$folder"
+    local entry="$state_dir/share/applications/mavernix-$folder.desktop"
+    if [[ ! -x "$program" ]]; then
+        rm -f "$entry"
+        return 0
+    fi
+    mkdir -p "$(dirname "$entry")"
+    {
+        echo "[Desktop Entry]"
+        echo "Type=Application"
+        echo "Name=$(setting config "$folder" name "$default_name")"
+        echo "Exec=$program${argument:+ $argument}"
+        echo "Icon=$(setting config "$folder" icon "$default_icon")"
+        echo "Categories=$categories"
+        # An `if`, not `&&`: a false test as the last command trips `set -e`.
+        if [[ -n "$mime_types" ]]; then
+            echo "MimeType=$mime_types"
+        fi
+    } > "$entry"
+}
+
+write_program_entries() {
+    write_program_entry settings Settings preferences-system "Settings;"
+    write_program_entry theme-installer "Theme Installer" system-software-install "System;" \
+        "application/x-apple-diskimage;application/x-iso9660-image;application/x-cd-image;" "%f"
+}
+
+# The theme's share/ folder (an icon theme) behind a fixed link, so a switch
+# only repoints the link.
+link_theme_files() {
+    local theme_directory
+    theme_directory=$(setting theme_directory "")
+    if [[ -d "$theme_directory/share" ]]; then
+        ln -sfn "$theme_directory/share" "$state_dir/theme-share"
+    else
+        rm -f "$state_dir/theme-share"
+    fi
+}
+
+# One line of the environment file: NAME=VALUE, or with VALUE empty the value
+# from before the session (DESKTOP_BEFORE_NAME), or unset.
+environment_line() {
+    local name=$1 value=$2
+    local before="DESKTOP_BEFORE_$name"
+    if [[ -n "$value" ]]; then
+        printf 'export %s=%q\n' "$name" "$value"
+    elif [[ -v $before ]]; then
+        printf 'export %s=%q\n' "$name" "${!before}"
+    else
+        printf 'unset %s\n' "$name"
+    fi
+}
+
+# The desktop-dependent environment, read by start-desktop and run-shell.
+# Programs the compositor starts by shortcut keep the login's environment.
+write_environment() {
+    local gtk_theme="" qt_style=""
+    if [[ -d "$app_theme/share" ]]; then
+        # Only if a Kvantum theme was written: naming a missing style makes
+        # Qt complain.
+        if [[ -d "$app_theme/xdg/Kvantum" && $(config_flag qt use_theme yes) == yes ]]; then
+            qt_style=kvantum
+        fi
+        if [[ $(config_flag gtk use_theme yes) == yes ]]; then
+            gtk_theme=DesktopTheme
+        fi
+    fi
+    {
+        echo "# Written by configure-desktop; the environment that depends on the desktop."
+        environment_line GTK_THEME "$gtk_theme"
+        environment_line QT_STYLE_OVERRIDE "$qt_style"
+        # For Qt programs; GTK reads the icon theme from dconf.
+        environment_line QT_QPA_SYSTEM_ICON_THEME "$(setting theme icons theme "")"
+    } > "$state_dir/desktop.env"
+}
+
+configure_everything() {
+    write_shell_settings
+    write_compositor_settings
+    write_application_themes
+    write_interface_settings
+    write_default_programs
+    write_program_entries
+    link_theme_files
+    write_environment
+}
+
+# SIGHUP ends the shell (pid from run-shell); keep-running restarts it.
+restart_shell() {
+    local pid_file="$state_dir/shell.pid"
+    if [[ ! -f "$pid_file" ]]; then
+        echo "configure-desktop: the shell's process number is not in $pid_file; log out and in to see the new desktop." >&2
+        return 1
+    fi
+    kill -HUP "$(cat "$pid_file")"
+}
+
+# Read by pick_desktop.py; the settings window writes the same file.
+remember_choice() {
+    local name=$1
+    local chosen_file="${XDG_CONFIG_HOME:-$HOME/.config}/mavernix/desktop"
+    mkdir -p "$(dirname "$chosen_file")"
+    echo "$name" > "$chosen_file"
+}
+
+case "$verb" in
+all)
+    [[ $# -eq 2 ]] || usage
+    read_current
+    configure_everything
+    ;;
+switch)
+    [[ $# -eq 3 ]] || usage
+    name=$3
+    if ! found=$(find_desktop_config "$name"); then
+        echo "configure-desktop: there is no desktop \"$name\"; the desktops are the .toml files in $user_config_dir/ and $config_dir/" >&2
+        exit 1
+    fi
+    read_current
+    config=$found
+    write_current
+    remember_choice "$name"
+    configure_everything
+    restart_shell
+    ;;
+choices)
+    [[ $# -eq 2 ]] || usage
+    read_current
+    write_compositor_settings > /dev/null
+    # A fresh copy of the shell's settings; its own file stays as it started.
+    current_settings=$(mktemp)
+    trap 'rm -f "$current_settings"' EXIT
+    python3 "$session_dir/make_shell_config.py" "$config" "$current_settings"
+    shell_settings=$current_settings
+    write_interface_settings --window-buttons-only
+    ;;
+*)
+    usage
+    ;;
+esac

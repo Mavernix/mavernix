@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The plain theme's trash, empty: a simple bin drawn for this project. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <rect x="14" y="12" width="36" height="5" rx="2" fill="#c9d1d9"/>
+  <rect x="26" y="7" width="12" height="6" rx="2" fill="#c9d1d9"/>
+  <path d="M17 20h30l-3 34a4 4 0 0 1-4 4H24a4 4 0 0 1-4-4z" fill="none" stroke="#c9d1d9" stroke-width="4" stroke-linejoin="round"/>
+</svg>

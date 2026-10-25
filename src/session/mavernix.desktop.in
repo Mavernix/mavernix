@@ -1,0 +1,7 @@
+# The login screen's entry. No desktop name, so the user's choice starts.
+[Desktop Entry]
+Type=Application
+Name=Mavernix
+Comment=A lightweight desktop session
+Exec=@LIBRARY_DIR@/session/start-desktop
+DesktopNames=wayfire

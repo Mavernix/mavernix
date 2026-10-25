@@ -1,0 +1,4 @@
+# Started from Wayfire's plugins (LICENSE-wayfire beside them); kept in its
+# layout so that they stay easy to compare with upstream.
+src/compositor/decoration/*
+src/compositor/minimize/*

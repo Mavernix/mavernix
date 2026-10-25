@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The Mavernix logo for small sizes (16 to 32 pixels): the cube of
+  mavernix.svg with each face's era in plain colour, since pinlines, streaks
+  and sweeps turn to noise this small.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="32" height="32">
+  <defs>
+    <linearGradient id="ocean" x1="1" y1="0" x2="0.25" y2="1">
+      <stop offset="0" stop-color="#21a681"/>
+      <stop offset="0.5" stop-color="#26607a"/>
+      <stop offset="1" stop-color="#0c2b52"/>
+    </linearGradient>
+    <linearGradient id="aqua" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4f9de6"/>
+      <stop offset="1" stop-color="#14378a"/>
+    </linearGradient>
+  </defs>
+  <path d="M128 28 L214 78 L128 128 L42 78 Z" fill="#d6d6d6"/>
+  <path d="M42 78 L128 128 L128 228 L42 178 Z" fill="url(#ocean)"/>
+  <path d="M128 128 L214 78 L214 178 L128 228 Z" fill="url(#aqua)"/>
+  <path d="M42 78 L128 128 L214 78 M128 128 L128 228"
+        fill="none" stroke="#ffffff" stroke-opacity="0.8" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M128 28 L214 78 L214 178 L128 228 L42 178 L42 78 Z"
+        fill="none" stroke="#0b1a30" stroke-opacity="0.5" stroke-width="6" stroke-linejoin="round"/>
+</svg>

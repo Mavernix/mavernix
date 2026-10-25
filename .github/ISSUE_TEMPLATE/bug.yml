@@ -1,0 +1,37 @@
+name: Bug report
+description: Something does not work as it should.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what you expected
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How to make it happen again
+      placeholder: "1. Open …\n2. Press …"
+  - type: input
+    id: system
+    attributes:
+      label: Distribution, Wayfire and Quickshell versions
+      description: On Arch, `pacman -Q wayfire quickshell` gives both.
+      placeholder: "Arch Linux, wayfire 0.11.0, quickshell 0.3.2"
+    validations:
+      required: true
+  - type: dropdown
+    id: desktop
+    attributes:
+      label: Which desktop
+      options: [plain, sea-lion, sea-lion-dark, my own]
+  - type: textarea
+    id: logs
+    attributes:
+      label: The end of the logs
+      description: >
+        The last 50 lines or so of `$XDG_RUNTIME_DIR/mavernix/session.log` and `login.log`;
+        for the Theme Installer, `~/.cache/mavernix/theme-installer.log`.
+        Please do not attach pictures or files taken from an installer.
+      render: text

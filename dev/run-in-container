@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+# Builds and starts the desktop in a throwaway Podman container on a
+# virtual screen, and opens a VNC viewer on it. Logs go to dev/out/.
+#
+#   dev/run-in-container [DESKTOP]    start DESKTOP (a config in data/config, or a path)
+#   dev/run-in-container shell        copy src/shell/ into the running desktop and
+#                                     restart its shell (seconds, for QML changes)
+#   dev/run-in-container stop         stop it
+#
+# Needs Podman, and TigerVNC's vncviewer for the window.
+set -euo pipefail
+
+source_dir=$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)
+out_dir=$source_dir/dev/out
+image=mavernix-dev
+container=${MAVERNIX_CONTAINER:-mavernix-dev}
+
+if [[ "${1:-}" == stop ]]; then
+    podman stop "$container"
+    exit 0
+fi
+# The shell's QML is installed as it is (src/shell/meson.build), so a QML
+# change needs only a copy over the installed files and a restart of the
+# shell: SIGHUP, which keep-running answers with a restart, not as a crash.
+# Compiled parts (src/shell/native, the compositor, the programs) need a
+# fresh start of the container.
+if [[ "${1:-}" == shell ]]; then
+    podman exec --user root "$container" sh -c \
+        'tar -C /src/src/shell --exclude=native --exclude=meson.build -cf - . | tar -C /usr/share/mavernix/shell -xf - &&
+         pkill -HUP -f "^qs -p /usr/share/mavernix/shell$"'
+    echo "run-in-container: copied src/shell/ into the running desktop and restarted its shell"
+    exit 0
+fi
+desktop=${1:-}
+
+podman build --quiet --tag "$image" --file "$source_dir/dev/Containerfile" "$source_dir/dev" > /dev/null
+
+mkdir -p "$out_dir"
+rm -f "$out_dir/vnc.sock"
+
+options=(
+    --detach --rm --name "$container"
+    # A tiny init, so that `stop` ends the session at once.
+    --init
+    --volume "$source_dir:/src:ro"
+    --volume "$out_dir:/out"
+    # Starts as root to install, then runs as this user so dev/out/ is ours.
+    --userns=keep-id --user root
+    --env "DESKTOP_UID=$(id -u)" --env "DESKTOP_GID=$(id -g)"
+)
+# The host's GPU for rendering, if any; otherwise software rendering.
+if [[ -e /dev/dri/renderD128 ]]; then
+    options+=(--device /dev/dri/renderD128)
+fi
+podman run "${options[@]}" "$image" /src/dev/container-session.sh "$desktop" > /dev/null
+
+echo "run-in-container: building and starting ${desktop:-the desktop} (log: dev/out/build.log)"
+for _ in $(seq 600); do
+    if [[ -S "$out_dir/vnc.sock" ]]; then
+        break
+    fi
+    if ! podman container exists "$container"; then
+        echo "run-in-container: the container stopped; see dev/out/build.log and dev/out/state/session.log" >&2
+        exit 1
+    fi
+    sleep 1
+done
+if [[ ! -S "$out_dir/vnc.sock" ]]; then
+    echo "run-in-container: the desktop did not come up in ten minutes; see dev/out/" >&2
+    exit 1
+fi
+
+if command -v vncviewer > /dev/null; then
+    setsid vncviewer "$out_dir/vnc.sock" > "$out_dir/vncviewer.log" 2>&1 &
+    echo "run-in-container: the desktop is open in a VNC window; \`dev/run-in-container stop\` ends it"
+else
+    echo "run-in-container: the desktop runs; connect a VNC viewer to $out_dir/vnc.sock"
+fi

@@ -1,0 +1,9 @@
+#!/bin/sh
+# Rewrites the compositor's settings and GTK's window buttons from the user's
+# current choices, so a change in the settings window takes hold without
+# logging out (the compositor reloads its settings file on change).
+if [ -z "${DESKTOP_SHELL_SETTINGS:-}" ]; then
+    echo "mavernix-reconfigure: DESKTOP_SHELL_SETTINGS is not set; run it inside the desktop session." >&2
+    exit 1
+fi
+exec "$(dirname "$(readlink -f "$0")")/../configure-desktop" choices "$(dirname "$DESKTOP_SHELL_SETTINGS")"

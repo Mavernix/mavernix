@@ -1,0 +1,5 @@
+# Build folders.
+/build*/
+
+# Python caches its compiled files next to the sources.
+__pycache__/

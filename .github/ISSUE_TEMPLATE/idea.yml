@@ -1,0 +1,15 @@
+name: Idea
+description: Something Mavernix could do or do better.
+labels: [idea]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What you would like, and why
+    validations:
+      required: true
+  - type: textarea
+    id: how
+    attributes:
+      label: How it could work
+      description: Optional. Which part it touches (the shell, a theme, the config, the Theme Installer) helps.

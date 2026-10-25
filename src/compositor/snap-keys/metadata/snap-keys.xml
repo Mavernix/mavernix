@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="snap-keys">
+		<_short>Snap Keys</_short>
+		<_long>Arrow keys that put the window in front on a half, a quarter or the whole of the screen, each press going on from where the window is.</_long>
+		<category>Window Management</category>
+		<option name="left" type="activator">
+			<_short>Left</_short>
+			<_long>Moves the window towards the left: onto the left half, from an upper or lower half onto its left quarter, from the right half back to where it was.</_long>
+			<default>none</default>
+		</option>
+		<option name="right" type="activator">
+			<_short>Right</_short>
+			<_long>Moves the window towards the right: onto the right half, from an upper or lower half onto its right quarter, from the left half back to where it was.</_long>
+			<default>none</default>
+		</option>
+		<option name="up" type="activator">
+			<_short>Up</_short>
+			<_long>Moves the window up: a floating window fills the screen, a half becomes its upper quarter, a lower quarter becomes its half.</_long>
+			<default>none</default>
+		</option>
+		<option name="down" type="activator">
+			<_short>Down</_short>
+			<_long>Moves the window down: the whole screen goes back to where the window was, a floating window is put away into the dock, a half becomes its lower quarter.</_long>
+			<default>none</default>
+		</option>
+	</plugin>
+</wayfire>

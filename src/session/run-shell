@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Starts the shell with the current desktop's environment, so a shell
+# restarted after a desktop switch gets the new one. Run by the compositor
+# through keep-running.
+set -euo pipefail
+
+# shellcheck source=paths.sh.in
+source "$(dirname "$(readlink -f "$0")")/paths.sh"
+state_dir=$(dirname "${DESKTOP_SHELL_SETTINGS:?run-shell: DESKTOP_SHELL_SETTINGS is not set; start-desktop sets it}")
+
+# shellcheck source=/dev/null
+source "$state_dir/desktop.env"
+
+# `exec` keeps this pid for the shell, so a switch can signal it.
+echo $$ > "$state_dir/shell.pid"
+exec qs -p "$shell_dir"

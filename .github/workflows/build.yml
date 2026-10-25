@@ -1,0 +1,53 @@
+# On every push and pull request: builds the desktop, runs the tests, tries the
+# install, and checks the code with ruff and clang-format. Arch Linux, because
+# it has current Wayfire and Qt packages.
+
+name: build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - name: Install what the build needs
+        run: >
+          pacman -Syu --noconfirm --needed
+          git base-devel meson ninja python
+          wayfire glm vulkan-headers tomlplusplus
+          qt6-base qt6-declarative qt6-multimedia qt6-wayland librsvg glib2
+
+      - uses: actions/checkout@v4
+
+      - name: Build
+        run: |
+          meson setup build
+          meson compile -C build
+
+      - name: Test
+        run: meson test -C build --print-errorlogs
+
+      - name: Install into a folder
+        run: meson install -C build --destdir "$PWD/staged"
+
+  lint:
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - name: Install the checkers
+        run: pacman -Syu --noconfirm --needed git ruff clang
+
+      - uses: actions/checkout@v4
+
+      # ruff.toml says which Python checks; .clang-format and
+      # .clang-format-ignore the C++ layout.
+      - name: Python
+        run: ruff check .
+
+      - name: C++ layout
+        run: |
+          git config --global --add safe.directory "$PWD"
+          clang-format --dry-run --Werror $(git ls-files '*.cpp' '*.hpp')

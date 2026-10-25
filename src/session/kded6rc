@@ -1,0 +1,83 @@
+# KDE background modules switched off in this session. kded6 is started on
+# demand by KDE programs and brings Plasma parts this desktop has its own of.
+# Listed in XDG_CONFIG_DIRS for this session only, so the user's own kded6rc
+# and Plasma are unaffected. Modules not listed (appmenu, soliduiserver,
+# freespacenotifier, smart, ...) keep running.
+
+# Rewrites ~/.config/gtk-3.0 and gtk-4.0 and starts xsettingsd with Plasma's
+# colours, icons and fonts, which then win over this desktop's.
+[Module-gtkconfig]
+autoload=false
+
+# Plasma's tray; the shell has its own (org.kde.StatusNotifierWatcher).
+[Module-statusnotifierwatcher]
+autoload=false
+
+# Notifications for networks, Bluetooth, devices, printers and Thunderbolt.
+[Module-networkmanagement]
+autoload=false
+
+[Module-bluedevil]
+autoload=false
+
+[Module-devicenotifications]
+autoload=false
+
+[Module-printmanager]
+autoload=false
+
+[Module-kded_bolt]
+autoload=false
+
+# Plasma's own messages: donations, welcome tour, OOM, browser add-on.
+[Module-donationmessage]
+autoload=false
+
+[Module-kded_plasma_welcome]
+autoload=false
+
+[Module-oom_notifier]
+autoload=false
+
+[Module-browserintegrationreminder]
+autoload=false
+
+[Module-browserintegrationflatpakintegrator]
+autoload=false
+
+# Keys and media keys: the compositor handles them here.
+[Module-plasma_session_shortcuts]
+autoload=false
+
+[Module-audioshortcutsservice]
+autoload=false
+
+[Module-mprisservice]
+autoload=false
+
+# Plasma's appearance: light/dark switching and accent colour.
+[Module-lookandfeelautoswitcher]
+autoload=false
+
+[Module-plasma_accentcolor_service]
+autoload=false
+
+[Module-kameleon]
+autoload=false
+
+# Screens, keyboard layouts and touchpad: set by the compositor here.
+[Module-kscreen]
+autoload=false
+
+[Module-keyboard]
+autoload=false
+
+[Module-kded_touchpad]
+autoload=false
+
+# Plasma Vaults and the desktop folder's watcher for Plasma's desktop.
+[Module-plasmavault]
+autoload=false
+
+[Module-desktopnotifier]
+autoload=false

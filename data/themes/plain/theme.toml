@@ -1,0 +1,602 @@
+# The plain theme: an ordinary flat desktop with no artwork.
+# See docs/themes/README.md for what each key means.
+
+[theme]
+name = "Plain"
+description = "A flat, neutral desktop with no artwork."
+format = 0
+
+[fonts]
+# A family most Linux systems have.
+interface    = { family = "DejaVu Sans", size = 13 }
+# the theme installer's page headings and its text.
+theme_installer_heading = { family = "DejaVu Sans", size = 17, bold = true }
+theme_installer_text    = { family = "DejaVu Sans", size = 13 }
+window_title = { family = "DejaVu Sans", size = 13 }
+menu         = { family = "DejaVu Sans", size = 13 }
+panel        = { family = "DejaVu Sans", size = 13 }
+dock_label   = { family = "DejaVu Sans", size = 12 }
+dock_folder  = { family = "DejaVu Sans", size = 11 }
+lock_name    = { family = "DejaVu Sans", size = 13, bold = true }
+dialog_title = { family = "DejaVu Sans", size = 13, bold = true }
+dialog_text  = { family = "DejaVu Sans", size = 12 }
+program_switcher = { family = "DejaVu Sans", size = 12 }
+desktop_icon = { family = "DejaVu Sans", size = 12 }
+banner_title = { family = "DejaVu Sans", size = 13, bold = true }
+banner_text  = { family = "DejaVu Sans", size = 12 }
+notification_list = { family = "DejaVu Sans", size = 12 }
+notification_list_heading = { family = "DejaVu Sans", size = 12, bold = true }
+notification_list_time = { family = "DejaVu Sans", size = 10 }
+app_grid_label = { family = "DejaVu Sans", size = 12 }
+
+[window.titlebar]
+height = 28
+background          = { color = "#e4e4e4" }
+background_inactive = { color = "#f2f2f2" }
+separator           = ["#b8b8b8"]
+separator_inactive  = ["#d4d4d4"]
+title_color          = "#202020"
+title_color_inactive = "#909090"
+title_align = "left"
+title_padding = 8
+
+[window.buttons]
+size = [16, 16]
+spacing = 4
+edge_inset = 6
+
+# Simple squares that darken under the pointer. No pictures.
+[window.buttons.close]
+normal   = { color = "#d0d0d0", radius = 3 }
+hover    = { color = "#e06060", radius = 3 }
+pressed  = { color = "#b04040", radius = 3 }
+inactive = { color = "#e0e0e0", radius = 3 }
+
+[window.buttons.minimize]
+normal   = { color = "#d0d0d0", radius = 3 }
+hover    = { color = "#b8b8b8", radius = 3 }
+pressed  = { color = "#a0a0a0", radius = 3 }
+inactive = { color = "#e0e0e0", radius = 3 }
+
+[window.buttons.maximize]
+normal   = { color = "#d0d0d0", radius = 3 }
+hover    = { color = "#b8b8b8", radius = 3 }
+pressed  = { color = "#a0a0a0", radius = 3 }
+inactive = { color = "#e0e0e0", radius = 3 }
+
+[window.frame]
+border_width = 1
+border_color          = "#a8a8a8"
+border_color_inactive = "#c8c8c8"
+corner_radius = 5
+resize_corner = 16
+
+[window.snap_preview]
+# The outline that shows where a window dragged to the screen's side will go.
+color = "#3a6ea540"
+border_color = "#3a6ea5cc"
+border_width = 2
+
+[window.shadow]
+color = "#00000050"
+blur_radius = 12
+offset = [0, 4]
+color_inactive = "#00000030"
+
+[icons]
+# A stock icon theme with one-colour status icons; without it Qt programs,
+# the shell among them, find only the icons each program installs itself.
+theme = "Adwaita"
+
+[controls]
+# Applications keep a stock look: only the colours are set here.
+kvantum_base = "KvFlatLight"
+window_color = "#efefef"
+text_color = "#202020"
+base_color = "#ffffff"
+highlight_color = "#3a6ea5"
+highlight_text_color = "#ffffff"
+
+# A light bar: the stock theme's dark one does not suit the dark text above.
+[controls.tool_bar]
+fill = ["#e4e4e4"]
+bottom_line = "#c0c0c0"
+
+[controls.selected_item]
+fill = ["#3a6ea5"]
+text_color = "#ffffff"
+hover_fill = ["#00000014"]
+
+[animation.minimize]
+kind = "scale"
+duration_ms = 150
+curve = "ease-out"
+
+[desktops]
+# The gap shown between desktops while switching.
+gap = 0
+gap_color = "#000000"
+
+[animation.desktop_switch]
+duration_ms = 250
+curve = "ease-out"
+
+[animation.dock_hide]
+# How a dock that hides itself goes and comes.
+duration_ms = 150
+curve = "ease-out"
+show_delay_ms = 100
+hide_delay_ms = 300
+
+[animation.window_overview]
+duration_ms = 200
+
+[animation.app_grid]
+kind = "fade"
+duration_ms = 120
+
+[animation.dock_folder]
+# How a folder's grid comes and goes above its tile in the dock.
+kind = "fade"
+duration_ms = 100
+
+[animation.dock_folder_fan]
+# How a folder's fan comes and goes above its tile.
+kind = "rise"
+duration_ms = 120
+
+[animation.app_grid_page]
+# How the grid settles on a page after a turn or a drag.
+kind = "slide"
+duration_ms = 200
+curve = "ease-out"
+
+[animation.banner]
+kind = "fade"
+duration_ms = 150
+
+[animation.window_open]
+kind = "fade"
+duration_ms = 100
+curve = "linear"
+
+[animation.window_close]
+kind = "fade"
+duration_ms = 100
+curve = "linear"
+
+[animation.window_resize]
+# A window jumping to a new size (maximized or snapped).
+kind = "blend"
+duration_ms = 150
+curve = "ease-out"
+
+[panel]
+height = 28
+background = { color = "#e8e8e8" }
+separator = ["#b0b0b0"]
+text_color = "#202020"
+app_name_bold = false
+item_spacing = 12
+edge_padding = 10
+title_highlight = { color = "#3a6ea5" }
+title_highlight_text_color = "#ffffff"
+
+[dialog]
+# The shell's own dialogs, which ask before something final is done.
+width = 440
+title_bar = false
+background = "#f4f4f4"
+text_color = "#202020"
+icon_size = 48
+icon_inset = [20, 20]
+text_left = 84
+text_width = 336
+title_top = 20
+title_line_height = 18
+text_gap = 8
+text_line_height = 16
+button_gap_above = 16
+button_inset = [16, 16]
+button_padding = 16
+button_spacing = 8
+button_min_width = 88
+button_height = 28
+button = { color = "#ffffff", radius = 4, border = { color = "#b0b0b0", width = 1 } }
+button_pressed = { color = "#e0e0e0", radius = 4, border = { color = "#b0b0b0", width = 1 } }
+button_default = { color = "#3a6ea5", radius = 4 }
+button_default_pressed = { color = "#2f5c8c", radius = 4 }
+button_default_text_color = "#ffffff"
+top_share = 0.35
+
+[theme_installer]
+# the theme installer's window: steps at the left, the current page at the
+# right, buttons (drawn from [dialog]) along the bottom.
+width = 640
+height = 500
+background = { color = "#efefef" }
+sidebar_width = 180
+sidebar = { color = "#e4e4e4" }
+sidebar_line_color = "#d0d0d0"
+steps_top = 36
+step_pitch = 30
+step_inset = 22
+step_marker_size = 10
+step_marker_gap = 10
+step_text_color = "#7a7a7a"
+step_current_text_color = "#202020"
+step_marker_waiting = { color = "#00000000", radius = 5, border = { color = "#a8a8a8", width = 1 } }
+step_marker_current = { color = "#3a6ea5", radius = 5 }
+step_marker_done = { color = "#9a9a9a", radius = 5 }
+content_margin = 22
+heading_height = 40
+text_color = "#202020"
+secondary_text_color = "#707070"
+pane = { color = "#ffffff", radius = 4, border = { color = "#cccccc", width = 1 } }
+pane_padding = 18
+paragraph_gap = 12
+summary_mark_size = 44
+note = { color = "#fff6d6", radius = 4, border = { color = "#e6d48a", width = 1 } }
+drop_well = { color = "#f7f7f7", radius = 10, border = { color = "#b4b4b4", width = 2 } }
+drop_well_ready = { color = "#eef3fa", radius = 10, border = { color = "#3a6ea5", width = 2 } }
+drop_well_height = 220
+drop_well_icon_size = 64
+drop_well_picture = "images/installer-disc.svg"
+progress_height = 8
+progress_track = { color = "#e2e2e2", radius = 4 }
+progress_fill = { color = "#3a6ea5", radius = 4 }
+stage_pitch = 24
+stage_waiting_color = "#a0a0a0"
+stage_running_color = "#3a6ea5"
+stage_done_color = "#3a8a3a"
+stage_failed_color = "#c03030"
+button_bar_height = 56
+disabled_button_opacity = 0.45
+
+[settings.overview]
+# The settings window's first page: the icon grid and its group stripes.
+columns = 6
+icon_size = 48
+cell_pitch = 110
+first_cell_middle = 65
+line_pitch = 104
+group_bottom = 12
+icon_top = 14
+label_baseline = 82
+label_line_pitch = 15
+label_font_size = 12
+label_color = "#202020"
+stripe = "#f6f6f6"
+stripe_alternate = "#eeeeee"
+line_colors = ["#dcdcdc", "#dcdcdc"]
+light_line_colors = ["#fafafa", "#fafafa"]
+
+[program_switcher]
+# The plate that shows the programs while the switching key is held.
+background = { color = "#f4f4f4f0", radius = 10, border = { color = "#b0b0b0", width = 1 } }
+icon_size = 64
+icon_gap = 12
+padding = [18, 18, 40, 18]
+mark = { color = "#3a6ea540", radius = 8 }
+mark_reach = 6
+name = { color = "#202020", gap = 10, padding = 6 }
+appear_after_ms = 150
+
+[search]
+# The panel's search: a field with results below, in a menu-style box.
+width = 420
+right_inset = 8
+header_height = 40
+header_background = { color = "#e4e4e4" }
+header_text_color = "#202020"
+heading_width = 110
+label_gap = 10
+heading_gap = 10
+heading_color = "#707070"
+field_inset = 0
+field_right = 10
+field_height = 26
+field = { color = "#ffffff", radius = 4, border = { width = 1, color = "#b0b0b0" } }
+field_text_inset = 8
+field_text_color = "#202020"
+row_height = 24
+row_gap = 0
+kind_gap = 8
+results_padding = 6
+icon_size = 16
+icon_inset = 4
+name_inset = 28
+
+[screenshot_flash]
+# The screenshot flash: the screen goes this pale at once, then clears.
+color = "#ffffff"
+opacity = 0.6
+
+[animation.screenshot_flash]
+duration_ms = 250
+curve = "ease-out"
+
+[notifications.list]
+# The list of past notifications, a panel at the screen's side.
+width = 320
+background = { color = "#f4f4f4" }
+edge_shadow = ["#00000018"]
+text_color = "#202020"
+heading_color = "#20202070"
+heading_height = 30
+section_height = 26
+section_background = { color = "#e4e4e4" }
+icon_left = 10
+text_left = 34
+title_top = 6
+line_height = 16
+time_right = 12
+entry_bottom_padding = 8
+divider_color = "#00000018"
+empty_text_top = 200
+
+[animation.notification_list]
+kind = "slide"
+duration_ms = 150
+curve = "ease-out"
+
+[notifications.banner]
+# The small panel in which a notification shows up at the screen's corner.
+width = 340
+top_gap = 10
+edge_gap = 10
+gap = 8
+# Background and height per number of text lines under the title (0, 1, 2).
+backgrounds = [
+    { color = "#f4f4f4", radius = 6, border = { color = "#b0b0b0", width = 1 } },
+    { color = "#f4f4f4", radius = 6, border = { color = "#b0b0b0", width = 1 } },
+    { color = "#f4f4f4", radius = 6, border = { color = "#b0b0b0", width = 1 } },
+]
+heights = [44, 60, 76]
+icon_size = 32
+icon_inset = [10, 6]
+text_left = 52
+text_right = 12
+title_baseline_row = 20
+text_baseline_row = 38
+text_line_height = 16
+title_color = "#202020"
+text_color = "#404040"
+
+[app_grid]
+# The grid of all applications that covers the screen.
+background_blur = 16
+background_veil = "#00000060"
+columns = 6
+rows = 4
+column_pitch = 180
+row_pitch = 140
+first_row_top = 110
+icon_size = 64
+label_baseline = 84
+label_color = "#ffffff"
+
+[app_grid.search]
+top = 40
+width = 320
+height = 32
+background = { color = "#00000050", radius = 6 }
+text_left = 12
+text_color = "#ffffff"
+
+[app_grid.page_dots]
+size = 8
+pitch = 18
+center_above_bottom = 100
+color = "#ffffff"
+other_color = "#ffffff50"
+
+[window_overview]
+# Who draws the overview of all windows: "shell" (grouped by program) or
+# "compositor".
+drawn_by = "shell"
+backdrop = { color = "#2c333a" }
+stage_scale = 0.8
+windows_top_share = 0.12
+windows_bottom_share = 0.84
+windows_side_margin = 40
+most_window_scale = 0.8
+group_gap = 40
+group_icon_size = 32
+group_icon_rise = 0
+group_name_gap = 4
+label_color = "#ffffff"
+selection = { color = "#00000000", radius = 4, border = { width = 3, color = "#3a6ea5" } }
+selection_reach = 4
+# Used when the compositor draws the overview:
+spacing = 30
+outer_margin = 30
+other_windows_opacity = 0.85
+titles = "all"
+title_font_size = 12
+title_position = "bottom"
+title_color = "#ffffff"
+title_background = "#000000b0"
+
+[menu]
+background = "#f4f4f4"
+corner_radius = 0
+padding = 2
+item_height = 24
+text_baseline_row = 17
+text_inset = 12
+text_color = "#202020"
+disabled_text_color = "#20202070"
+separator_height = 7
+separator_line_row = 4
+separator_color = "#c8c8c8"
+highlight = { color = "#3a6ea5" }
+highlight_text_color = "#ffffff"
+shortcut_end_inset = 12
+shortcut_gap = 24
+shadow = { color = "#00000040", offset = [0, 2], blur = 6 }
+rim = "#00000030"
+submenu_arrow = ">"
+check_mark = "x"
+
+[menu.key_symbols]
+Control = "Ctrl+"
+Shift = "Shift+"
+Alt = "Alt+"
+Super = "Super+"
+
+[dock]
+icon_size = 40
+tile_margin = 6
+headroom = 4
+base = [0.0, 8]
+end_padding = [0.0, 8]
+row_shift = 0
+end_trim = 0
+fit_spare_tiles = 1
+fit_overhang = 0
+largest_icon_size = 64
+magnification_reach = 2
+magnification_ramp_ms = [120, 0]
+pressed_darken = 0.7
+tile_slide_ms = 150
+tile_appear_ms = 150
+tile_appear_scale = 0.6
+
+[dock.minimized]
+# A minimized window's tile: a picture of the window with an app badge.
+shows = "picture"
+badge_share = 0.45
+
+[dock.shelf]
+shape = "box"
+height_above_base = [1.0, -4]
+background = { color = "#2b3138e6", radius = 10 }
+
+[dock.indicator]
+fill = { color = "#ffffff", radius = 1 }
+width = 16
+height = 3
+center_height = 4
+
+[dock.separator]
+color = "#ffffff40"
+line_width = 1
+width = 0.4
+bottom = 14
+top_gap = 14
+
+[dock.icons]
+# The app grid tile's picture; stock icon sets have none in colour.
+"view-app-grid" = "images/app-grid.svg"
+
+[dock.trash]
+empty_image = "images/trash-empty.svg"
+full_image = "images/trash-full.svg"
+
+[volume_display]
+# The volume box shown after a volume key: a loudspeaker and segments.
+width = 200
+height = 120
+bottom = 120
+background = { color = "#202020e0", radius = 10 }
+icon_size = 48
+icon_top = 20
+icon_color = "#ffffff"
+
+[volume_display.segments]
+count = 16
+width = 8
+height = 6
+pitch = 10
+left = 21
+top = 90
+color = "#ffffff"
+empty_color = "#ffffff40"
+
+[animation.volume_display]
+stay_ms = 900
+fade_out_ms = 150
+
+[lock]
+# The lock screen: the veiled background, and a box with the user's
+# picture, name and password field.
+text_color = "#202020"
+backdrop_veil = { color = "#00000090" }
+name_baseline = 124
+
+[lock.box]
+width = 280
+height = 200
+center_y = 0.45
+fill = { color = "#f4f4f4", radius = 8 }
+
+[lock.picture]
+size = 64
+top = 28
+round = true
+
+[lock.field]
+top = 148
+width = 200
+height = 26
+fill = { color = "#ffffff", radius = 4, border = { width = 1, color = "#909090" } }
+focus_rings = ["#3478f6"]
+text_inset = 8
+placeholder_color = "#909090"
+
+
+[dock.folder.fan]
+# A dock folder opened as a fan: here a straight column with names.
+icon_size = 40
+pitch = 46
+turn_per_entry = 0
+most_entries = 8
+label_gap = 6
+label_width = 220
+
+[dock.folder.grid]
+# A dock folder opened as a grid, in a menu-style box.
+side_padding = 8
+cell_width = 96
+cell_height = 92
+first_row_top = 30
+bottom_padding = 6
+icon_size = 48
+label_baseline = 66
+label_width = 88
+label_color = "#202020"
+title_baseline = 19
+title_color = "#20202070"
+screen_margin = 8
+
+[dock.label]
+background = "#202020f0"
+text_color = "#ffffff"
+height = 22
+padding = 8
+pointer_width = 0
+pointer_height = 0
+gap = 6
+fade_out_ms = 80
+
+[dock.launch_bounce]
+half_period_ms = 200
+height = [0.15, 0.0]
+longest_ms = 10000
+
+[desktop]
+background = { gradient = ["#5b6f82", "#34424f"] }
+
+[desktop.icons]
+# Desktop icons, in columns from the top corner.
+icon_size = 48
+row_pitch = 92
+column_pitch = 100
+top = 12
+edge_to_icon_middle = 58
+bottom_room = 90
+picked = { color = "#ffffff30", radius = 4 }
+picked_reach = 4
+name = { color = "#ffffff", shadow_color = "#000000c0", height = 18, padding = 5, gap = 4, most_width = 96, picked_background = { color = "#3a6ea5", radius = 4 } }
+band = { color = "#3a6ea540", border_color = "#3a6ea5", border_width = 1 }

@@ -1,0 +1,81 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="touchpad-gestures">
+		<_short>Touchpad Gestures</_short>
+		<_long>Runs a command when three or four fingers swipe or pinch on a touchpad.</_long>
+		<category>Input</category>
+		<option name="swipe_up_3" type="string">
+			<_short>Swipe up, 3 fingers</_short>
+			<_long>The command to run when 3 fingers swipe up on a touchpad. Empty for none.</_long>
+			<default></default>
+		</option>
+		<option name="swipe_up_4" type="string">
+			<_short>Swipe up, 4 fingers</_short>
+			<_long>The command to run when 4 fingers swipe up on a touchpad. Empty for none.</_long>
+			<default></default>
+		</option>
+		<option name="swipe_down_3" type="string">
+			<_short>Swipe down, 3 fingers</_short>
+			<_long>The command to run when 3 fingers swipe down on a touchpad. Empty for none.</_long>
+			<default></default>
+		</option>
+		<option name="swipe_down_4" type="string">
+			<_short>Swipe down, 4 fingers</_short>
+			<_long>The command to run when 4 fingers swipe down on a touchpad. Empty for none.</_long>
+			<default></default>
+		</option>
+		<option name="swipe_left_3" type="string">
+			<_short>Swipe left, 3 fingers</_short>
+			<_long>The command to run when 3 fingers swipe left on a touchpad. Empty for none.</_long>
+			<default></default>
+		</option>
+		<option name="swipe_left_4" type="string">
+			<_short>Swipe left, 4 fingers</_short>
+			<_long>The command to run when 4 fingers swipe left on a touchpad. Empty for none.</_long>
+			<default></default>
+		</option>
+		<option name="swipe_right_3" type="string">
+			<_short>Swipe right, 3 fingers</_short>
+			<_long>The command to run when 3 fingers swipe right on a touchpad. Empty for none.</_long>
+			<default></default>
+		</option>
+		<option name="swipe_right_4" type="string">
+			<_short>Swipe right, 4 fingers</_short>
+			<_long>The command to run when 4 fingers swipe right on a touchpad. Empty for none.</_long>
+			<default></default>
+		</option>
+		<option name="pinch_in_3" type="string">
+			<_short>Pinch in, 3 fingers</_short>
+			<_long>The command to run when 3 fingers pinch together on a touchpad. Empty for none.</_long>
+			<default></default>
+		</option>
+		<option name="pinch_in_4" type="string">
+			<_short>Pinch in, 4 fingers</_short>
+			<_long>The command to run when 4 fingers pinch together on a touchpad. Empty for none.</_long>
+			<default></default>
+		</option>
+		<option name="pinch_out_3" type="string">
+			<_short>Pinch out, 3 fingers</_short>
+			<_long>The command to run when 3 fingers spread apart on a touchpad. Empty for none.</_long>
+			<default></default>
+		</option>
+		<option name="pinch_out_4" type="string">
+			<_short>Pinch out, 4 fingers</_short>
+			<_long>The command to run when 4 fingers spread apart on a touchpad. Empty for none.</_long>
+			<default></default>
+		</option>
+		<option name="swipe_distance" type="double">
+			<_short>Swipe distance</_short>
+			<_long>How far the fingers have to travel before a swipe counts, in the units the touchpad reports (roughly screen pixels at ordinary pointer speed).</_long>
+			<default>80.0</default>
+			<min>1.0</min>
+		</option>
+		<option name="pinch_change" type="double">
+			<_short>Pinch change</_short>
+			<_long>By what share the fingers' spread has to shrink or grow before a pinch counts: 0.25 means to three quarters, or to four thirds.</_long>
+			<default>0.25</default>
+			<min>0.01</min>
+			<max>0.9</max>
+		</option>
+	</plugin>
+</wayfire>

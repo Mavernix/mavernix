@@ -1,0 +1,30 @@
+# An Arch Linux image with what building and running the desktop needs, for
+# dev/run-in-container. Nothing is installed on the host.
+
+FROM docker.io/archlinux:latest
+
+# Building: the compiler, meson, and the libraries the compiled parts use.
+# (glm and vulkan-headers are needed by Wayfire's own headers.)
+RUN pacman -Syu --noconfirm --needed \
+        base-devel meson ninja \
+        wayfire glm vulkan-headers tomlplusplus \
+        qt6-base qt6-declarative qt6-multimedia qt6-wayland librsvg glib2 \
+    && pacman -Scc --noconfirm
+
+# Running: the shell, the session bus, Python with Pillow for the toolkit
+# themes, Kvantum, GTK's schemas, GVfs for the wastebasket, the plain theme's
+# icons and font, and a terminal and editor for the dock.
+RUN pacman -S --noconfirm --needed \
+        quickshell dbus python python-pillow kvantum gsettings-desktop-schemas gvfs \
+        adwaita-icon-theme ttf-dejavu foot featherpad \
+        qt6-multimedia-ffmpeg qt6-svg \
+    && pacman -Scc --noconfirm
+
+# The theme installer: unpacking, converting icons, sounds and drawings, and
+# bubblewrap as its sandbox.
+RUN pacman -S --noconfirm --needed 7zip cpio bzip2 lbzip2 libicns ffmpeg poppler bubblewrap \
+    && pacman -Scc --noconfirm
+
+# Viewing and scripting the desktop: VNC, screenshots, key presses.
+RUN pacman -S --noconfirm --needed wayvnc grim wtype \
+    && pacman -Scc --noconfirm

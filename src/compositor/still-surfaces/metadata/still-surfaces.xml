@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="still-surfaces">
+		<_short>Still Surfaces</_short>
+		<_long>Keeps chosen parts of the shell (a dock, a panel) where they are while the desktops slide.</_long>
+		<category>Desktop</category>
+		<option name="names" type="string">
+			<_short>Surfaces</_short>
+			<_long>The names (layer-shell namespaces) of the surfaces that stay in place, separated by spaces.</_long>
+			<default></default>
+		</option>
+		<option name="sliding" type="string">
+			<_short>Sliding surfaces</_short>
+			<_long>The names of the surfaces that slide with the desktops as two: a picture of what the surface showed goes with the desktop that leaves, the surface itself comes with the new one. Separated by spaces.</_long>
+			<default></default>
+		</option>
+		<option name="during" type="string">
+			<_short>During</_short>
+			<_long>The plugins during whose activity the surfaces stay in place, separated by spaces.</_long>
+			<default>vswitch vswipe</default>
+		</option>
+	</plugin>
+</wayfire>

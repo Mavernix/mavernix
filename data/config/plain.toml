@@ -1,0 +1,532 @@
+# The plain desktop: an ordinary desktop, and the base the other configs
+# build on. Keys whose meaning is not obvious are explained here.
+
+theme = "plain"
+
+[window]
+button_side = "right"
+button_order = ["minimize", "maximize", "close"]
+# Double click on a title bar: "maximize" (and back), "minimize" or "none".
+title_double_click = "maximize"
+
+# A window dragged to a side takes that half, to a corner that quarter, to
+# the top the whole screen. The distances are in pixels from the edge.
+snap_to_edges = true
+snap_distance = 12
+snap_corner_distance = 60
+# Held, lets a window be moved (main button) or resized (secondary button)
+# from anywhere on it. "" for no such key.
+drag_key = "<super>"
+# Pixels outside a window's edge that still grab it for resizing. Left out:
+# the theme's value.
+resize_reach = 8
+# Duration of snapping to a half, quarter or the whole screen. Left out: the
+# theme's value.
+quick_resize_ms = 120
+# Tiled windows that touch share their edge: resizing one resizes the
+# others along it. With `false`, only the dragged window changes.
+shared_edges = true
+
+[gtk]
+# Buttons in GTK header bars, which the compositor does not draw. Left out:
+# [window]'s values.
+button_side = "right"
+button_order = ["minimize", "maximize", "close"]
+# Draw GTK programs in the theme's look (from the next login).
+use_theme = true
+
+[qt]
+# Draw Qt programs in the theme's look through Kvantum (from the next login;
+# see docs/configuration.md).
+use_theme = true
+
+[panel]
+position = "top"
+left = ["app_name", "menus"]
+# Status items (docs/panel-items.md); one with nothing to show takes no room.
+right = ["tray", "load", "bluetooth", "network", "volume", "battery", "clock", "search", "notifications", "session"]
+quit_label = "Close %1"
+clock_format = "HH:mm"
+clock_menu_date_format = "d MMMM yyyy"
+
+# The desktop's own menus, shown in the panel while no window is active.
+# The first menu, if titled like `name`, opens from the name. An entry runs
+# a `command` (asking first if it has a `confirm` table, as in logo_menu) or
+# one of the shell's `action`s: app_grid, window_overview, search,
+# notification_list, lock, empty_trash.
+[desktop_menus]
+name = "Desktop"
+
+[[desktop_menus.menus]]
+title = "Desktop"
+entries = [
+    { label = "Settings…", command = ["mavernix-settings", "desktop"] },
+    { separator = true },
+    { label = "Empty Wastebasket…", action = "empty_trash" },
+]
+
+[[desktop_menus.menus]]
+title = "File"
+entries = [
+    { label = "New Window", command = ["gio", "open", "~"] },
+    { label = "New Folder", command = ["mavernix-file-action", "new-folder", "~/Desktop", "New folder"] },
+    { separator = true },
+    { label = "Find…", action = "search" },
+]
+
+[[desktop_menus.menus]]
+title = "Go"
+entries = [
+    { label = "Home", command = ["gio", "open", "~"] },
+    { label = "Desktop", command = ["gio", "open", "~/Desktop"] },
+    { label = "Documents", command = ["gio", "open", "~/Documents"] },
+    { label = "Downloads", command = ["gio", "open", "~/Downloads"] },
+    { label = "Pictures", command = ["gio", "open", "~/Pictures"] },
+    { separator = true },
+    { label = "Applications", action = "app_grid" },
+    { label = "Wastebasket", command = ["gio", "open", "trash:///"] },
+]
+
+[[desktop_menus.menus]]
+title = "Window"
+entries = [
+    { label = "All Windows", action = "window_overview" },
+]
+
+[status.volume]
+# The menu's wording. Without settings_command there is no settings entry.
+output_label = "Output Device:"
+input_label = "Input Device:"
+mute_label = "Mute"
+settings_label = "Sound Settings…"
+settings_command = ["mavernix-settings", "sound"]
+
+[status.network]
+# A tray program whose menu this item shows, so there is one network icon.
+tray_program = "nm-applet"
+
+[status.bluetooth]
+# The menu's wording.
+on_label = "Bluetooth is on"
+off_label = "Bluetooth is off"
+turn_off_label = "Turn off"
+turn_on_label = "Turn on"
+devices_label = "Devices"
+connect_label = "Connect"
+disconnect_label = "Disconnect"
+battery_label = "Battery: %1%"
+nearby_label = "Nearby Devices"
+searching_label = "Searching…"
+pairing_label = "%1 (pairing…)"
+settings_label = "Bluetooth Settings…"
+settings_command = ["mavernix-settings", "bluetooth"]
+
+[status.battery]
+show_percentage = true
+charged_label = "Charged"
+until_full_label = "%1 until full"
+remaining_label = "%1 remaining"
+on_battery_label = "On battery"
+on_adapter_label = "On mains power"
+show_percentage_label = "Show percentage"
+
+# A custom item: an icon with a menu of commands, optionally confirmed.
+[status.session]
+icon = "system-shutdown"
+menu = [
+    { label = "Settings…", command = ["mavernix-settings"] },
+    { separator = true },
+    { label = "Suspend", command = ["systemctl", "suspend"] },
+    { separator = true },
+    { label = "Restart…", command = ["systemctl", "reboot"], confirm = { title = "Restart the computer?", text = "Programs are closed without asking.", button = "Restart", cancel = "Cancel", icon = "system-reboot" } },
+    { label = "Switch off…", command = ["systemctl", "poweroff"], confirm = { title = "Switch the computer off?", text = "It switches off by itself in %1 seconds.", button = "Switch off", cancel = "Cancel", icon = "system-shutdown", seconds = 30 } },
+    { label = "Log out…", command = ["sh", "-c", "kill \"$DESKTOP_SESSION_PID\""], confirm = { title = "Log out?", text = "Programs are closed without asking.", button = "Log out", cancel = "Cancel", icon = "system-log-out" } },
+]
+
+# A custom item showing what a command prints.
+[status.load]
+command = ["sh", "-c", "cut -d' ' -f1 /proc/loadavg"]
+every_seconds = 10
+
+[desktop]
+# Background picture: a full path, or a path inside the theme. Empty for
+# the theme's own.
+picture = ""
+
+# Default programs per file type where the user has chosen none
+# (~/.config/mimeapps.list wins). The first installed entry is used; without
+# these the system's alphabetical order can open pictures in a web browser.
+[[default_programs]]
+kinds = ["image/png", "image/jpeg", "image/gif", "image/webp", "image/bmp", "image/tiff", "image/svg+xml", "image/avif", "image/heif"]
+programs = ["org.kde.gwenview.desktop", "org.gnome.Loupe.desktop", "org.gnome.eog.desktop", "org.gnome.Shotwell-Viewer.desktop"]
+
+[[default_programs]]
+kinds = ["application/pdf"]
+programs = ["org.kde.okular.desktop", "org.gnome.Papers.desktop", "org.gnome.Evince.desktop", "org.pwmt.zathura.desktop"]
+
+[[default_programs]]
+kinds = ["video/mp4", "video/x-matroska", "video/webm", "video/quicktime", "video/x-msvideo", "video/mpeg", "video/ogg"]
+programs = ["mpv.desktop", "org.videolan.VLC.desktop", "vlc.desktop", "io.github.celluloid_player.Celluloid.desktop", "org.kde.haruna.desktop"]
+
+[[default_programs]]
+kinds = ["audio/mpeg", "audio/flac", "audio/ogg", "audio/x-wav", "audio/mp4", "audio/x-vorbis+ogg", "audio/opus"]
+programs = ["org.kde.elisa.desktop", "org.videolan.VLC.desktop", "vlc.desktop", "mpv.desktop"]
+
+[shortcuts]
+# Keys for shell actions, in Wayfire's key syntax.
+app_grid = "<super> KEY_A"
+window_overview = "<super> KEY_W"
+show_desktop = "<super> KEY_D"
+close_window = "<alt> KEY_F4"
+switch_window = "<alt> KEY_TAB"
+# The program switcher; both must use the same held modifier.
+switch_program = "<super> KEY_TAB"
+switch_program_back = "<super> <shift> KEY_TAB"
+minimize_window = "<super> KEY_H"
+fullscreen_window = "KEY_F11"
+search = "<super> KEY_SPACE"
+lock = "<super> KEY_L"
+volume_up = "KEY_VOLUMEUP"
+volume_down = "KEY_VOLUMEDOWN"
+volume_mute = "KEY_MUTE"
+
+# Arrow-key snapping, stepping from where the window is: left/right to a
+# half, then up/down to a quarter; up maximizes, down restores or minimizes.
+snap_left = "<super> KEY_LEFT"
+snap_right = "<super> KEY_RIGHT"
+snap_up = "<super> KEY_UP"
+snap_down = "<super> KEY_DOWN"
+# Unbound by default: tile_left, tile_right, tile_top, tile_bottom,
+# tile_top_left, tile_top_right, tile_bottom_left, tile_bottom_right,
+# maximize_window, restore_window.
+previous_desktop = "<ctrl> <alt> KEY_LEFT"
+next_desktop = "<ctrl> <alt> KEY_RIGHT"
+# Unbound by default:
+# window_to_previous_desktop = "<ctrl> <shift> KEY_LEFT"
+# window_to_next_desktop = "<ctrl> <shift> KEY_RIGHT"
+
+[desktops]
+# Virtual desktops: how many there are, and the most allowed.
+count = 2
+most = 16
+# A window held at a side moves to the next desktop after this long. Left
+# out: never.
+drag_to_edge_ms = 900
+# Shell parts that stay put while desktops slide: "dock", "panel".
+still = ["dock", "panel"]
+# Fingers for a sideways touchpad swipe between desktops; 0 for none.
+swipe_fingers = 3
+
+[gestures]
+# Three- and four-finger swipes and pinches ("in", "out"): an action named
+# as under [shortcuts], or { run = ["program", "argument"] }.
+swipe_up_3 = "window_overview"
+swipe_down_3 = "show_desktop"
+pinch_in_4 = "app_grid"
+
+[screenshot]
+# Flash the screen when a screenshot is taken (keys under [commands]).
+flash = true
+
+[search]
+# The panel's search: wording, and the folders searched and how deep.
+label = "Search"
+applications_label = "Applications"
+folders_label = "Folders"
+folders = ["~"]
+depth = 4
+most_of_a_kind = 5
+# Web searches offered after the results; "%s" is the query. Optional
+# `top_hit_label` repeats the best result first under that heading.
+web_label = "Web"
+web = [
+    { label = "Search the web for “%s”", address = "https://duckduckgo.com/?q=%s", icon = "web-browser" },
+]
+
+[notifications]
+# Banner time, unless the sender asks for its own.
+banner_seconds = 5
+# Wording of the notification list; %1 is a number.
+list_title = "Notifications"
+none_label = "No notifications"
+time_now = "now"
+time_minutes = "%1 min ago"
+time_hours = "%1 h ago"
+
+[dock]
+groups = [[{ name = "Applications", icon = "view-app-grid", shell = "app_grid" }, { name = "Home", icon = "user-home", folder = "~", view = "list", order = "name" }, "foot", "mavernix-settings"], [{ name = "Downloads", icon = "folder-download", folder = "~/Downloads", view = "list", order = "added" }]]
+magnification = false
+autohide = false
+settings_command = ["mavernix-settings", "dock"]
+trash = true
+trash_label = "Wastebasket"
+trash_command = ["gio", "open", "trash:///"]
+# Run with the paths of files dropped onto the trash.
+trash_drop_command = ["gio", "trash"]
+
+# Initial view of a folder dropped onto the dock: "fan", "grid" or "list".
+new_folder_view = "list"
+
+[dock.trash_empty]
+command = ["gio", "trash", "--empty"]
+confirm = { title = "Delete everything in the wastebasket for good?", text = "This cannot be undone.", button = "Delete", cancel = "Cancel", icon = "user-trash-full" }
+
+# Wording of the dock's menus; %1 is a window's title.
+[dock.words]
+options = "Options"
+keep = "Keep in dock"
+remove = "Remove from dock"
+open = "Open"
+open_named = "Show “%1”"
+quit = "Quit"
+empty_trash = "Empty wastebasket"
+magnification_on = "Enlarge icons under the pointer"
+magnification_off = "Do not enlarge icons"
+settings = "Dock settings…"
+sort_by = "Sort by"
+sort_name = "Name"
+sort_added = "Date added"
+sort_modified = "Date modified"
+sort_created = "Date created"
+sort_kind = "Kind"
+view_as = "Show contents as"
+view_fan = "Column"
+view_grid = "Grid"
+view_list = "List"
+open_in_file_manager = "Open folder"
+more_in_file_manager = "%1 more"
+
+[desktop_files]
+# Files of a folder shown as icons on the desktop.
+show = true
+folder = "~/Desktop"
+# Launchers placed on the desktop once, at a user's first login.
+place_once = ["mavernix-theme-installer"]
+# File actions, each given the paths. A command left out removes its menu
+# entry.
+open_command = ["gio", "open"]
+trash_command = ["gio", "trash"]
+rename_command = ["gio", "rename"]
+new_folder_command = ["mavernix-file-action", "new-folder"]
+move_in_command = ["mavernix-file-action", "move-into"]
+duplicate_command = ["mavernix-file-action", "duplicate"]
+background_command = ["mavernix-settings", "desktop"]
+
+[desktop_files.words]
+new_folder = "New Folder"
+new_folder_name = "New folder"
+change_background = "Change Background…"
+open = "Open"
+duplicate = "Duplicate"
+rename = "Rename"
+trash = "Move to Trash"
+# Entries left out here are not offered.
+clean_up = "Tidy Up"
+sort_by_name = "Sort by Name"
+sort_by_kind = "Sort by Kind"
+sort_by_modified = "Sort by Date Modified"
+sort_by_added = "Sort by Date Added"
+
+[extensions]
+# Extensions switched on, from ~/.config/mavernix/extensions/ or
+# PREFIX/share/mavernix/extensions/ (docs/extensions.md).
+enabled = []
+# An extension's settings override its extension.toml:
+# [extensions.NAME]
+# some_setting = false
+
+[settings]
+name = "Settings"
+# The panes, grouped as on the first page.
+groups = [
+    ["theme", "desktop", "dock", "icons", "desktops", "windows", "defaults", "toolkits"],
+    ["display", "energy", "keyboard", "trackpad", "sound"],
+    ["bluetooth"],
+    ["extensions"],
+]
+
+[settings.words]
+icons_title = "App icons"
+icons_intro = "Give an application another icon: one of the icon theme's, or a picture of your own. It is shown instead of the application's own wherever the desktop shows applications: the dock, the list of all applications, the program switcher and the search."
+icons_search = "Search"
+icons_group_own = "With an icon of your own"
+icons_group_all = "Applications"
+icons_none = "No applications are installed."
+icons_choose = "Choose icon…"
+icons_choose_heading = "Choose an icon for %1"
+icons_use_default = "Use the application’s icon"
+icons_state_own = "The icon is the picture %1."
+icons_state_theme = "The icon is %1 from the icon theme."
+icons_state_default = "The icon is the application’s own."
+icons_picture_file = "Picture file…"
+icons_file_kind = "Pictures"
+icons_unreadable = "This file is not a picture that can be shown as an icon."
+bluetooth_title = "Bluetooth"
+bluetooth_on = "Bluetooth on"
+bluetooth_connected = "Connected"
+bluetooth_not_connected = "Not connected"
+bluetooth_not_paired = "Not paired"
+bluetooth_connect = "Connect"
+bluetooth_disconnect = "Disconnect"
+bluetooth_pair = "Pair"
+bluetooth_forget = "Forget"
+bluetooth_searching = "Looking for devices…"
+bluetooth_none = "This computer has no Bluetooth."
+sound_output = "Output:"
+sound_input = "Input:"
+extensions_title = "Extensions"
+extensions_none = "No extensions are installed."
+extensions_intro = "Extensions add features to the desktop, such as panel items and helpers that run in the background. Switch them on or off here."
+extensions_group_on = "Turned on"
+extensions_group_off = "Turned off"
+extensions_state_on = "On"
+extensions_state_off = "Off"
+extensions_switch = "Turn on %1"
+extensions_version = "Version %1"
+extensions_open_folder = "Open extensions folder…"
+desktops_title = "Desktops"
+desktops_count = "Desktops:"
+desktops_swipe = "Swipe between desktops:"
+desktops_swipe_off = "Off"
+desktops_swipe_three = "Three fingers"
+desktops_swipe_four = "Four fingers"
+desktops_drag_to_edge = "A window held at the screen's side goes to the next desktop"
+windows_title = "Windows"
+windows_snap = "Windows snap to the screen's sides"
+windows_snap_note = "Left or right side: that half. A corner: that quarter. The top: the whole screen."
+windows_drag_key = "Move and resize a window by holding:"
+windows_drag_key_none = "No key"
+windows_drag_key_super = "Super"
+windows_drag_key_alt = "Alt"
+toolkits_title = "GTK & Qt"
+toolkits_gtk = "GTK programs:"
+toolkits_gtk_theme = "Drawn in the desktop's look"
+toolkits_gtk_theme_note = "Programs started after the next login. Off leaves them as GTK draws them."
+toolkits_buttons = "Window buttons:"
+toolkits_buttons_right = "At the right"
+toolkits_buttons_left = "At the left"
+toolkits_buttons_note = "For GTK programs that draw their own title bar. Shows at once."
+toolkits_qt = "Qt programs:"
+toolkits_qt_theme = "Drawn in the desktop's look"
+toolkits_qt_theme_note = "Programs started after the next login. Off leaves them as Qt draws them."
+show_all = "All settings"
+dock_title = "Dock"
+dock_size = "Icon size:"
+dock_size_small = "Small"
+dock_size_large = "Large"
+dock_magnification = "Enlarge under the pointer:"
+dock_autohide = "Hide the dock until the pointer is at the screen's edge"
+dock_magnification_min = "A little"
+dock_magnification_max = "A lot"
+window_double_click = "A double click on a title bar:"
+window_double_click_none = "does nothing"
+window_double_click_minimize = "minimises the window"
+window_double_click_maximize = "enlarges the window"
+theme_title = "Theme"
+theme_choice = "Theme:"
+theme_more = "Get more themes…"
+theme_more_note = "The Theme Installer makes more themes from an installer you own."
+desktop_title = "Desktop"
+desktop_picture = "Picture:"
+desktop_picture_choose = "Choose a picture…"
+desktop_picture_default = "Use the default"
+trackpad_title = "Touchpad"
+trackpad_tap = "Tap to click"
+trackpad_natural_scroll = "Natural scrolling"
+trackpad_natural_scroll_note = "The page moves with the fingers"
+display_title = "Display"
+display_size = "Size:"
+display_automatic = "Decide by the screen"
+display_chosen = "Choose"
+display_larger = "Larger"
+display_smaller = "More room"
+display_looks_like = "Room for %1 × %2"
+display_note = "Between the two ends pictures are drawn less sharply."
+energy_title = "Energy"
+energy_screen_off = "Switch the screen off after:"
+energy_lock = "Lock the screen when it switches off and before sleep"
+energy_never = "Never"
+energy_minute = "%1 minute"
+energy_minutes = "%1 minutes"
+energy_hour = "%1 hour"
+energy_hours = "%1 hours"
+sound_title = "Sound"
+sound_enabled = "Play the desktop's sounds"
+sound_pack = "Sound pack:"
+sound_alert = "Alert sound:"
+sound_alert_default = "The pack's own"
+sound_volume_feedback = "Play a sound when the volume is changed"
+sound_try = "Play a sound"
+desktop_note = "The desktop changes at once; windows that are open keep their look until they are opened again."
+
+[sounds]
+# Whether the desktop plays sounds at all.
+enabled = true
+# The theme names a sound pack (docs/sound-packs.md); to use another:
+# pack = "freedesktop"
+# Volume change per key press, as a share of full volume.
+volume_step = 0.0625
+
+[display]
+# Scale factor. "auto" uses 2 on dense screens and 1 elsewhere. Fractions
+# work but blur the theme's pictures.
+scale = "auto"
+# The screen for the panel and dock (default: the first listed):
+# main_screen = "eDP-1"
+# Per-screen settings, by name (`wlr-randr` lists them):
+# [display.screens."HDMI-A-1"]
+# scale = 1
+# position = "2560,0"
+
+[input]
+# Keyboard layouts (xkeyboard-config names), comma-separated with variants
+# in matching positions. Left out: the system's (`localectl`).
+# keyboard_layout = "us"
+# keyboard_variant = "intl"
+# Layout switch key: "ctrl_space", "alt_shift", "caps_lock", or "" for none.
+keyboard_switch_key = "alt_shift"
+tap_to_click = true
+natural_scroll = false
+
+[lock]
+# The lock screen checks the password with PAM, using this /etc/pam.d/
+# service.
+pam_service = "login"
+password_placeholder = "Password"
+
+[authentication]
+# Wording of the polkit password dialog.
+password_placeholder = "Password"
+button = "OK"
+cancel = "Cancel"
+icon = "dialog-password"
+
+[idle]
+# Idle times before locking and screen blanking; 0 means never. Idle
+# inhibitors (video, calls) are respected.
+lock_after_seconds = 600
+screen_off_after_seconds = 600
+lock_before_sleep = true
+
+[session]
+# Reload the shell when its files change on disk (for development).
+reload_shell_on_change = false
+# Programs started with the desktop; missing ones are skipped.
+autostart = [["nm-applet", "--indicator"]]
+# Also start ~/.config/autostart entries (needs `dex`).
+users_autostart = true
+
+[commands]
+# Keys that run a command, bound in the compositor so they work even when
+# the shell does not. end_session ends it without asking.
+terminal = { key = "<super> KEY_ENTER", run = ["foot"] }
+end_session = { key = "<ctrl> <alt> KEY_BACKSPACE", run = ["sh", "-c", "kill \"$DESKTOP_SESSION_PID\""] }
+# Brightness (needs `brightnessctl`) and media keys (needs `playerctl`).
+brightness_up = { key = "KEY_BRIGHTNESSUP", run = ["brightnessctl", "set", "+5%"], repeat = true }
+brightness_down = { key = "KEY_BRIGHTNESSDOWN", run = ["brightnessctl", "set", "5%-"], repeat = true }
+play_pause = { key = "KEY_PLAYPAUSE", run = ["playerctl", "play-pause"] }
+next_track = { key = "KEY_NEXTSONG", run = ["playerctl", "next"] }
+previous_track = { key = "KEY_PREVIOUSSONG", run = ["playerctl", "previous"] }
+# Screenshots to the desktop (needs `grim`, and `slurp` for a part).
+screenshot = { key = "KEY_SYSRQ", run = ["sh", "-c", "grim \"$HOME/Desktop/Screenshot $(date +'%Y-%m-%d at %H.%M.%S').png\" && mavernix-sound screen-capture"] }
+screenshot_part = { key = "<shift> KEY_SYSRQ", run = ["sh", "-c", "grim -g \"$(slurp)\" \"$HOME/Desktop/Screenshot $(date +'%Y-%m-%d at %H.%M.%S').png\" && mavernix-sound screen-capture"] }

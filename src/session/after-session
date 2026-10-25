@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# Restores the environment of the user's background services after the
+# session, so a Plasma session started next does not inherit our
+# XDG_CONFIG_DIRS and DCONF_PROFILE. at_login.py starts it as its own
+# systemd service, since it must outlive the session.
+#
+#   after-session COMPOSITOR_PID NAME[=VALUE]...   (bare NAME: remove it)
+set -u
+
+compositor_pid=$1
+shift
+
+# Polling is enough: two seconds late at logout harms nothing.
+while kill -0 "$compositor_pid" 2>/dev/null; do
+    sleep 2
+done
+
+for setting in "$@"; do
+    name=${setting%%=*}
+    if [[ "$setting" == *=* ]]; then
+        systemctl --user set-environment "$setting"
+        dbus-update-activation-environment "$setting"
+    else
+        systemctl --user unset-environment "$name"
+        # D-Bus cannot unset a name, only empty it. Empty is fine for folder
+        # lists, but an empty DCONF_PROFILE gives dconf the null
+        # configuration, so point it at a profile naming the default "user".
+        case "$name" in
+            DCONF_PROFILE)
+                standard_profile="$XDG_RUNTIME_DIR/dconf-standard-profile"
+                echo "user-db:user" > "$standard_profile"
+                dbus-update-activation-environment "DCONF_PROFILE=$standard_profile"
+                ;;
+            *) dbus-update-activation-environment "$name=" ;;
+        esac
+    fi
+done

@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+# Runs a program and starts it again if it ends with an error, so that a
+# crash of the shell does not leave a desktop of bare windows.
+#
+#   keep-running PROGRAM [ARGUMENTS...]
+#
+# SIGHUP means "restart with new settings" (a desktop switch) and is not a
+# failure. It gives up on a clean exit, at session end, or after too many
+# failures in a short time.
+set -u
+
+# How often the program may fail within how many seconds before this gives up.
+most_failures=5
+within_seconds=60
+
+# 128 + SIGHUP (1).
+ended_by_hang_up=129
+
+# Shows the shell's last log lines on screen when giving up; a desktop
+# without its panel and dock would otherwise say nothing.
+tell_on_screen() {
+    local program=$1 times=$2
+    local notice_dir
+    notice_dir=$(dirname "$(readlink -f "$0")")/notice
+    local newest_log
+    newest_log=$(ls -t "${XDG_RUNTIME_DIR:-/nonexistent}"/quickshell/by-id/*/log.log 2>/dev/null | head -n 1)
+
+    NOTICE_HEADING="" \
+    NOTICE_FAILED_HEADING="The desktop's panel and dock could not start" \
+    NOTICE_FAILED_EXPLANATION="\"$program\" ended with an error $times times in a row and is not being started again. Its last messages are below. Press any key to close this; then Super+Enter opens a terminal and Control+Alt+Backspace ends the session." \
+    NOTICE_COMMAND=sh NOTICE_ARGUMENT_1=-c \
+    NOTICE_ARGUMENT_2="tail -n 12 '${newest_log:-/dev/null}' | cut -c 1-160; exit 1" \
+        qs -p "$notice_dir" > /dev/null 2>&1 &
+}
+
+failure_times=()
+while true; do
+    "$@"
+    status=$?
+    if [[ $status -eq 0 ]]; then
+        exit 0
+    fi
+    if [[ $status -eq $ended_by_hang_up ]]; then
+        echo "keep-running: $1 was asked to start again; starting it again" >&2
+        continue
+    fi
+
+    # The session is over if its compositor is gone.
+    if [[ -n "${DESKTOP_SESSION_PID:-}" ]] && ! kill -0 "$DESKTOP_SESSION_PID" 2>/dev/null; then
+        exit 0
+    fi
+
+    now=$(date +%s)
+    failure_times+=("$now")
+    recent=0
+    for moment in "${failure_times[@]}"; do
+        if (( now - moment < within_seconds )); then
+            recent=$((recent + 1))
+        fi
+    done
+    if (( recent >= most_failures )); then
+        echo "keep-running: $1 ended with an error $recent times within $within_seconds seconds;" \
+             "not starting it again. Its own messages say why (the shell's are in" \
+             "\$XDG_RUNTIME_DIR/quickshell/by-id/*/log.log)." >&2
+        tell_on_screen "$1" "$recent"
+        exit "$status"
+    fi
+
+    echo "keep-running: $1 ended with status $status; starting it again" >&2
+    sleep 1
+done

@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="window-pictures">
+		<_short>Window Pictures</_short>
+		<_long>Writes a small picture of a window into a file when asked through the control socket (method "window-pictures/write"). A dock uses it to show a minimised window as a miniature.</_long>
+		<category>Utility</category>
+	</plugin>
+</wayfire>

@@ -1,0 +1,4 @@
+#!/bin/sh
+# Names every key of a theme that the theme format (docs/themes/) does not
+# have: mavernix-check-theme ~/.local/share/mavernix/themes/my-theme
+exec python3 "$(dirname "$(readlink -f "$0")")/../check_theme.py" "$@"

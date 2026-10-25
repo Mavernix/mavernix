@@ -1,0 +1,329 @@
+# The Sea Lion desktop: the plain desktop with Sea Lion's layout, keys and
+# words, and the Sea Lion theme, which the Theme Installer makes. Only what
+# differs from
+# plain.toml is here; what you change while using it is shared with plain.
+
+based_on = "plain"
+theme = "sea-lion"
+
+[window]
+button_side = "left"
+button_order = ["close", "minimize", "maximize"]
+joined_tool_bar_apps = ["mavernix-settings", "org.kde.dolphin", "org.kde.konsole"]
+quick_open_close_ms = 120
+
+[panel]
+left = ["logo", "app_name", "menus"]
+right = ["tray", "bluetooth", "volume", "network", "battery", "clock", "search", "notifications"]
+quit_label = "Quit %1"
+logo_menu = [
+    { label = "System Preferences…", command = ["mavernix-settings"] },
+    { separator = true },
+    { label = "Sleep", command = ["systemctl", "suspend"] },
+    { label = "Restart…", command = ["systemctl", "reboot"], confirm = { title = "Are you sure you want to restart your computer now?", text = "If you do nothing, the computer will restart automatically in %1 seconds.", button = "Restart", cancel = "Cancel", icon = "system-reboot", seconds = 60 } },
+    { label = "Shut Down…", command = ["systemctl", "poweroff"], confirm = { title = "Are you sure you want to shut down your computer now?", text = "If you do nothing, the computer will shut down automatically in %1 seconds.", button = "Shut Down", cancel = "Cancel", icon = "system-shutdown", seconds = 60 } },
+    { separator = true },
+    { label = "Log Out…", command = ["sh", "-c", "kill \"$DESKTOP_SESSION_PID\""], confirm = { title = "Are you sure you want to quit all applications and log out now?", text = "If you do nothing, you will be logged out automatically in %1 seconds.", button = "Log Out", cancel = "Cancel", icon = "system-log-out", seconds = 60 } },
+]
+clock_format = "ddd h:mm AP"
+clock_menu_date_format = "dddd, MMMM d, yyyy"
+
+[[desktop_menus.menus]]
+title = "Desktop"
+entries = [
+    { label = "System Preferences…", command = ["mavernix-settings", "desktop"] },
+    { separator = true },
+    { label = "Empty Trash…", action = "empty_trash" },
+]
+
+[[desktop_menus.menus]]
+title = "File"
+entries = [
+    { label = "New Window", command = ["gio", "open", "~"] },
+    { label = "New Folder", command = ["mavernix-file-action", "new-folder", "~/Desktop", "untitled folder"] },
+    { separator = true },
+    { label = "Find", action = "search" },
+]
+
+[[desktop_menus.menus]]
+title = "Go"
+entries = [
+    { label = "Home", command = ["gio", "open", "~"] },
+    { label = "Desktop", command = ["gio", "open", "~/Desktop"] },
+    { label = "Documents", command = ["gio", "open", "~/Documents"] },
+    { label = "Downloads", command = ["gio", "open", "~/Downloads"] },
+    { label = "Pictures", command = ["gio", "open", "~/Pictures"] },
+    { separator = true },
+    { label = "Applications", action = "app_grid" },
+    { label = "Trash", command = ["gio", "open", "trash:///"] },
+]
+
+[[desktop_menus.menus]]
+title = "Window"
+entries = [
+    { label = "All Windows", action = "window_overview" },
+]
+
+[shortcuts]
+app_grid = "KEY_F4"
+window_overview = "KEY_F3 | <ctrl> KEY_UP"
+show_desktop = "KEY_F11"
+close_window = "<super> KEY_Q"
+switch_window = "<super> KEY_GRAVE"
+minimize_window = "<super> KEY_M"
+fullscreen_window = "<ctrl> <super> KEY_F"
+lock = "<ctrl> <super> KEY_L"
+tile_top_left = "<ctrl> <alt> KEY_U"
+tile_top_right = "<ctrl> <alt> KEY_I"
+tile_bottom_left = "<ctrl> <alt> KEY_J"
+tile_bottom_right = "<ctrl> <alt> KEY_K"
+previous_desktop = "<ctrl> KEY_LEFT"
+next_desktop = "<ctrl> KEY_RIGHT"
+
+[desktops]
+count = 1
+still = ["dock"]
+slides_as_two = ["panel"]
+
+[gestures]
+swipe_up_4 = "window_overview"
+pinch_out_4 = "show_desktop"
+
+[window_overview]
+desktop_name = "Desktop"
+desktop_numbered_name = "Desktop %1"
+
+[screenshot]
+flash = false
+
+[search]
+top_hit_label = "Top Hit"
+web_label = "Web Searches"
+web = [
+    { label = "Search Web for “%s”", address = "https://www.google.com/search?q=%s", icon = "web-browser" },
+    { label = "Search Wikipedia for “%s”", address = "https://en.wikipedia.org/wiki/Special:Search?search=%s", icon = "web-browser" },
+]
+
+[notifications]
+none_label = "No New Notifications"
+time_minutes = "%1m ago"
+time_hours = "%1h ago"
+
+[dock]
+groups = [
+    [
+        { name = "Home", icon = "user-home", folder = "~", view = "list", order = "name" },
+        { name = "App Grid", icon = "view-app-grid", shell = "app_grid" },
+        "foot",
+        "mavernix-settings",
+    ],
+    [{ name = "Downloads", icon = "folder-download", folder = "~/Downloads", view = "fan", order = "added" }],
+]
+last_group_at_end = true
+trash_label = "Trash"
+new_folder_view = "fan"
+
+[dock.trash_empty.confirm]
+title = "Are you sure you want to permanently erase the items in the Trash?"
+text = "You can’t undo this action."
+button = "Empty Trash"
+
+[dock.words]
+keep = "Keep in Dock"
+remove = "Remove from Dock"
+open_named = "Open “%1”"
+empty_trash = "Empty Trash"
+magnification_on = "Turn Magnification On"
+magnification_off = "Turn Magnification Off"
+settings = "Dock Preferences…"
+sort_added = "Date Added"
+sort_modified = "Date Modified"
+sort_created = "Date Created"
+view_as = "View content as"
+view_fan = "Fan"
+
+[desktop_files.words]
+new_folder_name = "untitled folder"
+change_background = "Change Desktop Background…"
+clean_up = "Clean Up"
+sort_by_name = "Sort By Name"
+sort_by_kind = "Sort By Kind"
+sort_by_modified = "Sort By Date Modified"
+sort_by_added = "Sort By Date Added"
+
+[settings]
+name = "System Preferences"
+
+[settings.words]
+icons_title = "App\nIcons"
+icons_group_own = "With an Icon of Your Own"
+icons_none = "No Applications Are Installed."
+icons_choose = "Choose Icon…"
+icons_choose_heading = "Choose an Icon for %1"
+icons_use_default = "Use the Application’s Icon"
+icons_picture_file = "Picture File…"
+bluetooth_on = "Bluetooth On"
+bluetooth_not_connected = "Not Connected"
+bluetooth_not_paired = "Not Paired"
+bluetooth_forget = "Remove"
+bluetooth_searching = "Searching for devices…"
+bluetooth_none = "Bluetooth: Not Available"
+extensions_group_on = "Turned On"
+extensions_group_off = "Turned Off"
+extensions_switch = "Turn On %1"
+extensions_open_folder = "Open Extensions Folder…"
+desktops_title = "Overview"
+desktops_swipe_three = "Swipe left or right with three fingers"
+desktops_swipe_four = "Swipe left or right with four fingers"
+desktops_drag_to_edge = "A window held at the screen’s edge moves to the next desktop"
+windows_snap = "Snap windows to the screen’s edges"
+windows_snap_note = "Left or right edge: that half. A corner: that quarter. The top: the whole screen."
+windows_drag_key_super = "Super (Command)"
+windows_drag_key_alt = "Alt (Option)"
+toolkits_gtk_theme = "Drawn in the desktop’s look"
+toolkits_qt_theme = "Drawn in the desktop’s look"
+keyboard_title = "Keyboard"
+keyboard_category_desktops = "Overview"
+keyboard_category_launching = "App Grid & Search"
+keyboard_category_programs = "App Shortcuts"
+keyboard_tab_input_sources = "Input Sources"
+keyboard_tab_shortcuts = "Shortcuts"
+shortcut_window_overview = "Overview"
+shortcut_show_desktop = "Show Desktop"
+shortcut_previous_desktop = "Move left a space"
+shortcut_next_desktop = "Move right a space"
+shortcut_window_to_previous_desktop = "Move window to the space on the left"
+shortcut_window_to_next_desktop = "Move window to the space on the right"
+shortcut_app_grid = "Show the app grid"
+shortcut_search = "Show search"
+shortcut_switch_window = "Move focus to next window"
+shortcut_switch_program = "Switch to the next application"
+shortcut_switch_program_back = "Switch to the previous application"
+shortcut_notification_list = "Show notifications"
+shortcut_lock = "Lock Screen"
+shortcut_mod_ctrl = "⌃"
+shortcut_mod_alt = "⌥"
+shortcut_mod_shift = "⇧"
+shortcut_mod_super = "⌘"
+shortcut_mod_join = ""
+shortcut_mod_ctrl_name = "Control"
+shortcut_mod_alt_name = "Option"
+shortcut_mod_shift_name = "Shift"
+shortcut_mod_super_name = "Command"
+shortcut_key_KEY_UP = "↑"
+shortcut_key_KEY_DOWN = "↓"
+shortcut_key_KEY_LEFT = "←"
+shortcut_key_KEY_RIGHT = "→"
+shortcut_key_KEY_TAB = "⇥"
+shortcut_key_KEY_ENTER = "↩"
+shortcut_key_KEY_ESC = "⎋"
+shortcut_key_KEY_BACKSPACE = "⌫"
+shortcut_key_KEY_DELETE = "⌦"
+shortcut_key_KEY_PAGEUP = "⇞"
+shortcut_key_KEY_PAGEDOWN = "⇟"
+shortcut_key_KEY_HOME = "↖"
+shortcut_key_KEY_END = "↘"
+command_terminal = "Open Terminal"
+command_end_session = "End Session"
+command_brightness_up = "Brighter"
+command_brightness_down = "Dimmer"
+command_play_pause = "Play/Pause"
+command_next_track = "Next Track"
+command_previous_track = "Previous Track"
+command_screenshot = "Screen Shot of the Screen"
+command_screenshot_part = "Screen Shot of a Selection"
+command_screenshot_to_clipboard = "Copy Screen Shot of the Screen"
+command_screenshot_part_to_clipboard = "Copy Screen Shot of a Selection"
+defaults_title = "Default\nApps"
+defaults_intro = "Choose the program that opens each kind of file or web address."
+defaults_web = "Default web browser:"
+defaults_mail = "Default email reader:"
+show_all = "Show All"
+search = ""
+dock_size = "Size:"
+dock_magnification = "Magnification:"
+dock_autohide = "Automatically hide and show the Dock"
+dock_magnification_min = "Min"
+dock_magnification_max = "Max"
+window_double_click = "Double-click a window’s title bar to"
+window_double_click_none = "do nothing"
+window_double_click_minimize = "minimize"
+window_double_click_maximize = "zoom"
+desktop_picture = "Desktop picture:"
+desktop_picture_choose = "Choose a Picture…"
+desktop_picture_default = "Use the Default"
+trackpad_title = "Trackpad"
+trackpad_tap_note = "Tap with one finger"
+trackpad_natural_scroll = "Scroll direction: natural"
+trackpad_natural_scroll_note = "Content tracks finger movement"
+display_title = "Displays"
+display_size = "Resolution:"
+display_automatic = "Best for display"
+display_chosen = "Scaled"
+display_larger = "Larger Text"
+display_smaller = "More Space"
+display_looks_like = "Looks like %1 × %2"
+display_note = "Between the two ends the desktop's pictures are drawn less sharply."
+energy_title = "Energy\nSaver"
+energy_screen_off = "Display sleep:"
+energy_lock = "Require password after sleep or screen saver begins"
+energy_lock_note = "The screen is locked when the display goes to sleep and before the computer sleeps."
+sound_enabled = "Play user interface sound effects"
+sound_alert = "Select an alert sound:"
+sound_alert_default = "Funk (the default)"
+sound_volume_feedback = "Play feedback when volume is changed"
+sound_try = "Play a Sound"
+desktop_note = "The desktop changes at once. Windows that are open keep their look until you open them again."
+
+[input]
+keyboard_switch_key = "ctrl_space"
+tap_to_click = false
+natural_scroll = true
+secondary_click = "two_fingers"
+
+[commands.screenshot]
+key = "<super> <shift> KEY_3"
+run = [
+    "sh",
+    "-c",
+    "grim \"$HOME/Desktop/Screen Shot $(date +'%Y-%m-%d at %H.%M.%S').png\" && mavernix-sound screen-capture",
+]
+
+[commands.screenshot_part]
+key = "<super> <shift> KEY_4"
+run = [
+    "sh",
+    "-c",
+    "grim -g \"$(slurp)\" \"$HOME/Desktop/Screen Shot $(date +'%Y-%m-%d at %H.%M.%S').png\" && mavernix-sound screen-capture",
+]
+
+[commands.screenshot_to_clipboard]
+key = "<ctrl> <super> <shift> KEY_3"
+run = ["sh", "-c", "grim - | wl-copy --type image/png && mavernix-sound screen-capture"]
+
+[commands.screenshot_part_to_clipboard]
+key = "<ctrl> <super> <shift> KEY_4"
+run = [
+    "sh",
+    "-c",
+    "grim -g \"$(slurp)\" - | wl-copy --type image/png && mavernix-sound screen-capture",
+]
+
+[status.volume]
+settings_label = "Sound Preferences…"
+
+[status.bluetooth]
+on_label = "Bluetooth: On"
+off_label = "Bluetooth: Off"
+turn_off_label = "Turn Bluetooth Off"
+turn_on_label = "Turn Bluetooth On"
+settings_label = "Open Bluetooth Preferences…"
+
+[status.battery]
+show_percentage = false
+charged_label = "Battery Is Charged"
+until_full_label = "%1 Until Full"
+remaining_label = "%1 Remaining"
+on_battery_label = "Power Source: Battery"
+on_adapter_label = "Power Source: Power Adapter"
+show_percentage_label = "Show Percentage"

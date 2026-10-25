@@ -1,0 +1,14 @@
+#!/bin/sh
+# Switches the running session to another installed desktop config, which
+# also becomes the one started at the next login.
+#
+#   mavernix-switch NAME
+if [ $# -ne 1 ]; then
+    echo "usage: mavernix-switch NAME   (the desktops are the .toml files in ~/.local/share/mavernix/config/ and PREFIX/share/mavernix/config/)" >&2
+    exit 2
+fi
+if [ -z "${DESKTOP_SHELL_SETTINGS:-}" ]; then
+    echo "mavernix-switch: DESKTOP_SHELL_SETTINGS is not set; run it inside the desktop session." >&2
+    exit 1
+fi
+exec "$(dirname "$(readlink -f "$0")")/../configure-desktop" switch "$(dirname "$DESKTOP_SHELL_SETTINGS")" "$1"

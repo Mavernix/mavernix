@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="shortcut-capture">
+		<_short>Shortcut Capture</_short>
+		<_long>Lets a program record a new shortcut: while it asks for it, the compositor's own keys are switched off, so that the keys pressed reach that program's window instead of being acted on.</_long>
+		<category>Input</category>
+		<option name="timeout_ms" type="int">
+			<_short>Longest time</_short>
+			<_long>After this many milliseconds the compositor's keys are switched on again, even if the program that asked has not said it is done.</_long>
+			<default>30000</default>
+			<min>1000</min>
+		</option>
+	</plugin>
+</wayfire>
