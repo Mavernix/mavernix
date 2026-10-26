@@ -25,6 +25,10 @@ On a fresh install it looks pretty plain, and that's on purpose. The fun starts 
 
 Mavernix ships none of Apple's files; each look is built from your copy of the installer.
 
+<p align="center">
+  <img src="docs/images/sea-lion.jpg" alt="The Sea Lion look, dark on the left and light on the right">
+</p>
+
 ## Install
 
 Mavernix is built and tested on Arch Linux. It is in the AUR as [`mavernix`](https://aur.archlinux.org/packages/mavernix):
