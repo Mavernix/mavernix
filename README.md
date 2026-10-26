@@ -13,9 +13,9 @@
   <a href="https://discord.gg/9JC4cWKzjT"><img src="https://img.shields.io/badge/Discord-Join-5865F2?logo=discord&logoColor=white" alt="Join the Discord"></a>
 </p>
 
-Mavernix is a desktop for Linux with a menu bar, a dock, and windows with proper shadows.
+Mavernix is a Linux desktop with a menu bar up top, a dock down below, and windows that cast real shadows. Under the hood it's built on [Wayfire](https://github.com/WayfireWM/wayfire) and [Quickshell](https://quickshell.org).
 
-Out of the box it is calm and plain. If you still have an old installer of a classic system lying around, the Theme Installer turns it into a full look on your own computer:
+On a fresh install it looks pretty plain, and that's on purpose. The fun starts if you've still got an old installer for a classic system somewhere. Hand it to the Theme Installer and it builds the whole look right on your machine:
 
 | Your installer | Turns into | Status |
 |---|---|---|
