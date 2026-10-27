@@ -9,6 +9,7 @@ NAME=COMMAND` (repeatable) starts a program with the session.
 """
 
 import argparse
+import os
 import shlex
 import sys
 import tomllib
@@ -767,7 +768,12 @@ def main():
         text += "\n" + arguments.extra.read_text()
 
     arguments.output.parent.mkdir(parents=True, exist_ok=True)
-    arguments.output.write_text(text)
+    # Wayfire reloads the file as soon as it changes; written in place, it
+    # could read half of it, and a half-read config has crashed it. A
+    # reconfigure started while another runs writes its own copy too.
+    unfinished = arguments.output.with_name(f"{arguments.output.name}.{os.getpid()}.new")
+    unfinished.write_text(text)
+    os.replace(unfinished, arguments.output)
     print(f"wrote {arguments.output} (theme: {theme_dir.name}, plugins: {len(plugins)})")
 
 
