@@ -19,6 +19,7 @@
 #include "input-sources-pane.hpp"
 #include "keyboard-pane.hpp"
 #include "sound-pane.hpp"
+#include "startup-pane.hpp"
 #include "display-pane.hpp"
 #include "energy-pane.hpp"
 #include "overview.hpp"
@@ -52,6 +53,7 @@ static const KnownPane known_panes[] = {
     {"bluetooth", "preferences-system-bluetooth", "Bluetooth"},
     {"keyboard", "input-keyboard", "Keyboard"},
     {"defaults", "applications-other", "Default Apps"},
+    {"startup", "preferences-system-startup", "Startup"},
 };
 
 SettingsWindow::SettingsWindow(Choices& choices) : choices(choices)
@@ -256,6 +258,10 @@ QWidget* SettingsWindow::makePane(const QString& name)
     if (name == QLatin1String("defaults"))
     {
         return new DefaultsPane(choices);
+    }
+    if (name == QLatin1String("startup"))
+    {
+        return new StartupPane(choices);
     }
 
     return nullptr;

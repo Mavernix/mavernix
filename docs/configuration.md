@@ -30,6 +30,10 @@ A dense screen is drawn at twice its pixels, any other at once; `[display] scale
 
 Ctrl+Super+L under Sea Lion, Super+L under the others, locks the screen; so does going to sleep, `loginctl lock-session`, and ten minutes without input (`[idle]` in the config, or Settings, Energy Saver). `[idle] sleep_after_seconds` puts the computer to sleep after a time without input; it is 0, never, unless set. Try it once while the desktop runs in a window inside another one (see [building](building.md#try-it-in-a-window)) before relying on it: the keys that end the session do not work while locked.
 
+## Programs started at login
+
+The config's `[session] autostart` starts its programs with the desktop. Unless `[session] users_autostart = false`, so do the entries in `~/.config/autostart` and the system's autostart folders (`/etc/xdg/autostart`), through `dex`. Settings, Startup lists them: unticking one writes a copy into `~/.config/autostart` that says `Hidden=true`, and Add… copies an installed program's entry there.
+
 ## The panel's items
 
 The icons at the panel's right end show what the machine's own services report, and take no room when a service is not running:

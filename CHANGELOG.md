@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- A Startup pane in Settings (Login Items under Sea Lion) lists the programs that open at login, from `~/.config/autostart` and the system's autostart folders. Unticking one switches it off, a system one included; Add… starts an installed program at login; Remove takes away one the user added.
 - Settings, Energy can put the computer to sleep after a time without input (`[idle] sleep_after_seconds`; never by default). Video players and calls that keep the screen on also keep the computer awake.
 
 ## 0.1.4 (2026-10-25)
