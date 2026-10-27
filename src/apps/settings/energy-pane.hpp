@@ -1,6 +1,7 @@
 // The settings for saving energy (the config's [idle]): when the screen
-// switches off, and whether it is locked then and before sleep. Ticked, the
-// lock keeps `lock_after_seconds` equal to `screen_off_after_seconds`.
+// switches off, when the machine goes to sleep, and whether the screen is
+// locked then and before sleep. Ticked, the lock keeps `lock_after_seconds`
+// equal to `screen_off_after_seconds`.
 
 #pragma once
 
@@ -10,6 +11,7 @@
 
 class Choices;
 class QCheckBox;
+class QHBoxLayout;
 class QLabel;
 class QSlider;
 
@@ -21,6 +23,9 @@ class EnergyPane : public QWidget
     EnergyPane(Choices& choices, QWidget* parent = nullptr);
 
   private:
+    // A slider over `stops` standing at the one nearest the config's key,
+    // with the time it stands for beside it.
+    QHBoxLayout* timeSlider(const QString& key, QSlider*& slider);
     void write();
     // "10 minutes", "Never".
     QString written(int seconds) const;
@@ -30,6 +35,6 @@ class EnergyPane : public QWidget
     // In seconds; 0 is never.
     QList<int> stops;
     QSlider* screen_off;
-    QLabel* screen_off_time;
+    QSlider* sleep;
     QCheckBox* locks;
 };

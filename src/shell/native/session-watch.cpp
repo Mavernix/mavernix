@@ -90,3 +90,12 @@ void SessionWatch::readyToSleep()
     // Closing the descriptor releases the inhibitor.
     delay = QDBusUnixFileDescriptor();
 }
+
+void SessionWatch::sleep()
+{
+    QDBusMessage ask =
+        QDBusMessage::createMethodCall(LOGIN_SERVICE, LOGIN_PATH, LOGIN_MANAGER, QStringLiteral("Suspend"));
+    // Not interactive: an idle machine has nobody to ask for a password.
+    ask << false;
+    QDBusConnection::systemBus().asyncCall(ask);
+}

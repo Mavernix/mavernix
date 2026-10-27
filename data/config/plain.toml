@@ -482,6 +482,7 @@ display_looks_like = "Room for %1 × %2"
 display_note = "Between the two ends pictures are drawn less sharply."
 energy_title = "Energy"
 energy_screen_off = "Switch the screen off after:"
+energy_sleep = "Put the computer to sleep after:"
 energy_lock = "Lock the screen when it switches off and before sleep"
 energy_never = "Never"
 energy_minute = "%1 minute"
@@ -540,10 +541,11 @@ cancel = "Cancel"
 icon = "dialog-password"
 
 [idle]
-# Idle times before locking and screen blanking; 0 means never. Idle
+# Idle times before locking, screen blanking and sleep; 0 means never. Idle
 # inhibitors (video, calls) are respected.
 lock_after_seconds = 600
 screen_off_after_seconds = 600
+sleep_after_seconds = 0
 lock_before_sleep = true
 
 [session]

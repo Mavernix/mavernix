@@ -28,8 +28,36 @@ EnergyPane::EnergyPane(Choices& choices, QWidget* parent) : QWidget(parent), cho
     }
     stops.append(0);
 
-    const int chosen_seconds =
-        choices.value(QStringLiteral("idle"), QStringLiteral("screen_off_after_seconds")).toInt();
+    auto* screen_off_row = timeSlider(QStringLiteral("screen_off_after_seconds"), screen_off);
+    auto* sleep_row = timeSlider(QStringLiteral("sleep_after_seconds"), sleep);
+
+    locks = new QCheckBox(word("energy_lock", "Lock the screen when it switches off and before sleep"));
+    locks->setChecked(choices.value(QStringLiteral("idle"), QStringLiteral("lock_before_sleep")).toBool() ||
+                      choices.value(QStringLiteral("idle"), QStringLiteral("lock_after_seconds")).toInt() > 0);
+
+    connect(locks, &QCheckBox::toggled, this, [this]() { write(); });
+
+    auto* form = new QFormLayout(this);
+    form->setLabelAlignment(Qt::AlignRight | Qt::AlignTop);
+    form->setFormAlignment(Qt::AlignHCenter | Qt::AlignTop);
+    form->setVerticalSpacing(14);
+    form->addRow(word("energy_screen_off", "Switch the screen off after:"), screen_off_row);
+    form->addRow(word("energy_sleep", "Put the computer to sleep after:"), sleep_row);
+    form->addRow(QString(), locks);
+
+    const QString note = word("energy_lock_note", "");
+    if (!note.isEmpty())
+    {
+        auto* note_label = new QLabel(note);
+        note_label->setWordWrap(true);
+        note_label->setEnabled(false);
+        form->addRow(QString(), note_label);
+    }
+}
+
+QHBoxLayout* EnergyPane::timeSlider(const QString& key, QSlider*& slider)
+{
+    const int chosen_seconds = choices.value(QStringLiteral("idle"), key).toInt();
 
     // The nearest stop: the config may name a time between two.
     int nearest = stops.size() - 1;
@@ -45,51 +73,32 @@ EnergyPane::EnergyPane(Choices& choices, QWidget* parent) : QWidget(parent), cho
         }
     }
 
-    screen_off = new QSlider(Qt::Horizontal);
-    screen_off->setRange(0, stops.size() - 1);
-    screen_off->setPageStep(1);
-    screen_off->setTickPosition(QSlider::TicksBelow);
-    screen_off->setTickInterval(1);
-    screen_off->setFixedWidth(slider_width_px);
-    screen_off->setValue(nearest);
-    screen_off_time = new QLabel(written(stops[nearest]));
+    slider = new QSlider(Qt::Horizontal);
+    slider->setRange(0, stops.size() - 1);
+    slider->setPageStep(1);
+    slider->setTickPosition(QSlider::TicksBelow);
+    slider->setTickInterval(1);
+    slider->setFixedWidth(slider_width_px);
+    slider->setValue(nearest);
+    auto* time = new QLabel(written(stops[nearest]));
 
-    auto* slider_row = new QHBoxLayout;
-    slider_row->setSpacing(10);
-    slider_row->addWidget(screen_off);
-    slider_row->addWidget(screen_off_time);
-    slider_row->addStretch();
-
-    locks = new QCheckBox(word("energy_lock", "Lock the screen when it switches off and before sleep"));
-    locks->setChecked(choices.value(QStringLiteral("idle"), QStringLiteral("lock_before_sleep")).toBool() ||
-                      choices.value(QStringLiteral("idle"), QStringLiteral("lock_after_seconds")).toInt() > 0);
-
-    connect(screen_off, &QSlider::valueChanged, this, [this](int stop) {
-        screen_off_time->setText(written(stops[stop]));
+    connect(slider, &QSlider::valueChanged, this, [this, time](int stop) {
+        time->setText(written(stops[stop]));
         write();
     });
-    connect(locks, &QCheckBox::toggled, this, [this]() { write(); });
 
-    auto* form = new QFormLayout(this);
-    form->setLabelAlignment(Qt::AlignRight | Qt::AlignTop);
-    form->setFormAlignment(Qt::AlignHCenter | Qt::AlignTop);
-    form->setVerticalSpacing(14);
-    form->addRow(word("energy_screen_off", "Switch the screen off after:"), slider_row);
-    form->addRow(QString(), locks);
-
-    const QString note = word("energy_lock_note", "");
-    if (!note.isEmpty())
-    {
-        auto* note_label = new QLabel(note);
-        note_label->setWordWrap(true);
-        note_label->setEnabled(false);
-        form->addRow(QString(), note_label);
-    }
+    auto* row = new QHBoxLayout;
+    row->setSpacing(10);
+    row->addWidget(slider);
+    row->addWidget(time);
+    row->addStretch();
+    return row;
 }
 
 void EnergyPane::write()
 {
     const int screen_off_seconds = stops[screen_off->value()];
+    choices.set(QStringLiteral("idle"), QStringLiteral("sleep_after_seconds"), stops[sleep->value()]);
     choices.set(QStringLiteral("idle"), QStringLiteral("screen_off_after_seconds"), screen_off_seconds);
     choices.set(
         QStringLiteral("idle"), QStringLiteral("lock_after_seconds"), locks->isChecked() ? screen_off_seconds : 0);

@@ -18,6 +18,8 @@ class SessionWatch : public QObject
     explicit SessionWatch(QObject* parent = nullptr);
 
     Q_INVOKABLE void readyToSleep();
+    // Asks logind to suspend the machine; without its leave, nothing happens.
+    Q_INVOKABLE void sleep();
 
   signals:
     void aboutToSleep();
