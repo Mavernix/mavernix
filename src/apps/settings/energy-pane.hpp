@@ -36,8 +36,8 @@ class EnergyPane : public QWidget
     QVariantMap words;
     // In seconds; 0 is never.
     QList<int> stops;
-    QSlider* screen_off;
-    QSlider* sleep;
+    QSlider* screen_off = nullptr;
+    QSlider* sleep = nullptr;
     QCheckBox* locks;
     QTimer* write_later;
 };

@@ -4,6 +4,8 @@
 #include <QComboBox>
 #include <QDBusConnection>
 #include <QDBusMessage>
+#include <QDBusPendingCallWatcher>
+#include <QDBusPendingReply>
 #include <QDBusVariant>
 #include <QFormLayout>
 #include <QHBoxLayout>
@@ -24,21 +26,6 @@ static const int slider_width_px = 260;
 // Each write of [idle] makes the session rewrite the compositor's config,
 // so holding an arrow key must not write at every stop.
 static const int write_delay_ms = 500;
-// UPower answers at once if it runs at all.
-static const int lid_question_wait_ms = 500;
-
-// Whether this computer has a lid, as UPower knows; false without UPower.
-static bool has_lid()
-{
-    QDBusMessage ask = QDBusMessage::createMethodCall(QStringLiteral("org.freedesktop.UPower"),
-        QStringLiteral("/org/freedesktop/UPower"), QStringLiteral("org.freedesktop.DBus.Properties"),
-        QStringLiteral("Get"));
-    ask << QStringLiteral("org.freedesktop.UPower") << QStringLiteral("LidIsPresent");
-    const QDBusMessage answer = QDBusConnection::systemBus().call(ask, QDBus::Block, lid_question_wait_ms);
-    return answer.type() == QDBusMessage::ReplyMessage && !answer.arguments().isEmpty() &&
-           answer.arguments().first().value<QDBusVariant>().variant().toBool();
-}
-
 EnergyPane::EnergyPane(Choices& choices, QWidget* parent) : QWidget(parent), choices(choices)
 {
     words = choices.configTable(QStringLiteral("settings")).value(QStringLiteral("words")).toMap();
@@ -90,7 +77,6 @@ EnergyPane::EnergyPane(Choices& choices, QWidget* parent) : QWidget(parent), cho
 
     // What the shell does with it (src/shell/Idle.qml); "sleep" is the
     // system's own rule, which usually sleeps.
-    if (has_lid())
     {
         auto* lid = new QComboBox;
         lid->addItem(word("energy_lid_sleep", "Sleep"), QStringLiteral("sleep"));
@@ -104,6 +90,19 @@ EnergyPane::EnergyPane(Choices& choices, QWidget* parent) : QWidget(parent), cho
         // As wide as its longest choice, not as the pane.
         lid->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
         form->addRow(word("energy_lid", "When the lid is closed:"), lid);
+        // Shown once UPower says this computer has a lid; asked aside, so
+        // a slow or missing UPower does not hold the window up.
+        form->setRowVisible(lid, false);
+        QDBusMessage ask = QDBusMessage::createMethodCall(QStringLiteral("org.freedesktop.UPower"),
+            QStringLiteral("/org/freedesktop/UPower"), QStringLiteral("org.freedesktop.DBus.Properties"),
+            QStringLiteral("Get"));
+        ask << QStringLiteral("org.freedesktop.UPower") << QStringLiteral("LidIsPresent");
+        auto* watcher = new QDBusPendingCallWatcher(QDBusConnection::systemBus().asyncCall(ask), this);
+        connect(watcher, &QDBusPendingCallWatcher::finished, this, [form, lid](QDBusPendingCallWatcher* finished) {
+            const QDBusPendingReply<QDBusVariant> reply = *finished;
+            finished->deleteLater();
+            form->setRowVisible(lid, !reply.isError() && reply.value().variant().toBool());
+        });
     }
 
     const QString note = word("energy_lock_note", "");
@@ -152,9 +151,10 @@ QHBoxLayout* EnergyPane::timeSlider(const QString& key, QSlider*& slider)
 
     // While the slider is dragged only the time beside it follows; the
     // times are written when it is let go.
-    connect(slider, &QSlider::valueChanged, this, [this, slider, time](int stop) {
+    connect(slider, &QSlider::valueChanged, this, [this, time](int stop) {
         time->setText(written(stops[stop]));
-        if (!slider->isSliderDown())
+        // Either slider: the other one moves along while one is dragged.
+        if (!screen_off->isSliderDown() && !sleep->isSliderDown())
         {
             write_later->start();
         }
