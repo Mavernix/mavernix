@@ -4,9 +4,9 @@
 #include <QJsonObject>
 #include <QtEndian>
 
-// What a message is made of, as the compositor's "ipc" plugin has it
-// (src/session/compositor_call.py): the length of the JSON as 4 bytes, least
-// significant first, and then the JSON.
+#include "compositor-call.hpp"
+
+// The length before each answer (compositor-call.hpp).
 static const int length_prefix_bytes = 4;
 static const char* const start_method = "shortcut-capture/start";
 static const char* const stop_method = "shortcut-capture/stop";
@@ -79,15 +79,7 @@ void CompositorLink::stopShortcutCapture()
 
 void CompositorLink::sendRequest(const QString& method)
 {
-    QJsonObject request;
-    request.insert(QStringLiteral("method"), method);
-    request.insert(QStringLiteral("data"), QJsonObject());
-    const QByteArray body = QJsonDocument(request).toJson(QJsonDocument::Compact);
-
-    QByteArray message(length_prefix_bytes, '\0');
-    qToLittleEndian<quint32>(quint32(body.size()), message.data());
-    message.append(body);
-    socket.write(message);
+    socket.write(compositor_message(method));
 }
 
 void CompositorLink::readAnswers()

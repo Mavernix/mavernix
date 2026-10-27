@@ -38,6 +38,7 @@ BASE_PLUGINS = [
     "snap-keys",
     "shared-edges",
     "shortcut-capture",
+    "screen-modes",
 ]
 
 

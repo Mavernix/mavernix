@@ -7,6 +7,7 @@ wayfire_metadata_dir = mavernix_datadir / 'wayfire'
 
 subdir('decoration')
 subdir('minimize')
+subdir('screen-modes')
 subdir('shared-edges')
 subdir('shortcut-capture')
 subdir('snap-keys')

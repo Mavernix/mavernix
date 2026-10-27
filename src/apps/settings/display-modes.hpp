@@ -1,0 +1,73 @@
+// The Display pane's choice of resolution and refresh rate for each screen,
+// from the modes the compositor reports (src/compositor/screen-modes/). A
+// choice is written to [display.screens.NAME] mode and kept only if the user
+// says so within a few seconds, so a mode the screen cannot show undoes
+// itself. Without the compositor's answer, or for a virtual screen with no
+// modes, the rows stay hidden.
+
+#pragma once
+
+#include <QList>
+#include <QObject>
+#include <QSize>
+#include <QString>
+#include <QVariantMap>
+
+class Choices;
+class QComboBox;
+class QFormLayout;
+class QWidget;
+
+struct ScreenMode
+{
+    int width = 0;
+    int height = 0;
+    // In millihertz, as the compositor counts.
+    int refresh = 0;
+    bool preferred = false;
+};
+
+struct ModedScreen
+{
+    QString name;
+    QString description;
+    ScreenMode current;
+    QList<ScreenMode> modes;
+};
+
+class DisplayModes : public QObject
+{
+    Q_OBJECT
+
+  public:
+    DisplayModes(Choices& choices, QWidget* pane);
+
+    // Adds the rows, hidden until the compositor has answered.
+    void addRowsTo(QFormLayout* form);
+    // Top to bottom, for the pane's tab order.
+    QList<QWidget*> lists() const;
+
+  signals:
+    // The screen `name` now shows this many pixels.
+    void modeChanged(const QString& name, QSize pixels);
+
+  private:
+    void showScreens(const QList<ModedScreen>& found);
+    void showScreen(int index);
+    void showRefreshRates();
+    void choose();
+    // The user's [display.screens.NAME] mode; empty for the screen's own.
+    QString writtenMode(const QString& name) const;
+    void writeMode(const QString& name, const QString& mode);
+    // Asks whether to keep the mode just written; no answer in time is no.
+    bool keepAsked();
+
+    Choices& choices;
+    QWidget* pane;
+    QVariantMap words;
+    QFormLayout* form = nullptr;
+    QComboBox* screen_list;
+    QComboBox* resolution_list;
+    QComboBox* refresh_list;
+    QList<ModedScreen> screens;
+};
