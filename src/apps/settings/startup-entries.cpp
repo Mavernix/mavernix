@@ -204,6 +204,20 @@ QList<StartupEntry> startup_entries()
     return entries;
 }
 
+// A copy of `path` in the user's folder, switched on or off.
+static QString save_switched_copy(const QString& path, const QString& own_path, bool on)
+{
+    GKeyFile* entry = read_entry(path);
+    if (entry == nullptr)
+    {
+        return QStringLiteral("%1 cannot be read").arg(path);
+    }
+    g_key_file_set_boolean(entry, ENTRY_GROUP, "Hidden", !on);
+    const QString problem = save(entry, own_path);
+    g_key_file_free(entry);
+    return problem;
+}
+
 QString switch_startup_entry(const QString& file_name, bool on)
 {
     const QStringList paths = paths_of(file_name);
@@ -214,29 +228,34 @@ QString switch_startup_entry(const QString& file_name, bool on)
 
     const QString own_path = users_folder() + QLatin1Char('/') + file_name;
     const bool has_own = paths.first() == own_path;
-    if (on && !has_own)
+    // The system's entries under the user's copy, the one that counts first.
+    const QStringList below = has_own ? paths.mid(1) : paths;
+
+    if (!on)
     {
-        // Only the system's: nothing switches it off.
-        return QString();
+        // The user's own copy says so, made from the system's if need be.
+        return save_switched_copy(paths.first(), own_path, false);
+    }
+    if (below.isEmpty())
+    {
+        // One the user added, switched off before.
+        return save_switched_copy(own_path, own_path, true);
     }
 
-    // Switched off, the system's entry gets a copy of its own that says so.
-    GKeyFile* entry = read_entry(paths.first());
-    if (entry == nullptr)
+    // Switched on again, the system's entry counts again as it is: a copy
+    // left behind would hide its updates, or, a mere stub, the program.
+    if (has_own && !QFile::remove(own_path))
     {
-        return QStringLiteral("%1 cannot be read").arg(paths.first());
+        return QStringLiteral("%1 cannot be removed").arg(own_path);
     }
-    if (on)
+    GKeyFile* system = read_entry(below.first());
+    const bool system_is_off = system != nullptr && flag(system, "Hidden");
+    if (system != nullptr)
     {
-        g_key_file_remove_key(entry, ENTRY_GROUP, "Hidden", nullptr);
+        g_key_file_free(system);
     }
-    else
-    {
-        g_key_file_set_boolean(entry, ENTRY_GROUP, "Hidden", true);
-    }
-    const QString problem = save(entry, own_path);
-    g_key_file_free(entry);
-    return problem;
+    // One the system itself switches off needs a copy that says on.
+    return system_is_off ? save_switched_copy(below.first(), own_path, true) : QString();
 }
 
 QString add_startup_program(const QString& program_id)

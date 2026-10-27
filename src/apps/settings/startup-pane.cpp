@@ -10,6 +10,7 @@
 #include <QListWidget>
 #include <QPushButton>
 #include <QStandardPaths>
+#include <QTimer>
 #include <QVBoxLayout>
 
 #include "choices.hpp"
@@ -17,7 +18,8 @@
 #include "pane-parts.hpp"
 #include "startup-entries.hpp"
 
-static const int list_height_px = 280;
+// Short enough that a problem and the note under the buttons fit too.
+static const int list_height_px = 200;
 static const int icon_size_px = 24;
 static const int chooser_width_px = 360;
 static const int chooser_height_px = 420;
@@ -55,10 +57,6 @@ class KeysToList : public QObject
 StartupPane::StartupPane(Choices& choices, QWidget* parent) : QWidget(parent)
 {
     words = choices.configTable(QStringLiteral("settings")).value(QStringLiteral("words")).toMap();
-    const auto word = [this](const char* key, const char* fallback) {
-        return words.value(QLatin1String(key), QLatin1String(fallback)).toString();
-    };
-
     auto* rows = new QVBoxLayout(this);
     rows->setSpacing(pane_spacing_px);
 
@@ -115,7 +113,11 @@ StartupPane::StartupPane(Choices& choices, QWidget* parent) : QWidget(parent)
     }
 
     connect(list, &QListWidget::itemChanged, this, [this](QListWidgetItem* item) {
-        showProblem(switch_startup_entry(item->data(FileNameRole).toString(), item->checkState() == Qt::Checked));
+        const QString file_name = item->data(FileNameRole).toString();
+        showProblem(switch_startup_entry(file_name, item->checkState() == Qt::Checked));
+        // The box shows what the folders now say, also when the change
+        // failed; read after this signal, as reading clears the list.
+        QTimer::singleShot(0, this, [this, file_name]() { fill(file_name); });
     });
     connect(list, &QListWidget::currentItemChanged, this, [this](QListWidgetItem* current) {
         // One only the system has is switched off instead.
@@ -157,10 +159,6 @@ void StartupPane::fill(const QString& chosen)
 
 void StartupPane::addProgram()
 {
-    const auto word = [this](const char* key, const char* fallback) {
-        return words.value(QLatin1String(key), QLatin1String(fallback)).toString();
-    };
-
     QDialog chooser(this);
     chooser.setWindowTitle(word("startup_add_heading", "Open at Login"));
     chooser.resize(chooser_width_px, chooser_height_px);
@@ -215,6 +213,11 @@ void StartupPane::addProgram()
     const QString id = programs->currentItem()->data(FileNameRole).toString();
     showProblem(add_startup_program(id));
     fill(id);
+}
+
+QString StartupPane::word(const char* key, const char* fallback) const
+{
+    return words.value(QLatin1String(key), QLatin1String(fallback)).toString();
 }
 
 void StartupPane::showProblem(const QString& problem)
