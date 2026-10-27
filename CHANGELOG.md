@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.5 (2026-10-27)
 
 - New Startup pane in Settings (called Login Items in Sea Lion). It shows the programs that open when you log in. You can switch any of them off, add your own, or remove ones you added.
 - Your computer can now go to sleep on its own after a while without use. Set it in Settings, Energy. It's off by default, and a playing video or a call keeps the computer awake.
