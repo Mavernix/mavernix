@@ -12,6 +12,7 @@ gtk.css for GTK 3 and 4, plus KDE and GTK settings, written to:
     OUTPUT/xdg/gtk-3.0/settings.ini          (names the icon theme, if any)
     OUTPUT/xdg/kdeglobals                    (the same, and the colours, for KDE's programs)
     OUTPUT/share/color-schemes/DesktopTheme.colors   (the colours as a KDE colour scheme)
+    OUTPUT/share/color-schemes/BreezeLight.colors, BreezeDark.colors   (the same, for KDE's "Default")
 
 Each starts from a stock theme (Kvantum's `kvantum_base`, GTK's Adwaita) and
 replaces only what the desktop theme describes.
@@ -38,6 +39,10 @@ except ImportError:
 
 # Fixed, so the session's environment never has to change.
 APP_THEME_NAME = "DesktopTheme"
+# The schemes a KDE program set to "Default" takes outside Plasma, light or
+# dark as Qt reports the desktop (KColorSchemeManager). Qt cannot tell here,
+# so it is always the light one; both are covered.
+KDE_DEFAULT_SCHEMES = {"BreezeLight": "Breeze Light", "BreezeDark": "Breeze Dark"}
 
 KVANTUM_STOCK_DIRECTORY = Path("/usr/share/Kvantum")
 
@@ -856,6 +861,13 @@ def write_kde_settings(theme, output_directory):
         (schemes_directory / f"{APP_THEME_NAME}.colors").write_text(
             "\n".join(["[General]", f"ColorScheme={APP_THEME_NAME}", f"Name={APP_THEME_NAME}", ""] + color_lines))
         lines += ["[UiSettings]", f"ColorScheme={APP_THEME_NAME}", ""]
+        # A program whose own settings say "Default" (Konsole writes it)
+        # skips the line above for Breeze's scheme: one of the same file
+        # name earlier in XDG_DATA_DIRS, as this folder is, takes its place.
+        for scheme, breeze_name in KDE_DEFAULT_SCHEMES.items():
+            name = f"{APP_THEME_NAME} (in place of {breeze_name})"
+            (schemes_directory / f"{scheme}.colors").write_text(
+                "\n".join(["[General]", f"ColorScheme={scheme}", f"Name={name}", ""] + color_lines))
 
     settings_directory = output_directory / "xdg"
     settings_directory.mkdir(parents=True, exist_ok=True)

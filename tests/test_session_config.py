@@ -202,5 +202,26 @@ class TestScreenScale(SessionTestCase):
         self.assertIn("scale = 1", stretched[0])
 
 
+class TestKdeColours(SessionTestCase):
+    def test_default_scheme_is_the_themes(self):
+        # A KDE program set to "Default" takes Breeze's scheme by its file
+        # name; the session's own copy of that name must hold the theme's.
+        output = self.home / "app-theme"
+        self.run_script("make_app_theme.py", THEMES_DIR / "plain", output)
+        schemes = output / "share" / "color-schemes"
+
+        def colours(path):
+            scheme = configparser.ConfigParser(interpolation=None, strict=False)
+            scheme.optionxform = str
+            scheme.read(path)
+            return {name: dict(scheme[name]) for name in scheme.sections() if name.startswith("Colors:")}
+
+        theme = colours(schemes / "DesktopTheme.colors")
+        self.assertIn("Colors:View", theme)
+        for name in ("BreezeLight", "BreezeDark"):
+            with self.subTest(scheme=name):
+                self.assertEqual(colours(schemes / f"{name}.colors"), theme)
+
+
 if __name__ == "__main__":
     unittest.main()
