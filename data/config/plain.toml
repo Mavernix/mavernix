@@ -499,6 +499,10 @@ startup_search = "Search"
 energy_title = "Energy"
 energy_screen_off = "Switch the screen off after:"
 energy_sleep = "Put the computer to sleep after:"
+energy_lid = "When the lid is closed:"
+energy_lid_sleep = "Sleep"
+energy_lid_lock = "Lock the screen"
+energy_lid_nothing = "Do nothing"
 energy_lock = "Lock the screen when it switches off and before sleep"
 energy_never = "Never"
 energy_minute = "%1 minute"
@@ -562,6 +566,12 @@ icon = "dialog-password"
 lock_after_seconds = 600
 screen_off_after_seconds = 600
 sleep_after_seconds = 0
+
+[power]
+# Closing the lid: "sleep" leaves it to the system (logind's
+# HandleLidSwitch, usually sleep), "lock" only locks the screen, "nothing"
+# does nothing. Needs UPower to see the lid.
+lid_closed = "sleep"
 lock_before_sleep = true
 
 [session]

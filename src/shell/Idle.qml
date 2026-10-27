@@ -1,6 +1,8 @@
 // Locks the screen after a time without input ([idle] lock_after_seconds),
 // before the machine sleeps, and when logind asks; unlocks when logind asks.
 // Puts the machine to sleep after a longer time ([idle] sleep_after_seconds).
+// Closing the lid does what [power] lid_closed says: "sleep" leaves it to
+// the system, "lock" only locks, "nothing" does nothing.
 // Switching the screens off is left to the compositor.
 
 import QtQml
@@ -18,6 +20,7 @@ Item {
     // 0 or less: never.
     readonly property real lockAfterSeconds: choices.value("idle", "lock_after_seconds") ?? 0
     readonly property real sleepAfterSeconds: choices.value("idle", "sleep_after_seconds") ?? 0
+    readonly property string lidClosed: choices.value("power", "lid_closed") ?? "sleep"
     readonly property bool lockBeforeSleep: choices.value("idle", "lock_before_sleep") ?? true
 
     // Remade whenever the time changes: an IdleMonitor whose timeout was changed,
@@ -49,6 +52,15 @@ Item {
                 if (isIdle) {
                     session.sleep()
                 }
+            }
+        }
+    }
+
+    LidWatch {
+        handlesLid: idle.lidClosed === "lock" || idle.lidClosed === "nothing"
+        onClosedChanged: {
+            if (closed && idle.lidClosed === "lock") {
+                idle.lockScreen.lock()
             }
         }
     }

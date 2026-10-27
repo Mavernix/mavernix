@@ -1,6 +1,10 @@
 #include "energy-pane.hpp"
 
 #include <QCheckBox>
+#include <QComboBox>
+#include <QDBusConnection>
+#include <QDBusMessage>
+#include <QDBusVariant>
 #include <QFormLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -20,6 +24,20 @@ static const int slider_width_px = 260;
 // Each write of [idle] makes the session rewrite the compositor's config,
 // so holding an arrow key must not write at every stop.
 static const int write_delay_ms = 500;
+// UPower answers at once if it runs at all.
+static const int lid_question_wait_ms = 500;
+
+// Whether this computer has a lid, as UPower knows; false without UPower.
+static bool has_lid()
+{
+    QDBusMessage ask = QDBusMessage::createMethodCall(QStringLiteral("org.freedesktop.UPower"),
+        QStringLiteral("/org/freedesktop/UPower"), QStringLiteral("org.freedesktop.DBus.Properties"),
+        QStringLiteral("Get"));
+    ask << QStringLiteral("org.freedesktop.UPower") << QStringLiteral("LidIsPresent");
+    const QDBusMessage answer = QDBusConnection::systemBus().call(ask, QDBus::Block, lid_question_wait_ms);
+    return answer.type() == QDBusMessage::ReplyMessage && !answer.arguments().isEmpty() &&
+           answer.arguments().first().value<QDBusVariant>().variant().toBool();
+}
 
 EnergyPane::EnergyPane(Choices& choices, QWidget* parent) : QWidget(parent), choices(choices)
 {
@@ -69,6 +87,24 @@ EnergyPane::EnergyPane(Choices& choices, QWidget* parent) : QWidget(parent), cho
     form->addRow(word("energy_screen_off", "Switch the screen off after:"), screen_off_row);
     form->addRow(word("energy_sleep", "Put the computer to sleep after:"), sleep_row);
     form->addRow(QString(), locks);
+
+    // What the shell does with it (src/shell/Idle.qml); "sleep" is the
+    // system's own rule, which usually sleeps.
+    if (has_lid())
+    {
+        auto* lid = new QComboBox;
+        lid->addItem(word("energy_lid_sleep", "Sleep"), QStringLiteral("sleep"));
+        lid->addItem(word("energy_lid_lock", "Lock the screen"), QStringLiteral("lock"));
+        lid->addItem(word("energy_lid_nothing", "Do nothing"), QStringLiteral("nothing"));
+        const QString chosen = choices.value(QStringLiteral("power"), QStringLiteral("lid_closed")).toString();
+        lid->setCurrentIndex(qMax(0, lid->findData(chosen)));
+        connect(lid, &QComboBox::activated, this, [this, lid]() {
+            this->choices.set(QStringLiteral("power"), QStringLiteral("lid_closed"), lid->currentData());
+        });
+        // As wide as its longest choice, not as the pane.
+        lid->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+        form->addRow(word("energy_lid", "When the lid is closed:"), lid);
+    }
 
     const QString note = word("energy_lock_note", "");
     if (!note.isEmpty())
