@@ -1,5 +1,6 @@
 // Locks the screen after a time without input ([idle] lock_after_seconds),
 // before the machine sleeps, and when logind asks; unlocks when logind asks.
+// Puts the machine to sleep after a longer time ([idle] sleep_after_seconds).
 // Switching the screens off is left to the compositor.
 
 import QtQml
@@ -16,6 +17,7 @@ Item {
 
     // 0 or less: never.
     readonly property real lockAfterSeconds: choices.value("idle", "lock_after_seconds") ?? 0
+    readonly property real sleepAfterSeconds: choices.value("idle", "sleep_after_seconds") ?? 0
     readonly property bool lockBeforeSleep: choices.value("idle", "lock_before_sleep") ?? true
 
     // Remade whenever the time changes: an IdleMonitor whose timeout was changed,
@@ -31,6 +33,21 @@ Item {
             onIsIdleChanged: {
                 if (isIdle) {
                     idle.lockScreen.lock()
+                }
+            }
+        }
+    }
+
+    Instantiator {
+        model: idle.sleepAfterSeconds > 0 ? [idle.sleepAfterSeconds] : []
+
+        IdleMonitor {
+            required property real modelData
+            timeout: modelData
+            respectInhibitors: true
+            onIsIdleChanged: {
+                if (isIdle) {
+                    session.sleep()
                 }
             }
         }

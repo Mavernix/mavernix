@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Settings, Energy can put the computer to sleep after a time without input (`[idle] sleep_after_seconds`; never by default). Video players and calls that keep the screen on also keep the computer awake.
+
 ## 0.1.4 (2026-10-25)
 
 - Sea Lion Dark's About This PC shows "OS X" under the logo in light grey; it was the light theme's dark grey, nearly lost on the dark window. Import the theme again to get the new picture.

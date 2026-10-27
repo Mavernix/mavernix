@@ -28,7 +28,7 @@ A dense screen is drawn at twice its pixels, any other at once; `[display] scale
 
 ## Locking
 
-Ctrl+Super+L under Sea Lion, Super+L under the others, locks the screen; so does going to sleep, `loginctl lock-session`, and ten minutes without input (`[idle]` in the config, or Settings, Energy Saver). Try it once while the desktop runs in a window inside another one (see [building](building.md#try-it-in-a-window)) before relying on it: the keys that end the session do not work while locked.
+Ctrl+Super+L under Sea Lion, Super+L under the others, locks the screen; so does going to sleep, `loginctl lock-session`, and ten minutes without input (`[idle]` in the config, or Settings, Energy Saver). `[idle] sleep_after_seconds` puts the computer to sleep after a time without input; it is 0, never, unless set. Try it once while the desktop runs in a window inside another one (see [building](building.md#try-it-in-a-window)) before relying on it: the keys that end the session do not work while locked.
 
 ## The panel's items
 
