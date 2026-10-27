@@ -25,6 +25,7 @@ executable(
         'picture-chooser.cpp',
         'energy-pane.cpp',
         'display-pane.cpp',
+        'panel-modes.cpp',
         'desktops-pane.cpp',
         'windows-pane.cpp',
         'toolkits-pane.cpp',

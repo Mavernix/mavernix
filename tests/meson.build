@@ -28,6 +28,11 @@ tests = {
         'include': test_sources / 'apps/settings',
         'dependencies': [qt_widgets],
     },
+    'panel-modes': {
+        'sources': [test_sources / 'apps/settings/panel-modes.cpp'],
+        'include': test_sources / 'apps/settings',
+        'dependencies': [],
+    },
 }
 
 foreach name, test_parts : tests

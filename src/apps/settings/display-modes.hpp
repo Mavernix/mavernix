@@ -3,7 +3,8 @@
 // choice is written to [display.screens.NAME] mode and kept only if the user
 // says so within a few seconds, so a mode the screen cannot show undoes
 // itself. Without the compositor's answer, or for a virtual screen with no
-// modes, the rows stay hidden.
+// modes, the rows stay hidden. A built-in panel is offered smaller sizes
+// too (panel-modes.hpp).
 
 #pragma once
 
@@ -13,19 +14,12 @@
 #include <QString>
 #include <QVariantMap>
 
+#include "panel-modes.hpp"
+
 class Choices;
 class QComboBox;
 class QFormLayout;
 class QWidget;
-
-struct ScreenMode
-{
-    int width = 0;
-    int height = 0;
-    // In millihertz, as the compositor counts.
-    int refresh = 0;
-    bool preferred = false;
-};
 
 struct ModedScreen
 {
