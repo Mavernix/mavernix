@@ -14,6 +14,10 @@ class QObject;
 
 QByteArray compositor_message(const QString& method, const QJsonObject& data = QJsonObject());
 
+// Takes the first whole answer's JSON off the front of `received`; false,
+// and `received` left as it is, while the answer is still coming.
+bool take_compositor_answer(QByteArray& received, QByteArray& json);
+
 // Calls `answered` once: with the answer, or with an empty answer and what
 // went wrong (no session, no answer in time, the compositor's error). It is
 // not called if `context` is gone first.

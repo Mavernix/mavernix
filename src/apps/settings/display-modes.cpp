@@ -78,10 +78,6 @@ DisplayModes::DisplayModes(Choices& choices, QWidget* pane) : QObject(pane), cho
 
 void DisplayModes::addRowsTo(QFormLayout* rows)
 {
-    const auto word = [this](const char* key, const char* fallback) {
-        return words.value(QLatin1String(key), QLatin1String(fallback)).toString();
-    };
-
     form = rows;
     form->addRow(word("display_screen", "Screen:"), screen_list);
     form->addRow(word("display_resolution", "Resolution:"), resolution_list);
@@ -142,8 +138,7 @@ void DisplayModes::showScreen(int index)
         return;
     }
     const ModedScreen& screen = screens[index];
-    const QString recommended =
-        words.value(QStringLiteral("display_recommended"), QStringLiteral("%1 (recommended)")).toString();
+    const QString recommended = word("display_recommended", "%1 (recommended)");
 
     // Each size once, the most pixels first.
     QList<QSize> sizes;
@@ -186,7 +181,7 @@ void DisplayModes::showRefreshRates()
     }
     const ModedScreen& screen = screens[index];
     const QSize size = resolution_list->currentData().toSize();
-    const QString hertz = words.value(QStringLiteral("display_hertz"), QStringLiteral("%1 Hz")).toString();
+    const QString hertz = word("display_hertz", "%1 Hz");
 
     QList<int> rates;
     for (const ScreenMode& mode : screen.modes)
@@ -272,10 +267,6 @@ void DisplayModes::writeMode(const QString& name, const QString& mode)
 
 bool DisplayModes::keepAsked()
 {
-    const auto word = [this](const char* key, const char* fallback) {
-        return words.value(QLatin1String(key), QLatin1String(fallback)).toString();
-    };
-
     QMessageBox question(pane);
     question.setWindowTitle(pane->window()->windowTitle());
     question.setIcon(QMessageBox::Question);
@@ -303,4 +294,9 @@ bool DisplayModes::keepAsked()
     tick.start();
     question.exec();
     return question.clickedButton() == keep;
+}
+
+QString DisplayModes::word(const char* key, const char* fallback) const
+{
+    return words.value(QLatin1String(key), QLatin1String(fallback)).toString();
 }

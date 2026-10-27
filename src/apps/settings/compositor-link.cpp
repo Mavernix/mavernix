@@ -2,12 +2,9 @@
 
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QtEndian>
 
 #include "compositor-call.hpp"
 
-// The length before each answer (compositor-call.hpp).
-static const int length_prefix_bytes = 4;
 static const char* const start_method = "shortcut-capture/start";
 static const char* const stop_method = "shortcut-capture/stop";
 
@@ -85,15 +82,9 @@ void CompositorLink::sendRequest(const QString& method)
 void CompositorLink::readAnswers()
 {
     received.append(socket.readAll());
-    while (received.size() >= length_prefix_bytes)
+    QByteArray json;
+    while (take_compositor_answer(received, json))
     {
-        const quint32 length = qFromLittleEndian<quint32>(received.constData());
-        if (received.size() < qsizetype(length_prefix_bytes + length))
-        {
-            return;
-        }
-        const QByteArray json = received.mid(length_prefix_bytes, length);
-        received.remove(0, length_prefix_bytes + length);
         handleAnswer(json);
     }
 }
