@@ -61,6 +61,7 @@ class DisplayModes : public QObject
     void writeMode(const QString& name, const QString& mode);
     // Asks whether to keep the mode just written; no answer in time is no.
     bool keepAsked();
+    QString word(const char* key, const char* fallback) const;
 
     Choices& choices;
     QWidget* pane;
