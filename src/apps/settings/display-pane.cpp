@@ -12,6 +12,7 @@
 #include <cmath>
 
 #include "choices.hpp"
+#include "display-modes.hpp"
 #include "pane-parts.hpp"
 
 // The scales on offer, from everything drawn largest to most room.
@@ -119,7 +120,26 @@ DisplayPane::DisplayPane(Choices& choices, QWidget* parent) : QWidget(parent), c
     auto* form = new QFormLayout(this);
     form->setLabelAlignment(Qt::AlignRight | Qt::AlignTop);
     form->setFormAlignment(Qt::AlignHCenter | Qt::AlignTop);
+    // The screen's resolution and refresh rate come first: what is drawn
+    // larger or smaller is made of those pixels.
+    auto* modes = new DisplayModes(choices, this);
+    modes->addRowsTo(form);
+    connect(modes, &DisplayModes::modeChanged, this, [this](const QString& name, QSize pixels) {
+        if (this->screen() != nullptr && this->screen()->name() == name)
+        {
+            screen_pixels = pixels;
+            showLooksLike();
+        }
+    });
     form->addRow(word("display_size", "Size:"), choice);
+
+    // The lists were made last but stand first.
+    QList<QWidget*> tab_order = modes->lists();
+    tab_order << automatic << chosen << scale;
+    for (int index = 1; index < tab_order.size(); index++)
+    {
+        setTabOrder(tab_order[index - 1], tab_order[index]);
+    }
 }
 
 void DisplayPane::write()

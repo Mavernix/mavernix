@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="screen-modes">
+		<_short>Screen Modes</_short>
+		<_long>Tells a program, such as the settings window, which sizes and refresh rates each screen can show.</_long>
+		<category>Utility</category>
+	</plugin>
+</wayfire>

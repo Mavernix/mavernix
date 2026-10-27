@@ -4,6 +4,7 @@
 
 - A Startup pane in Settings (Login Items under Sea Lion) lists the programs that open at login, from `~/.config/autostart` and the system's autostart folders. Unticking one switches it off, a system one included; Add… starts an installed program at login; Remove takes away one the user added.
 - Settings, Energy can put the computer to sleep after a time without input (`[idle] sleep_after_seconds`; never by default). Video players and calls that keep the screen on also keep the computer awake.
+- Settings, Display chooses each screen's resolution and refresh rate, from the modes the screen reports (a new compositor plugin, `screen-modes`). A new mode is undone after 15 seconds unless kept, so one the screen cannot show does not leave it dark. It is kept as `[display.screens.NAME] mode`.
 - Moving an Energy slider with the arrow keys could freeze the whole desktop: every step rewrote the compositor's config, and the compositor could read it half-written. The config is now replaced in one step, and the pane writes once the slider stops.
 
 ## 0.1.4 (2026-10-25)
