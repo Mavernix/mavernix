@@ -566,13 +566,13 @@ icon = "dialog-password"
 lock_after_seconds = 600
 screen_off_after_seconds = 600
 sleep_after_seconds = 0
+lock_before_sleep = true
 
 [power]
 # Closing the lid: "sleep" leaves it to the system (logind's
 # HandleLidSwitch, usually sleep), "lock" only locks the screen, "nothing"
 # does nothing. Needs UPower to see the lid.
 lid_closed = "sleep"
-lock_before_sleep = true
 
 [session]
 # Reload the shell when its files change on disk (for development).
