@@ -279,7 +279,8 @@ DENSE_SCREEN_DPI = 170
 
 
 def connected_screens(directory=SCREENS_DIRECTORY):
-    """The screens that are plugged in: { "eDP-1": { "width": 2560, "dpi": 191.0 } }.
+    """The screens that are plugged in:
+    { "eDP-1": { "width": 2560, "dpi": 191.0, "sizes": {"2560x1600"} } }.
 
     The density comes from the best mode and the EDID's physical width
     (byte 21, centimetres); None if the screen reports no size.
@@ -289,16 +290,58 @@ def connected_screens(directory=SCREENS_DIRECTORY):
         try:
             if (folder / "status").read_text().strip() != "connected":
                 continue
-            best_mode = (folder / "modes").read_text().split("\n")[0]
-            width = int(best_mode.split("x")[0])
+            sizes = (folder / "modes").read_text().split()
+            width = int(sizes[0].split("x")[0])
             edid = (folder / "edid").read_bytes()
         except (OSError, ValueError):
             continue
         name = folder.name.split("-", 1)[1]
         width_cm = edid[21] if len(edid) > 22 else 0
         dpi = width / (width_cm / 2.54) if width_cm > 0 else None
-        screens[name] = {"width": width, "dpi": dpi}
+        screens[name] = {"width": width, "dpi": dpi, "sizes": set(sizes)}
     return screens
+
+
+# CVT reduced blanking (VESA CVT 1.2, as `cvt -r` makes them): a custom mode's
+# timings. A laptop's panel keeps its own; the graphics card stretches the
+# picture to it.
+CVT_RB_MIN_VBLANK_US = 460
+CVT_RB_H_BLANK = 160
+CVT_RB_H_SYNC = 32
+CVT_RB_V_FRONT = 3
+CVT_RB_MIN_V_BACK = 6
+CVT_CLOCK_STEP_MHZ = 0.25
+
+
+def cvt_reduced_modeline(width, height, refresh_hz):
+    """A modeline as Wayfire's custom_mode reads it: "clock hdisplay ... -vsync"."""
+    width -= width % 8
+    # The sync's length tells the shape apart.
+    v_sync = next((lines for shape, lines in ((4 / 3, 4), (16 / 9, 5), (16 / 10, 6), (5 / 4, 7), (15 / 9, 7))
+                   if abs(width / height - shape) < 0.01), 10)
+    line_us = (1_000_000 / refresh_hz - CVT_RB_MIN_VBLANK_US) / height
+    blank_lines = max(int(CVT_RB_MIN_VBLANK_US / line_us) + 1, CVT_RB_V_FRONT + v_sync + CVT_RB_MIN_V_BACK)
+    h_total = width + CVT_RB_H_BLANK
+    v_total = height + blank_lines
+    clock_mhz = CVT_CLOCK_STEP_MHZ * int(refresh_hz * h_total * v_total / 1_000_000 / CVT_CLOCK_STEP_MHZ)
+    h_sync_end = h_total - CVT_RB_H_BLANK // 2
+    v_sync_start = height + CVT_RB_V_FRONT
+    return (f"{clock_mhz:.2f} {width} {h_sync_end - CVT_RB_H_SYNC} {h_sync_end} {h_total} "
+            f"{height} {v_sync_start} {v_sync_start + v_sync} {v_total} +hsync -vsync")
+
+
+def custom_mode(mode, screen):
+    """The modeline for `mode` ("1920x1200@120000") if the screen does not list
+    its size, else None: Wayfire sets only listed sizes on a real screen."""
+    try:
+        size, refresh = str(mode).split("@")
+        width, height = map(int, size.split("x"))
+        refresh_hz = int(refresh) / 1000
+    except ValueError:
+        return None
+    if "sizes" not in screen or size in screen["sizes"] or refresh_hz <= 0:
+        return None
+    return cvt_reduced_modeline(width, height, refresh_hz)
 
 
 def display_sections(config):
@@ -331,6 +374,9 @@ def display_sections(config):
         for key in ("mode", "position", "transform"):
             if key in own:
                 lines.append(f"{key} = {own[key]}")
+        modeline = custom_mode(own["mode"], screens.get(name, {})) if "mode" in own else None
+        if modeline is not None:
+            lines.append(f"custom_mode = {modeline}")
         sections.append(lines)
     return sections
 
