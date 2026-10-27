@@ -14,6 +14,7 @@ class QCheckBox;
 class QHBoxLayout;
 class QLabel;
 class QSlider;
+class QTimer;
 
 class EnergyPane : public QWidget
 {
@@ -21,6 +22,7 @@ class EnergyPane : public QWidget
 
   public:
     EnergyPane(Choices& choices, QWidget* parent = nullptr);
+    ~EnergyPane() override;
 
   private:
     // A slider over `stops` standing at the one nearest the config's key,
@@ -37,4 +39,5 @@ class EnergyPane : public QWidget
     QSlider* screen_off;
     QSlider* sleep;
     QCheckBox* locks;
+    QTimer* write_later;
 };

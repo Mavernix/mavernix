@@ -5,6 +5,7 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QSlider>
+#include <QTimer>
 
 #include "choices.hpp"
 
@@ -12,8 +13,13 @@
 static const int stop_minutes[] = {1, 3, 5, 10, 15, 20, 25, 30, 45, 60, 75, 90, 105, 120, 180};
 static const int seconds_per_minute = 60;
 static const int minutes_per_hour = 60;
-// Wide enough that neighbouring stops are easy to tell apart.
-static const int slider_width_px = 320;
+// Wide enough that neighbouring stops are easy to tell apart, narrow
+// enough that the longer label and the longest time fit beside it.
+static const int slider_width_px = 260;
+// How long after the last step made with the keys the times are written.
+// Each write of [idle] makes the session rewrite the compositor's config,
+// so holding an arrow key must not write at every stop.
+static const int write_delay_ms = 500;
 
 EnergyPane::EnergyPane(Choices& choices, QWidget* parent) : QWidget(parent), choices(choices)
 {
@@ -21,6 +27,11 @@ EnergyPane::EnergyPane(Choices& choices, QWidget* parent) : QWidget(parent), cho
     const auto word = [this](const char* key, const char* fallback) {
         return words.value(QLatin1String(key), QLatin1String(fallback)).toString();
     };
+
+    write_later = new QTimer(this);
+    write_later->setSingleShot(true);
+    write_later->setInterval(write_delay_ms);
+    connect(write_later, &QTimer::timeout, this, &EnergyPane::write);
 
     for (const int minutes : stop_minutes)
     {
@@ -35,6 +46,20 @@ EnergyPane::EnergyPane(Choices& choices, QWidget* parent) : QWidget(parent), cho
     locks->setChecked(choices.value(QStringLiteral("idle"), QStringLiteral("lock_before_sleep")).toBool() ||
                       choices.value(QStringLiteral("idle"), QStringLiteral("lock_after_seconds")).toInt() > 0);
 
+    // The screen switches off no later than the computer sleeps: moving one
+    // slider past the other takes the other along. "Never" is the last stop.
+    connect(sleep, &QSlider::valueChanged, this, [this](int stop) {
+        if (screen_off->value() > stop)
+        {
+            screen_off->setValue(stop);
+        }
+    });
+    connect(screen_off, &QSlider::valueChanged, this, [this](int stop) {
+        if (sleep->value() < stop)
+        {
+            sleep->setValue(stop);
+        }
+    });
     connect(locks, &QCheckBox::toggled, this, [this]() { write(); });
 
     auto* form = new QFormLayout(this);
@@ -81,9 +106,25 @@ QHBoxLayout* EnergyPane::timeSlider(const QString& key, QSlider*& slider)
     slider->setFixedWidth(slider_width_px);
     slider->setValue(nearest);
     auto* time = new QLabel(written(stops[nearest]));
+    // As wide as the longest time, so the form does not shift as it changes.
+    int widest_px = 0;
+    for (const int seconds : stops)
+    {
+        widest_px = qMax(widest_px, time->fontMetrics().horizontalAdvance(written(seconds)));
+    }
+    time->setMinimumWidth(widest_px);
 
-    connect(slider, &QSlider::valueChanged, this, [this, time](int stop) {
+    // While the slider is dragged only the time beside it follows; the
+    // times are written when it is let go.
+    connect(slider, &QSlider::valueChanged, this, [this, slider, time](int stop) {
         time->setText(written(stops[stop]));
+        if (!slider->isSliderDown())
+        {
+            write_later->start();
+        }
+    });
+    connect(slider, &QSlider::sliderReleased, this, [this]() {
+        write_later->stop();
         write();
     });
 
@@ -93,6 +134,15 @@ QHBoxLayout* EnergyPane::timeSlider(const QString& key, QSlider*& slider)
     row->addWidget(time);
     row->addStretch();
     return row;
+}
+
+EnergyPane::~EnergyPane()
+{
+    // A step made just before the window closed.
+    if (write_later->isActive())
+    {
+        write();
+    }
 }
 
 void EnergyPane::write()
