@@ -23,6 +23,7 @@ class StartupPane : public QWidget
     void fill(const QString& chosen = QString());
     void addProgram();
     void showProblem(const QString& problem);
+    QString word(const char* key, const char* fallback) const;
 
     QVariantMap words;
     QListWidget* list;
