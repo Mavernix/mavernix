@@ -318,6 +318,14 @@ def display_sections(config):
         scale = own.get("scale", general)
         if scale == "auto":
             dpi = screens.get(name, {}).get("dpi")
+            # A smaller mode stretched to the panel is that much less dense.
+            native_width = screens.get(name, {}).get("width")
+            try:
+                chosen_width = int(str(own["mode"]).split("x")[0])
+            except (KeyError, ValueError):
+                chosen_width = None
+            if dpi is not None and native_width and chosen_width:
+                dpi = dpi * chosen_width / native_width
             scale = 2 if dpi is not None and dpi >= DENSE_SCREEN_DPI else 1
         lines = [f"[output:{name}]", f"scale = {scale}"]
         for key in ("mode", "position", "transform"):

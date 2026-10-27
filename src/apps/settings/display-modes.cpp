@@ -12,6 +12,7 @@
 #include <QWidget>
 
 #include <algorithm>
+#include <cstdlib>
 
 #include "choices.hpp"
 #include "compositor-call.hpp"
@@ -66,10 +67,12 @@ DisplayModes::DisplayModes(Choices& choices, QWidget* pane) : QObject(pane), cho
             screen.name = json.value(QStringLiteral("name")).toString();
             screen.description = json.value(QStringLiteral("description")).toString();
             screen.current = mode_from_json(json.value(QStringLiteral("current")).toObject());
+            QList<ScreenMode> reported;
             for (const QJsonValue& mode : json.value(QStringLiteral("modes")).toArray())
             {
-                screen.modes.append(mode_from_json(mode.toObject()));
+                reported.append(mode_from_json(mode.toObject()));
             }
+            screen.modes = offered_modes(screen.name, screen.current, reported);
             found.append(screen);
         }
         showScreens(found);
@@ -203,10 +206,20 @@ void DisplayModes::showRefreshRates()
                                    : QString::number(double(rate) / millihertz_per_hertz, 'f', 2);
         refresh_list->addItem(hertz.arg(number), rate);
     }
-    // The current rate if this is the current size, else the highest.
-    const bool is_current = size == QSize(screen.current.width, screen.current.height);
-    const int found = is_current ? refresh_list->findData(screen.current.refresh) : -1;
-    refresh_list->setCurrentIndex(found >= 0 ? found : 0);
+    // The current rate if this is the current size, else the highest. A
+    // custom mode's rate may come back a hair off the one asked: the nearest.
+    int shown = 0;
+    if (size == QSize(screen.current.width, screen.current.height))
+    {
+        for (int index = 1; index < rates.size(); index++)
+        {
+            if (std::abs(rates[index] - screen.current.refresh) < std::abs(rates[shown] - screen.current.refresh))
+            {
+                shown = index;
+            }
+        }
+    }
+    refresh_list->setCurrentIndex(shown);
     refresh_list->setEnabled(refresh_list->count() > 1);
 }
 
@@ -220,7 +233,9 @@ void DisplayModes::choose()
     ModedScreen& screen = screens[index];
     const QSize size = resolution_list->currentData().toSize();
     const int refresh = refresh_list->currentData().toInt();
-    if (size == QSize(screen.current.width, screen.current.height) && refresh == screen.current.refresh)
+    // The rate shown for the current mode may be a hair off it (showRefreshRates).
+    if (size == QSize(screen.current.width, screen.current.height)
+        && std::abs(refresh - screen.current.refresh) <= same_rate_millihertz)
     {
         return;
     }

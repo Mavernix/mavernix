@@ -14,6 +14,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import unittest.mock
 from pathlib import Path
 
 SESSION_SOURCE_DIR = Path(os.environ["SESSION_SOURCE_DIR"])
@@ -182,6 +183,23 @@ class TestThemes(SessionTestCase):
         written = self.home / "odd-icons.json"
         self.run_script("make_shell_config.py", config, written)
         self.assertEqual(json.loads(written.read_text())["theme"]["icons"]["theme"], "breeze")
+
+
+class TestScreenScale(SessionTestCase):
+    def test_a_stretched_mode_is_less_dense(self):
+        # A dense panel shown at half its width is drawn at once, not twice.
+        sys.path[:0] = [self.folder.name, str(SESSION_SOURCE_DIR)]
+        try:
+            import make_wayfire_config
+        finally:
+            del sys.path[:2]
+        panel = {"eDP-1": {"width": 2560, "dpi": 227.0}}
+        with unittest.mock.patch.object(make_wayfire_config, "connected_screens", return_value=panel):
+            native = make_wayfire_config.display_sections({})
+            stretched = make_wayfire_config.display_sections(
+                {"display": {"screens": {"eDP-1": {"mode": "1280x800@60000"}}}})
+        self.assertIn("scale = 2", native[0])
+        self.assertIn("scale = 1", stretched[0])
 
 
 if __name__ == "__main__":
