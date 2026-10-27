@@ -201,6 +201,24 @@ class TestScreenScale(SessionTestCase):
         self.assertIn("scale = 2", native[0])
         self.assertIn("scale = 1", stretched[0])
 
+    def test_a_size_the_screen_does_not_list_gets_its_timings(self):
+        # Wayfire sets only a listed size on a real screen; any other is
+        # added to the list from a modeline, here as `cvt -r 1920 1200 120`.
+        sys.path[:0] = [self.folder.name, str(SESSION_SOURCE_DIR)]
+        try:
+            import make_wayfire_config
+        finally:
+            del sys.path[:2]
+        panel = {"eDP-1": {"width": 2560, "dpi": 227.0, "sizes": {"2560x1600"}}}
+
+        def written(mode):
+            with unittest.mock.patch.object(make_wayfire_config, "connected_screens", return_value=panel):
+                return make_wayfire_config.display_sections({"display": {"screens": {"eDP-1": {"mode": mode}}}})[0]
+
+        self.assertIn("custom_mode = 317.00 1920 1968 2000 2080 1200 1203 1209 1271 +hsync -vsync",
+                      written("1920x1200@120000"))
+        self.assertFalse(any(line.startswith("custom_mode") for line in written("2560x1600@120000")))
+
 
 class TestKdeColours(SessionTestCase):
     def test_default_scheme_is_the_themes(self):

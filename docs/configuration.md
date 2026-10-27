@@ -24,7 +24,7 @@ The keyboard layout is the system's (`localectl status`) until one is chosen in 
 
 ## Screens
 
-A dense screen is drawn at twice its pixels, any other at once; `[display] scale` says otherwise, and Settings, Displays changes it while the desktop runs. Settings, Displays also chooses each screen's resolution and refresh rate, written as `[display.screens.NAME] mode = "1920x1080@60000"` (the refresh rate in millihertz); a new mode goes back after 15 seconds unless it is kept. A screen built into the computer (eDP, LVDS, DSI) that reports only its own size is offered the usual smaller sizes of the same shape too, at its own refresh rates: the graphics card stretches them to the panel, so they look less sharp, but programs and games draw fewer pixels. With more than one screen, the panel and dock are on the one `[display] main_screen` names, else on the first.
+A dense screen is drawn at twice its pixels, any other at once; `[display] scale` says otherwise, and Settings, Displays changes it while the desktop runs. Settings, Displays also chooses each screen's resolution and refresh rate, written as `[display.screens.NAME] mode = "1920x1080@60000"` (the refresh rate in millihertz); a new mode goes back after 15 seconds unless it is kept. A screen built into the computer (eDP, LVDS, DSI) that reports only its own size is offered the usual smaller sizes of the same shape too, at its own refresh rates: the graphics card stretches them to the panel, so they look less sharp, but programs and games draw fewer pixels. Wayfire sets such a size from timings the session writes beside it (`custom_mode`, as `cvt -r` makes them). With more than one screen, the panel and dock are on the one `[display] main_screen` names, else on the first.
 
 ## Locking
 
