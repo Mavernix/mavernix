@@ -6,6 +6,7 @@
 - Settings, Energy can put the computer to sleep after a time without input (`[idle] sleep_after_seconds`; never by default). Video players and calls that keep the screen on also keep the computer awake.
 - Settings, Display chooses each screen's resolution and refresh rate, from the modes the screen reports (a new compositor plugin, `screen-modes`). A new mode is undone after 15 seconds unless kept, so one the screen cannot show does not leave it dark. It is kept as `[display.screens.NAME] mode`. A laptop's own panel, which usually reports a single size, is also offered the usual smaller sizes of its shape, which the graphics card stretches to fill it, as other desktops do. Sea Lion's words for the new rows come with importing the theme again.
 - Settings, Energy chooses what closing a laptop's lid does: sleep (the system's own rule), lock the screen, or nothing (`[power] lid_closed`). It needs UPower; the shell then takes logind's lid switch while the choice is not sleep.
+- KDE programs whose own colour scheme is "Default", such as Konsole, drew dark text and white lists under a dark theme: outside Plasma that default is Breeze Light. The session now puts the theme's colours under Breeze's scheme names too, so "Default" follows the theme.
 - Moving an Energy slider with the arrow keys could freeze the whole desktop: every step rewrote the compositor's config, and the compositor could read it half-written. The config is now replaced in one step, and the pane writes once the slider stops.
 
 ## 0.1.4 (2026-10-25)
