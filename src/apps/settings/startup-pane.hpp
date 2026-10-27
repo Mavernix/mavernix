@@ -27,5 +27,6 @@ class StartupPane : public QWidget
     QVariantMap words;
     QListWidget* list;
     QPushButton* remove;
+    QLabel* empty_label;
     QLabel* problem_label;
 };

@@ -1,8 +1,10 @@
 #include "startup-pane.hpp"
 
 #include <QDialog>
+#include <QCoreApplication>
 #include <QDialogButtonBox>
 #include <QHBoxLayout>
+#include <QKeyEvent>
 #include <QLabel>
 #include <QLineEdit>
 #include <QListWidget>
@@ -24,6 +26,32 @@ static const int chooser_height_px = 420;
 static const int FileNameRole = Qt::UserRole;
 static const int UsersOwnRole = Qt::UserRole + 1;
 
+// The arrow keys typed into the search move through the list under it, so
+// a program can be found and chosen without leaving the keys.
+class KeysToList : public QObject
+{
+  public:
+    KeysToList(QListWidget* list, QObject* parent) : QObject(parent), list(list) {}
+
+  protected:
+    bool eventFilter(QObject* watched, QEvent* event) override
+    {
+        if (event->type() == QEvent::KeyPress)
+        {
+            const int key = static_cast<QKeyEvent*>(event)->key();
+            if (key == Qt::Key_Up || key == Qt::Key_Down || key == Qt::Key_PageUp || key == Qt::Key_PageDown)
+            {
+                QCoreApplication::sendEvent(list, event);
+                return true;
+            }
+        }
+        return QObject::eventFilter(watched, event);
+    }
+
+  private:
+    QListWidget* list;
+};
+
 StartupPane::StartupPane(Choices& choices, QWidget* parent) : QWidget(parent)
 {
     words = choices.configTable(QStringLiteral("settings")).value(QStringLiteral("words")).toMap();
@@ -44,6 +72,13 @@ StartupPane::StartupPane(Choices& choices, QWidget* parent) : QWidget(parent)
     list->setFixedSize(intro_width_px, list_height_px);
     list->setIconSize(QSize(icon_size_px, icon_size_px));
     rows->addWidget(list);
+
+    // In the empty list, instead of nothing.
+    empty_label = new QLabel(word("startup_none", "No programs open at login."));
+    empty_label->setAlignment(Qt::AlignCenter);
+    empty_label->setEnabled(false);
+    auto* inside_list = new QVBoxLayout(list->viewport());
+    inside_list->addWidget(empty_label);
 
     auto* add = new QPushButton(word("startup_add", "Add…"));
     remove = new QPushButton(word("startup_remove", "Remove"));
@@ -115,6 +150,7 @@ void StartupPane::fill(const QString& chosen)
             list->setCurrentItem(item);
         }
     }
+    empty_label->setVisible(list->count() == 0);
     const QListWidgetItem* current = list->currentItem();
     remove->setEnabled(current != nullptr && current->data(UsersOwnRole).toBool());
 }
@@ -147,11 +183,23 @@ void StartupPane::addProgram()
     rows->addWidget(programs);
     rows->addWidget(answer);
 
+    search->installEventFilter(new KeysToList(programs, &chooser));
+    // The first program found is chosen, so Return takes it; one that the
+    // search hides is not taken.
     connect(search, &QLineEdit::textChanged, &chooser, [programs](const QString& text) {
+        QListWidgetItem* first_found = nullptr;
         for (int row = 0; row < programs->count(); row++)
         {
             QListWidgetItem* item = programs->item(row);
             item->setHidden(!item->text().contains(text, Qt::CaseInsensitive));
+            if (first_found == nullptr && !item->isHidden())
+            {
+                first_found = item;
+            }
+        }
+        if (programs->currentItem() == nullptr || programs->currentItem()->isHidden())
+        {
+            programs->setCurrentItem(first_found);
         }
     });
     connect(programs, &QListWidget::currentItemChanged, &chooser,
