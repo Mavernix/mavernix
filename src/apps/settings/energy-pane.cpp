@@ -65,6 +65,12 @@ EnergyPane::EnergyPane(Choices& choices, QWidget* parent) : QWidget(parent), cho
             sleep->setValue(stop);
         }
     });
+    // A config written by hand may have them the wrong way round: put right,
+    // and so written, as a slider moved there would be.
+    if (screen_off->value() > sleep->value())
+    {
+        screen_off->setValue(sleep->value());
+    }
     connect(locks, &QCheckBox::toggled, this, [this]() { write(); });
 
     auto* form = new QFormLayout(this);
