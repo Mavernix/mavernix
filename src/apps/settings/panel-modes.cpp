@@ -8,11 +8,37 @@
 // programs and games expect. Only those of the panel's own shape are
 // offered: any other is drawn with black bars or out of proportion.
 static const QSize common_sizes[] = {
-    {3840, 2400}, {3840, 2160}, {3200, 2000}, {3200, 1800}, {3000, 2000}, {2880, 1920}, {2880, 1800},
-    {2880, 1620}, {2560, 1600}, {2560, 1440}, {2400, 1600}, {2304, 1440}, {2256, 1504}, {2048, 1536},
-    {2048, 1280}, {2048, 1152}, {1920, 1440}, {1920, 1280}, {1920, 1200}, {1920, 1080}, {1680, 1120},
-    {1680, 1050}, {1600, 1200}, {1600, 900},  {1440, 960},  {1440, 900},  {1400, 1050}, {1280, 960},
-    {1280, 800},  {1280, 720},  {1024, 768},
+    {3840, 2400},
+    {3840, 2160},
+    {3200, 2000},
+    {3200, 1800},
+    {3000, 2000},
+    {2880, 1920},
+    {2880, 1800},
+    {2880, 1620},
+    {2560, 1600},
+    {2560, 1440},
+    {2400, 1600},
+    {2304, 1440},
+    {2256, 1504},
+    {2048, 1536},
+    {2048, 1280},
+    {2048, 1152},
+    {1920, 1440},
+    {1920, 1280},
+    {1920, 1200},
+    {1920, 1080},
+    {1680, 1120},
+    {1680, 1050},
+    {1600, 1200},
+    {1600, 900},
+    {1440, 960},
+    {1440, 900},
+    {1400, 1050},
+    {1280, 960},
+    {1280, 800},
+    {1280, 720},
+    {1024, 768},
 };
 
 // Within half a percent: 1920 × 1200 and 2560 × 1600 are one shape.
@@ -25,8 +51,8 @@ static bool same_shape(const QSize& one, const QSize& other)
 
 bool is_built_in(const QString& name)
 {
-    return name.startsWith(QLatin1String("eDP-")) || name.startsWith(QLatin1String("LVDS-"))
-           || name.startsWith(QLatin1String("DSI-"));
+    return name.startsWith(QLatin1String("eDP-")) || name.startsWith(QLatin1String("LVDS-")) ||
+           name.startsWith(QLatin1String("DSI-"));
 }
 
 QList<ScreenMode> offered_modes(const QString& name, const ScreenMode& current, const QList<ScreenMode>& reported)
@@ -36,7 +62,8 @@ QList<ScreenMode> offered_modes(const QString& name, const ScreenMode& current, 
     const auto has = [&modes](int width, int height, int refresh) {
         for (const ScreenMode& mode : modes)
         {
-            if (mode.width == width && mode.height == height && std::abs(mode.refresh - refresh) <= same_rate_millihertz)
+            if (mode.width == width && mode.height == height &&
+                std::abs(mode.refresh - refresh) <= same_rate_millihertz)
             {
                 return true;
             }

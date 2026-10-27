@@ -234,8 +234,8 @@ void DisplayModes::choose()
     const QSize size = resolution_list->currentData().toSize();
     const int refresh = refresh_list->currentData().toInt();
     // The rate shown for the current mode may be a hair off it (showRefreshRates).
-    if (size == QSize(screen.current.width, screen.current.height)
-        && std::abs(refresh - screen.current.refresh) <= same_rate_millihertz)
+    if (size == QSize(screen.current.width, screen.current.height) &&
+        std::abs(refresh - screen.current.refresh) <= same_rate_millihertz)
     {
         return;
     }
