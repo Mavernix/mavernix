@@ -276,6 +276,10 @@ QString add_startup_program(const QString& program_id)
     {
         return QStringLiteral("%1 cannot be read").arg(program_id);
     }
+    // Chosen to start here: a program meant for another desktop alone would
+    // otherwise be saved but neither listed nor started.
+    g_key_file_remove_key(entry, ENTRY_GROUP, "OnlyShowIn", nullptr);
+    g_key_file_remove_key(entry, ENTRY_GROUP, "NotShowIn", nullptr);
     const QString problem = save(entry, users_folder() + QLatin1Char('/') + program_id);
     g_key_file_free(entry);
     return problem;
