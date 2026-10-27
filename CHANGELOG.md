@@ -2,12 +2,13 @@
 
 ## Unreleased
 
-- A Startup pane in Settings (Login Items under Sea Lion) lists the programs that open at login, from `~/.config/autostart` and the system's autostart folders. Unticking one switches it off, a system one included; Add… starts an installed program at login; Remove takes away one the user added.
-- Settings, Energy can put the computer to sleep after a time without input (`[idle] sleep_after_seconds`; never by default). Video players and calls that keep the screen on also keep the computer awake.
-- Settings, Display chooses each screen's resolution and refresh rate, from the modes the screen reports (a new compositor plugin, `screen-modes`). A new mode is undone after 15 seconds unless kept, so one the screen cannot show does not leave it dark. It is kept as `[display.screens.NAME] mode`. A laptop's own panel, which usually reports a single size, is also offered the usual smaller sizes of its shape, which the graphics card stretches to fill it, as other desktops do. Sea Lion's words for the new rows come with importing the theme again.
-- Settings, Energy chooses what closing a laptop's lid does: sleep (the system's own rule), lock the screen, or nothing (`[power] lid_closed`). It needs UPower; the shell then takes logind's lid switch while the choice is not sleep.
-- KDE programs whose own colour scheme is "Default", such as Konsole, drew dark text and white lists under a dark theme: outside Plasma that default is Breeze Light. The session now puts the theme's colours under Breeze's scheme names too, so "Default" follows the theme.
-- Moving an Energy slider with the arrow keys could freeze the whole desktop: every step rewrote the compositor's config, and the compositor could read it half-written. The config is now replaced in one step, and the pane writes once the slider stops.
+- New Startup pane in Settings (called Login Items in Sea Lion). It shows the programs that open when you log in. You can switch any of them off, add your own, or remove ones you added.
+- Your computer can now go to sleep on its own after a while without use. Set it in Settings, Energy. It's off by default, and a playing video or a call keeps the computer awake.
+- You can pick each screen's resolution and refresh rate in Settings, Display. If the screen goes dark, it switches back after 15 seconds unless you click Keep.
+- Laptop screens usually offer just one size. Settings now also offers smaller sizes of the same shape, which look bigger and help with games. If you use Sea Lion, import the theme again to get the new labels.
+- You can choose what closing the lid does in Settings, Energy: sleep, lock the screen, or nothing. When the laptop is plugged into a dock or another screen, closing the lid leaves it alone, as before.
+- KDE apps like Konsole now follow the desktop's colours. Before, they could show dark text on white under a dark theme.
+- Moving an Energy slider with the arrow keys could freeze the desktop. Fixed.
 
 ## 0.1.4 (2026-10-25)
 
