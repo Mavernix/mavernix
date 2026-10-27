@@ -376,7 +376,7 @@ enabled = []
 name = "Settings"
 # The panes, grouped as on the first page.
 groups = [
-    ["theme", "desktop", "dock", "icons", "desktops", "windows", "defaults", "toolkits"],
+    ["theme", "desktop", "dock", "icons", "desktops", "windows", "defaults", "startup", "toolkits"],
     ["display", "energy", "keyboard", "trackpad", "sound"],
     ["bluetooth"],
     ["extensions"],
@@ -480,6 +480,12 @@ display_larger = "Larger"
 display_smaller = "More room"
 display_looks_like = "Room for %1 × %2"
 display_note = "Between the two ends pictures are drawn less sharply."
+startup_title = "Startup"
+startup_intro = "These programs open by themselves when you log in. Untick one to keep it from opening."
+startup_add = "Add…"
+startup_remove = "Remove"
+startup_add_heading = "Open at Login"
+startup_search = "Search"
 energy_title = "Energy"
 energy_screen_off = "Switch the screen off after:"
 energy_sleep = "Put the computer to sleep after:"
