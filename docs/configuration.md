@@ -28,7 +28,7 @@ A dense screen is drawn at twice its pixels, any other at once; `[display] scale
 
 ## Locking
 
-Ctrl+Super+L under Sea Lion, Super+L under the others, locks the screen; so does going to sleep, `loginctl lock-session`, and ten minutes without input (`[idle]` in the config, or Settings, Energy Saver). `[idle] sleep_after_seconds` puts the computer to sleep after a time without input; it is 0, never, unless set. `[power] lid_closed` says what closing the lid does: `"sleep"` (the system's own rule, logind's `HandleLidSwitch`), `"lock"` or `"nothing"`; the last two need UPower, and Settings, Energy offers the choice only on a computer UPower reports a lid for. Try it once while the desktop runs in a window inside another one (see [building](building.md#try-it-in-a-window)) before relying on it: the keys that end the session do not work while locked.
+Ctrl+Super+L under Sea Lion, Super+L under the others, locks the screen; so does going to sleep, `loginctl lock-session`, and ten minutes without input (`[idle]` in the config, or Settings, Energy Saver). `[idle] sleep_after_seconds` puts the computer to sleep after a time without input; it is 0, never, unless set. `[power] lid_closed` says what closing the lid does: `"sleep"` (the system's own rule, logind's `HandleLidSwitch`), `"lock"` or `"nothing"`; `"lock"` leaves a docked laptop alone (a dock or a second screen, as logind counts it), as logind does; the last two need UPower, and Settings, Energy offers the choice only on a computer UPower reports a lid for. Try it once while the desktop runs in a window inside another one (see [building](building.md#try-it-in-a-window)) before relying on it: the keys that end the session do not work while locked.
 
 ## Programs started at login
 

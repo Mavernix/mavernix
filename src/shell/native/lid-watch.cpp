@@ -53,12 +53,7 @@ void LidWatch::powerChanged(const QString& interface, const QVariantMap& changed
     }
     if (changed.contains(QStringLiteral("LidIsClosed")))
     {
-        const bool now_closed = changed.value(QStringLiteral("LidIsClosed")).toBool();
-        if (now_closed != closed)
-        {
-            closed = now_closed;
-            emit closedChanged();
-        }
+        changeLid(changed.value(QStringLiteral("LidIsClosed")).toBool());
     }
     else if (invalidated.contains(QStringLiteral("LidIsClosed")))
     {
@@ -87,13 +82,13 @@ void LidWatch::readLid(bool announce)
             holdLid();
         }
         const bool now_closed = reply.value().value(QStringLiteral("LidIsClosed")).toBool();
-        if (now_closed != closed)
+        if (announce)
+        {
+            changeLid(now_closed);
+        }
+        else
         {
             closed = now_closed;
-            if (announce)
-            {
-                emit closedChanged();
-            }
         }
     });
 }
@@ -113,5 +108,42 @@ void LidWatch::holdLid()
             lid_lock = reply.value();
         }
         finished->deleteLater();
+    });
+}
+
+void LidWatch::changeLid(bool now_closed)
+{
+    // Any move drops an answer still to come, an opening before it too.
+    const int move = ++lid_moves;
+    if (!now_closed)
+    {
+        if (closed)
+        {
+            closed = false;
+            emit closedChanged();
+        }
+        return;
+    }
+    if (closed)
+    {
+        return;
+    }
+
+    QDBusMessage ask =
+        QDBusMessage::createMethodCall(LOGIN_SERVICE, LOGIN_PATH, PROPERTIES_INTERFACE, QStringLiteral("Get"));
+    ask << LOGIN_MANAGER << QStringLiteral("Docked");
+    auto* watcher = new QDBusPendingCallWatcher(QDBusConnection::systemBus().asyncCall(ask), this);
+    connect(watcher, &QDBusPendingCallWatcher::finished, this, [this, move](QDBusPendingCallWatcher* finished) {
+        const QDBusPendingReply<QVariant> reply = *finished;
+        finished->deleteLater();
+        // Opened again meanwhile.
+        if (move != lid_moves)
+        {
+            return;
+        }
+        // Not known: not docked, as logind would have it without a dock.
+        docked = !reply.isError() && reply.value().toBool();
+        closed = true;
+        emit closedChanged();
     });
 }
