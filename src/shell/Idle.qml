@@ -69,7 +69,8 @@ Item {
     LidWatch {
         handlesLid: idle.lidClosed === "lock" || idle.lidClosed === "nothing"
         onClosedChanged: {
-            if (closed && idle.lidClosed === "lock") {
+            // Docked, the lid is left alone, as logind leaves it.
+            if (closed && !docked && idle.lidClosed === "lock") {
                 idle.lockScreen.lock()
             }
         }
