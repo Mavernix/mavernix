@@ -54,10 +54,23 @@ class TestPanelModes : public QObject
         QVERIFY(!offers(modes, 1280, 800, 60000));
     }
 
+    void aSizeChosenBeforeKeepsTheOthers()
+    {
+        // Once set, a stretched size is among those the panel names.
+        QList<ScreenMode> after = PANEL;
+        after.append({1920, 1200, 119987, false});
+        const QList<ScreenMode> modes = offered_modes(QStringLiteral("eDP-1"), after.last(), after);
+        QVERIFY(offers(modes, 1280, 800, 120000));
+        QVERIFY(offers(modes, 1440, 900, 60000));
+        QVERIFY(!offers(modes, 1920, 1200, 120000));
+        QVERIFY(offers(modes, 1920, 1200, 119987));
+    }
+
     void otherScreensKeepTheirOwnList()
     {
         QCOMPARE(offered_modes(QStringLiteral("DP-1"), PANEL.first(), PANEL).size(), PANEL.size());
-        const QList<ScreenMode> two_sizes = {{1920, 1080, 60000, true}, {1280, 720, 60000, false}};
+        // A driver that adds sizes of its own adds other shapes too.
+        const QList<ScreenMode> two_sizes = {{1920, 1080, 60000, true}, {1024, 768, 60000, false}};
         QCOMPARE(offered_modes(QStringLiteral("eDP-1"), two_sizes.first(), two_sizes).size(), two_sizes.size());
     }
 
