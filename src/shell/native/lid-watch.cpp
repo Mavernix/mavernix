@@ -23,7 +23,7 @@ LidWatch::LidWatch(QObject* parent) : QObject(parent)
     }
     bus.connect(POWER_SERVICE, POWER_PATH, PROPERTIES_INTERFACE, QStringLiteral("PropertiesChanged"), this,
         SLOT(powerChanged(QString, QVariantMap, QStringList)));
-    readLid();
+    readLid(false);
 }
 
 void LidWatch::setHandlesLid(bool handles)
@@ -62,17 +62,17 @@ void LidWatch::powerChanged(const QString& interface, const QVariantMap& changed
     }
     else if (invalidated.contains(QStringLiteral("LidIsClosed")))
     {
-        readLid();
+        readLid(true);
     }
 }
 
-void LidWatch::readLid()
+void LidWatch::readLid(bool announce)
 {
     QDBusMessage ask =
         QDBusMessage::createMethodCall(POWER_SERVICE, POWER_PATH, PROPERTIES_INTERFACE, QStringLiteral("GetAll"));
     ask << POWER_INTERFACE;
     auto* watcher = new QDBusPendingCallWatcher(QDBusConnection::systemBus().asyncCall(ask), this);
-    connect(watcher, &QDBusPendingCallWatcher::finished, this, [this](QDBusPendingCallWatcher* finished) {
+    connect(watcher, &QDBusPendingCallWatcher::finished, this, [this, announce](QDBusPendingCallWatcher* finished) {
         const QDBusPendingReply<QVariantMap> reply = *finished;
         finished->deleteLater();
         if (reply.isError())
@@ -90,7 +90,10 @@ void LidWatch::readLid()
         if (now_closed != closed)
         {
             closed = now_closed;
-            emit closedChanged();
+            if (announce)
+            {
+                emit closedChanged();
+            }
         }
     });
 }

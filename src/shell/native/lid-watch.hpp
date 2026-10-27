@@ -31,7 +31,9 @@ class LidWatch : public QObject
     void powerChanged(const QString& interface, const QVariantMap& changed, const QStringList& invalidated);
 
   private:
-    void readLid();
+    // `announce` false: the state the lid is found in at the start (a docked
+    // laptop's shut lid) is not news, only what it does from then on.
+    void readLid(bool announce);
     void holdLid();
 
     bool present = false;
