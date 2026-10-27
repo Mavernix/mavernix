@@ -55,6 +55,26 @@ bool is_built_in(const QString& name)
            name.startsWith(QLatin1String("DSI-"));
 }
 
+// The common sizes smaller than `panel` and of its shape.
+static QList<QSize> stretched_sizes(const QSize& panel)
+{
+    QList<QSize> sizes;
+    // A panel built upright, as a tablet's, has the same sizes on end.
+    const bool upright = panel.height() > panel.width();
+    for (QSize size : common_sizes)
+    {
+        if (upright)
+        {
+            size.transpose();
+        }
+        if (size.width() < panel.width() && size.height() < panel.height() && same_shape(size, panel))
+        {
+            sizes.append(size);
+        }
+    }
+    return sizes;
+}
+
 QList<ScreenMode> offered_modes(const QString& name, const ScreenMode& current, const QList<ScreenMode>& reported)
 {
     QList<ScreenMode> modes = reported;
@@ -71,30 +91,37 @@ QList<ScreenMode> offered_modes(const QString& name, const ScreenMode& current, 
         return false;
     };
 
-    // A screen that names more than one size has its driver's own list.
-    bool one_size = !reported.isEmpty();
+    // The panel's own size: its preferred mode's, else the largest.
+    QSize panel;
     for (const ScreenMode& mode : reported)
     {
-        one_size = one_size && mode.width == reported.first().width && mode.height == reported.first().height;
-    }
-    if (one_size && is_built_in(name))
-    {
-        const QSize panel(reported.first().width, reported.first().height);
-        // A panel built upright, as a tablet's, has the same sizes on end.
-        const bool upright = panel.height() > panel.width();
-        for (QSize size : common_sizes)
+        const QSize size(mode.width, mode.height);
+        if (mode.preferred || qint64(size.width()) * size.height() > qint64(panel.width()) * panel.height())
         {
-            if (upright)
+            panel = size;
+            if (mode.preferred)
             {
-                size.transpose();
+                break;
             }
-            if (size.width() >= panel.width() || size.height() >= panel.height() || !same_shape(size, panel))
-            {
-                continue;
-            }
+        }
+    }
+    const QList<QSize> stretched = stretched_sizes(panel);
+
+    // A screen that names more sizes than its own has its driver's list. One
+    // of these, chosen before, comes back as a size it names: still its own.
+    bool one_size = !reported.isEmpty() && is_built_in(name);
+    for (const ScreenMode& mode : reported)
+    {
+        const QSize size(mode.width, mode.height);
+        one_size = one_size && (size == panel || stretched.contains(size));
+    }
+    if (one_size)
+    {
+        for (const QSize& size : stretched)
+        {
             for (const ScreenMode& own : reported)
             {
-                if (!has(size.width(), size.height(), own.refresh))
+                if (QSize(own.width, own.height) == panel && !has(size.width(), size.height(), own.refresh))
                 {
                     modes.append({size.width(), size.height(), own.refresh, false});
                 }
