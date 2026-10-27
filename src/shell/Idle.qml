@@ -45,6 +45,7 @@ Item {
         model: idle.sleepAfterSeconds > 0 ? [idle.sleepAfterSeconds] : []
 
         IdleMonitor {
+            id: sleepMonitor
             required property real modelData
             timeout: modelData
             respectInhibitors: true
@@ -52,6 +53,15 @@ Item {
                 if (isIdle) {
                     session.sleep()
                 }
+            }
+
+            // Still idle after a sleep another program held off, or after a
+            // wake with no input (a timer, the network): asked again.
+            property Timer askAgain: Timer {
+                interval: Math.max(60, sleepMonitor.modelData) * 1000
+                repeat: true
+                running: sleepMonitor.isIdle
+                onTriggered: session.sleep()
             }
         }
     }
