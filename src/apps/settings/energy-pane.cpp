@@ -14,6 +14,7 @@
 #include <QTimer>
 
 #include "choices.hpp"
+#include "pane-parts.hpp"
 
 // In minutes; "never" comes after them.
 static const int stop_minutes[] = {1, 3, 5, 10, 15, 20, 25, 30, 45, 60, 75, 90, 105, 120, 180};
@@ -73,6 +74,14 @@ EnergyPane::EnergyPane(Choices& choices, QWidget* parent) : QWidget(parent), cho
     }
     connect(locks, &QCheckBox::toggled, this, [this]() { write(); });
 
+    lock_note = new QLabel;
+    lock_note->setWordWrap(true);
+    lock_note->setFont(scaled_font(lock_note->font(), small_words_scale));
+    lock_note->setFixedWidth(slider_width_px + 80);
+    connect(screen_off, &QSlider::valueChanged, this, &EnergyPane::showLockNote);
+    connect(sleep, &QSlider::valueChanged, this, &EnergyPane::showLockNote);
+    connect(locks, &QCheckBox::toggled, this, &EnergyPane::showLockNote);
+
     auto* form = new QFormLayout(this);
     form->setLabelAlignment(Qt::AlignRight | Qt::AlignTop);
     form->setFormAlignment(Qt::AlignHCenter | Qt::AlignTop);
@@ -80,6 +89,8 @@ EnergyPane::EnergyPane(Choices& choices, QWidget* parent) : QWidget(parent), cho
     form->addRow(word("energy_screen_off", "Switch the screen off after:"), screen_off_row);
     form->addRow(word("energy_sleep", "Put the computer to sleep after:"), sleep_row);
     form->addRow(QString(), locks);
+    form->addRow(QString(), lock_note);
+    showLockNote();
 
     // What the shell does with it (src/shell/Idle.qml); "sleep" is the
     // system's own rule, which usually sleeps.
@@ -231,4 +242,16 @@ QString EnergyPane::written(int seconds) const
     }
 
     return parts.join(QLatin1Char(' '));
+}
+
+void EnergyPane::showLockNote()
+{
+    // "Never" is the last stop of both sliders.
+    const int never = stops.size() - 1;
+    const bool never_idle = screen_off->value() == never && sleep->value() == never;
+    lock_note->setVisible(locks->isChecked() && never_idle);
+    lock_note->setText(words.value(QStringLiteral("energy_lock_never"),
+        QStringLiteral("The screen never switches off and the computer never sleeps, so it won't lock by itself. "
+                       "Lock it any time from the menu at the right of the menu bar."))
+                           .toString());
 }

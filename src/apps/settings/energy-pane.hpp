@@ -39,5 +39,8 @@ class EnergyPane : public QWidget
     QSlider* screen_off = nullptr;
     QSlider* sleep = nullptr;
     QCheckBox* locks;
+    // Says when the lock never comes by itself.
+    QLabel* lock_note = nullptr;
+    void showLockNote();
     QTimer* write_later;
 };
