@@ -133,3 +133,71 @@ jobs:
             /root/rpmbuild/SRPMS/*.src.rpm
           if-no-files-found: error
           retention-days: 7
+
+
+  quickshell:
+    runs-on: ubuntu-latest
+    container: fedora:44
+    timeout-minutes: 60
+    steps:
+      - name: Install RPM tools
+        run: dnf install -y git rpm-build rpmdevtools dnf5-plugins
+      - uses: actions/checkout@v4
+      - name: Prepare Quickshell sources
+        run: |
+          mkdir -p /root/rpmbuild/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}
+          cp packaging/fedora/quickshell.spec /root/rpmbuild/SPECS/
+          spectool -g -C /root/rpmbuild/SOURCES /root/rpmbuild/SPECS/quickshell.spec
+      - name: Install build dependencies
+        run: dnf builddep -y /root/rpmbuild/SPECS/quickshell.spec
+      - name: Build and test Quickshell RPMs
+        run: rpmbuild --define '_topdir /root/rpmbuild' -ba /root/rpmbuild/SPECS/quickshell.spec
+      - name: Upload RPMs and source RPM
+        uses: actions/upload-artifact@v4
+        with:
+          name: quickshell-fedora-44
+          path: |
+            /root/rpmbuild/RPMS/**/*.rpm
+            /root/rpmbuild/SRPMS/*.src.rpm
+          if-no-files-found: error
+          retention-days: 7
+
+  install-test:
+    needs: [wf-config, wayfire, mavernix, quickshell]
+    runs-on: ubuntu-latest
+    container: fedora:44
+    timeout-minutes: 30
+    steps:
+      - name: Download built RPMs
+        uses: actions/download-artifact@v4
+        with:
+          pattern: '*-fedora-44'
+          path: packages
+      - name: Select the four runtime packages
+        run: |
+          mkdir runtime-rpms
+          mapfile -t packages < <(find packages -type f \( -name 'wf-config-0*.x86_64.rpm' -o -name 'wayfire-0*.x86_64.rpm' -o -name 'quickshell-0*.x86_64.rpm' -o -name 'mavernix-0*.x86_64.rpm' \))
+          test "${#packages[@]}" -eq 4
+          cp "${packages[@]}" runtime-rpms/
+      - name: Install together in a clean Fedora container
+        run: dnf install -y ./runtime-rpms/*.rpm
+      - name: Verify installed packages and commands
+        env:
+          QT_QPA_PLATFORM: offscreen
+          QT_QUICK_BACKEND: software
+        run: |
+          rpm -q wf-config wayfire quickshell mavernix
+          quickshell --version
+          wayfire --version
+          test -f /usr/share/wayland-sessions/mavernix.desktop
+          test -d /usr/share/mavernix
+      - name: Generate download checksums
+        working-directory: runtime-rpms
+        run: sha256sum *.rpm > SHA256SUMS
+      - name: Upload installable runtime package set
+        uses: actions/upload-artifact@v4
+        with:
+          name: mavernix-fedora-44-runtime
+          path: runtime-rpms/
+          if-no-files-found: error
+          retention-days: 7
