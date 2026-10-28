@@ -676,6 +676,19 @@ PanelWindow {
         tilesRevision
         return tiles.itemAt(index)
     }
+    // The same by key, which a layer's item keeps when the row is reordered.
+    // By index it would ask while the tiles are still in their old order, as
+    // the layers hear of the move first, and would keep the wrong tile.
+    function tileOf(key) {
+        tilesRevision
+        for (let number = 0; number < tiles.count; number++) {
+            const tile = tiles.itemAt(number)
+            if (tile !== null && tile.modelData === key) {
+                return tile
+            }
+        }
+        return null
+    }
 
     // --- The window ---------------------------------------------------------------
 
@@ -814,7 +827,7 @@ PanelWindow {
             required property int index
             required property string modelData
             readonly property var place: dock.placeOf(modelData)
-            readonly property var tile: dock.tileAt(index)
+            readonly property var tile: dock.tileOf(modelData)
 
             visible: !place.isSeparator && dock.looks.icon_shadow !== undefined
             iconSource: tile?.iconSource ?? ""
@@ -860,7 +873,7 @@ PanelWindow {
             required property int index
             required property string modelData
             readonly property var place: dock.placeOf(modelData)
-            readonly property var tile: dock.tileAt(index)
+            readonly property var tile: dock.tileOf(modelData)
             readonly property var looks: dock.looks.separator
 
             visible: place.isSeparator
@@ -936,7 +949,7 @@ PanelWindow {
                 required property int index
                 required property string modelData
                 readonly property var place: dock.placeOf(modelData)
-                readonly property var tile: dock.tileAt(index)
+                readonly property var tile: dock.tileOf(modelData)
 
                 visible: !place.isSeparator
                 iconSource: tile?.iconSource ?? ""
@@ -965,7 +978,7 @@ PanelWindow {
             required property int index
             required property string modelData
             readonly property var place: dock.placeOf(modelData)
-            readonly property var tile: dock.tileAt(index)
+            readonly property var tile: dock.tileOf(modelData)
             readonly property real iconSize: tile?.iconSize ?? 0
 
             visible: !place.isSeparator
@@ -989,7 +1002,7 @@ PanelWindow {
             required property int index
             required property string modelData
             readonly property var place: dock.placeOf(modelData)
-            readonly property var tile: dock.tileAt(index)
+            readonly property var tile: dock.tileOf(modelData)
             readonly property var looks: dock.looks.indicator
             readonly property bool small: looks.small_fill !== undefined
                                           && dock.tileSize < looks.small_below_tile_size
