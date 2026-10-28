@@ -5,6 +5,7 @@
 #include <QDBusPendingCall>
 #include <QDir>
 #include <QFile>
+#include <QComboBox>
 #include <QFormLayout>
 #include <QGuiApplication>
 #include <QLabel>
@@ -171,6 +172,114 @@ DisplayPane::DisplayPane(Choices& choices, QWidget* parent) : QWidget(parent), c
         }
     });
     form->addRow(word("display_size", "Size:"), choice);
+
+    // With several screens: which one has the menu bar and the dock, and
+    // where each other one stands next to it. Takes effect at once; the
+    // compositor reads the positions ([display.screens.NAME] position).
+    const QList<QScreen*> screens = QGuiApplication::screens();
+    if (screens.size() > 1)
+    {
+        const QString wanted_main = choices.value(QStringLiteral("display"), QStringLiteral("main_screen")).toString();
+        auto* main_choice = new QComboBox;
+        for (QScreen* one : screens)
+        {
+            main_choice->addItem(QStringLiteral("%1 (%2)").arg(one->model().isEmpty() ? one->name() : one->model(), one->name()),
+                one->name());
+        }
+        main_choice->setCurrentIndex(qMax(0, main_choice->findData(wanted_main)));
+        form->addRow(word("display_main", "Menu bar and dock on:"), main_choice);
+
+        const struct
+        {
+            const char* key;
+            const char* word_key;
+            const char* fallback;
+        } places[] = {
+            {"right", "display_place_right", "right of the main screen"},
+            {"left", "display_place_left", "left of the main screen"},
+            {"above", "display_place_above", "above the main screen"},
+            {"below", "display_place_below", "below the main screen"},
+        };
+        auto* arrangement = new QWidget;
+        auto* arrangement_rows = new QFormLayout(arrangement);
+        arrangement_rows->setContentsMargins(0, 0, 0, 0);
+        QList<QComboBox*> place_choices;
+        for (QScreen* one : screens)
+        {
+            auto* place = new QComboBox;
+            for (const auto& choice : places)
+            {
+                place->addItem(word(choice.word_key, choice.fallback), QLatin1String(choice.key));
+            }
+            place->setProperty("screen", one->name());
+            place_choices << place;
+            arrangement_rows->addRow(one->name() + QLatin1Char(':'), place);
+        }
+
+        // The main screen at 0,0 and every other one beside it, in logical pixels.
+        const auto arrange = [this, main_choice, place_choices]() {
+            const QString main_name = main_choice->currentData().toString();
+            QScreen* main_screen = nullptr;
+            for (QScreen* one : QGuiApplication::screens())
+            {
+                if (one->name() == main_name)
+                {
+                    main_screen = one;
+                }
+            }
+            if (main_screen == nullptr)
+            {
+                return;
+            }
+            QVariantMap per_screen = this->choices.value(QStringLiteral("display"), QStringLiteral("screens")).toMap();
+            const QSize main_size = main_screen->size();
+            for (QComboBox* place : place_choices)
+            {
+                const QString name = place->property("screen").toString();
+                place->setEnabled(name != main_name);
+                QPoint at(0, 0);
+                QScreen* one = nullptr;
+                for (QScreen* candidate : QGuiApplication::screens())
+                {
+                    if (candidate->name() == name)
+                    {
+                        one = candidate;
+                    }
+                }
+                if (name != main_name && one != nullptr)
+                {
+                    const QString side = place->currentData().toString();
+                    at = side == QLatin1String("left")    ? QPoint(-one->size().width(), 0)
+                         : side == QLatin1String("above") ? QPoint(0, -one->size().height())
+                         : side == QLatin1String("below") ? QPoint(0, main_size.height())
+                                                          : QPoint(main_size.width(), 0);
+                }
+                QVariantMap screen = per_screen.value(name).toMap();
+                screen.insert(QStringLiteral("position"), QStringLiteral("%1,%2").arg(at.x()).arg(at.y()));
+                per_screen.insert(name, screen);
+            }
+            this->choices.set(QStringLiteral("display"), QStringLiteral("main_screen"), main_name);
+            this->choices.set(QStringLiteral("display"), QStringLiteral("screens"), per_screen);
+        };
+        // Where each screen stands now, read back from the saved positions.
+        const QVariantMap saved = choices.value(QStringLiteral("display"), QStringLiteral("screens")).toMap();
+        for (QComboBox* place : place_choices)
+        {
+            const QStringList at = saved.value(place->property("screen").toString()).toMap()
+                                       .value(QStringLiteral("position")).toString().split(QLatin1Char(','));
+            if (at.size() == 2)
+            {
+                const int x = at[0].toInt();
+                const int y = at[1].toInt();
+                const char* side = x < 0 ? "left" : (y < 0 ? "above" : (y > 0 && x == 0 ? "below" : "right"));
+                place->setCurrentIndex(qMax(0, place->findData(QLatin1String(side))));
+            }
+            place->setEnabled(place->property("screen").toString() != main_choice->currentData().toString());
+            connect(place, &QComboBox::activated, this, arrange);
+        }
+        connect(main_choice, &QComboBox::activated, this, arrange);
+        form->addRow(word("display_arrangement", "Arrangement:"), arrangement);
+    }
 
     // Brightness, for a screen with a backlight; the brightness keys change it too.
     backlight = backlight_name();

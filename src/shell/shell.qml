@@ -23,7 +23,8 @@ ShellRoot {
     // The screen for the panel, dock and overlays: [display] main_screen, else
     // the first one.
     readonly property var mainScreen: {
-        const wanted = (settings.config.display ?? ({})).main_screen
+        // The settings' Display pane may change it while the shell runs.
+        const wanted = userChoices.value("display", "main_screen") ?? (settings.config.display ?? ({})).main_screen
         const screens = Quickshell.screens
         return screens.find(screen => screen.name === wanted) ?? screens[0] ?? null
     }
