@@ -80,8 +80,10 @@ tile_top_left = "<ctrl> <alt> KEY_U"
 tile_top_right = "<ctrl> <alt> KEY_I"
 tile_bottom_left = "<ctrl> <alt> KEY_J"
 tile_bottom_right = "<ctrl> <alt> KEY_K"
-previous_desktop = "<ctrl> KEY_LEFT"
-next_desktop = "<ctrl> KEY_RIGHT"
+# Not Ctrl+arrows as on the original: there those move by words in text
+# fields on Linux, which the Mac does with Option.
+previous_desktop = "<ctrl> <alt> KEY_LEFT"
+next_desktop = "<ctrl> <alt> KEY_RIGHT"
 
 [desktops]
 count = 1
