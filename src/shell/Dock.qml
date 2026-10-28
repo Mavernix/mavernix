@@ -1241,18 +1241,17 @@ PanelWindow {
         }
 
         // A running program can be kept or let go; a kept idle one only removed.
-        // One without a desktop entry (no listedAs) cannot be kept.
+        // One without a desktop entry (no listedAs) cannot be kept. In the
+        // menu itself rather than the original's Options submenu, to be found.
         if (place.listedAs !== undefined) {
-            const options = []
             if (tile.running) {
                 const keep = menuEntry(keepId, words.keep ?? "Keep in dock")
                 keep.checkable = true
                 keep.checked = place.kept
-                options.push(keep)
+                items.push(keep)
             } else {
-                options.push(menuEntry(removeId, words.remove ?? "Remove from dock"))
+                items.push(menuEntry(removeId, words.remove ?? "Remove from dock"))
             }
-            items.push(menuEntry(optionsId, words.options ?? "Options", true, options))
             items.push(menuSeparator())
         }
         items.push(tile.running ? menuEntry(quitId, words.quit ?? "Quit")
@@ -1436,8 +1435,7 @@ PanelWindow {
         folderViews.forEach((view, number) => items.push(
             ticked(viewBaseId + number, viewWords[number], (folder.view ?? "list") === view)))
         items.push(menuSeparator())
-        items.push(menuEntry(optionsId, words.options ?? "Options", true,
-                             [menuEntry(removeId, words.remove ?? "Remove from dock")]))
+        items.push(menuEntry(removeId, words.remove ?? "Remove from dock"))
         items.push(menuSeparator())
         items.push(menuEntry(openFolderId, (words.open_named ?? "Open “%1”").arg(folder.name ?? "")))
         return items
