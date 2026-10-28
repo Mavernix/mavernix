@@ -416,8 +416,15 @@ PanelWindow {
                 }
                 Timer {
                     id: restingOnPicture
-                    interval: overview.stripLooks.close_delay_ms ?? 800
+                    interval: overview.stripLooks.close_delay_ms ?? 300
                     onTriggered: desktopItem.rested = true
+                }
+                // Without the theme's picture, a plain round button.
+                CloseCircle {
+                    visible: overview.stripLooks.close_button === undefined && overview.desktopCount > 1 && desktopItem.rested
+                    x: -width / 2
+                    y: -height / 2
+                    onClicked: overview.removeDesktop(desktopItem.index)
                 }
                 Image {
                     visible: overview.stripLooks.close_button !== undefined && overview.desktopCount > 1 && desktopItem.rested
@@ -454,7 +461,7 @@ PanelWindow {
                 }
             }
 
-            visible: overview.stripLooks.add_tile !== undefined && out > 0
+            visible: out > 0
             width: overview.stripPictureWidth
             height: overview.stripPictureHeight
             x: strip.width - out * width * (tile.shown_share ?? 0.5)
@@ -463,6 +470,18 @@ PanelWindow {
             SmallDesktop {
                 anchors.fill: parent
                 opacity: addTile.tile.opacity ?? 0.6
+            }
+            // Without the theme's picture, a plain plus.
+            Text {
+                visible: addTile.tile.image === undefined
+                text: "+"
+                color: "white"
+                font.pixelSize: 28
+                font.bold: true
+                style: Text.Raised
+                styleColor: "#80000000"
+                x: (parent.width * (addTile.tile.shown_share ?? 0.5) - width) / 2
+                anchors.verticalCenter: parent.verticalCenter
             }
             Image {
                 source: addTile.tile.image !== undefined ? "file://" + overview.themeDirectory + "/" + addTile.tile.image : ""
@@ -474,7 +493,6 @@ PanelWindow {
         }
         MouseArea {
             id: nearCorner
-            visible: overview.stripLooks.add_tile !== undefined
             width: overview.stripPictureWidth
             height: strip.height + (overview.stripLooks.name_gap ?? 12)
             x: strip.width - width
@@ -592,6 +610,44 @@ PanelWindow {
                     }
                 }
             }
+            // Under the pointer, a button on the corner closes the window
+            // without going to it first.
+            CloseCircle {
+                visible: overview.hoveredId === windowItem.modelData.id && overview.open && !windowItem.dragged
+                // Inside the picture, so that the pointer on it is still on the window.
+                x: 6
+                y: 6
+                onClicked: {
+                    desktops.closeWindow(windowItem.modelData.id)
+                    overview.hoveredId = -1
+                }
+            }
+        }
+    }
+
+    // A round close button drawn without the theme: dark, with a light cross.
+    component CloseCircle: Rectangle {
+        id: circle
+        signal clicked()
+        width: 24
+        height: 24
+        radius: width / 2
+        color: circleArea.pressed ? "#303030" : "#505050"
+        border.color: "#e0e0e0"
+        border.width: 2
+        Text {
+            anchors.centerIn: parent
+            anchors.verticalCenterOffset: -1
+            text: "×"
+            color: "white"
+            font.pixelSize: 18
+            font.bold: true
+        }
+        // No hover of its own, so the window under it keeps the pointer's hover.
+        MouseArea {
+            id: circleArea
+            anchors.fill: parent
+            onClicked: circle.clicked()
         }
     }
 

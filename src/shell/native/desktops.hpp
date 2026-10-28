@@ -41,6 +41,9 @@ class Desktops : public QObject
     // Coordinates are relative to the desktop shown.
     Q_INVOKABLE void placeWindow(int id, qreal x, qreal y, qreal windowWidth, qreal windowHeight);
 
+    // Asks the window to close, as its close button would.
+    Q_INVOKABLE void closeWindow(int id);
+
   signals:
     void changed();
     void gapClosed();

@@ -83,6 +83,11 @@ void Desktops::placeWindow(int id, qreal x, qreal y, qreal windowWidth, qreal wi
     compositor.request("window-rules/configure-view", wish, [](const QJsonObject&) {});
 }
 
+void Desktops::closeWindow(int id)
+{
+    compositor.request("window-rules/close-view", QJsonObject{{"id", id}}, [](const QJsonObject&) {});
+}
+
 void Desktops::closeGap(int index)
 {
     if ((screenId == -1) || (width <= 0) || (index < 0) || (index >= desktopCount) || (desktopCount < 2))
