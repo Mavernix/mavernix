@@ -8,6 +8,7 @@ Source0:        https://github.com/quickshell-mirror/quickshell/archive/refs/tag
 ExclusiveArch:  x86_64
 
 BuildRequires:  gcc-c++
+BuildRequires:  gdb
 BuildRequires:  cmake
 BuildRequires:  ninja-build
 BuildRequires:  pkgconf-pkg-config
@@ -54,7 +55,16 @@ reporter is disabled because cpptrace is unavailable in Fedora 44.
 %cmake_install
 
 %check
-QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software %ctest --output-on-failure
+export QT_QPA_PLATFORM=offscreen
+export QT_QUICK_BACKEND=software
+export QT_LOGGING_TO_CONSOLE=1
+export QT_DEBUG_PLUGINS=1
+export QS_NO_FILTER_QT_LOGS=1
+if ! %ctest --verbose --output-on-failure; then
+    # Capture one representative startup failure without suppressing test errors.
+    find %{_vpath_builddir} -type f -name ringbuffer -executable -exec gdb --batch -ex 'set pagination off' -ex run -ex 'thread apply all bt' --args {} \; || :
+    exit 1
+fi
 
 %files
 %license LICENSE LICENSE-GPL
