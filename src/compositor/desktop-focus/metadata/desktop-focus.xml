@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="desktop-focus">
+		<_short>Desktop Focus</_short>
+		<_long>A click on the desktop leaves no window active.</_long>
+		<category>Desktop</category>
+	</plugin>
+</wayfire>

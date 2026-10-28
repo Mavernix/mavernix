@@ -39,6 +39,7 @@ BASE_PLUGINS = [
     "shared-edges",
     "shortcut-capture",
     "screen-modes",
+    "desktop-focus",
 ]
 
 

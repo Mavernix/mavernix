@@ -57,15 +57,17 @@ void ActiveWindow::startWatching()
 void ActiveWindow::takeWindow(const QJsonValue& window)
 {
     // Panels and menus take the keyboard too; the menu bar must keep the
-    // application's menu while one of its own menus is open.
+    // application's menu while one of its own menus is open. The desktop
+    // (the background layer) leaves no window active.
     const QJsonObject description = window.toObject();
     const bool isApplicationWindow = description.value("role").toString() == "toplevel";
-    if (!window.isNull() && !isApplicationWindow)
+    const bool isDesktop = description.value("layer").toString() == "background";
+    if (!window.isNull() && !isApplicationWindow && !isDesktop)
     {
         return;
     }
 
-    const int newId = window.isNull() ? -1 : description.value("id").toInt(-1);
+    const int newId = (window.isNull() || isDesktop) ? -1 : description.value("id").toInt(-1);
     if (newId == windowId)
     {
         return;

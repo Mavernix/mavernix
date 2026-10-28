@@ -6,6 +6,7 @@ wayfire_plugin_dir = mavernix_libdir / 'wayfire'
 wayfire_metadata_dir = mavernix_datadir / 'wayfire'
 
 subdir('decoration')
+subdir('desktop-focus')
 subdir('minimize')
 subdir('screen-modes')
 subdir('shared-edges')

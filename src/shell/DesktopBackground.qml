@@ -25,7 +25,9 @@ PanelWindow {
         right: true
     }
 
-    WlrLayershell.keyboardFocus: showsFiles ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+    // Always takes the keyboard on a click, files or not: the compositor then
+    // leaves no window active (src/compositor/desktop-focus).
+    WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
     WlrLayershell.namespace: "desktop-background"
 
     // Shown while a picture is still loading, or if a theme gives no fill.
