@@ -202,6 +202,9 @@ ShellRoot {
         dialog: confirmDialog
     }
 
+    // For menus that offer to empty it.
+    readonly property bool trashIsEmpty: dock.trashIsEmpty
+
     // [sounds] volume_step, a share of the full loudness.
     readonly property real volumeStep: (settings.config.sounds ?? ({})).volume_step ?? 0.05
 

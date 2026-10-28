@@ -98,7 +98,7 @@ ThemePane::ThemePane(Choices& choices, QWidget* parent) : QWidget(parent)
     more->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     connect(more, &QPushButton::clicked, this, []() { QProcess::startDetached(installer_command, {}); });
     auto* more_note =
-        new QLabel(word("theme_more_note", "The Theme Installer makes more themes from a Mac installer."));
+        new QLabel(word("theme_more_note", "The Theme Installer can make more themes, such as Sea Lion, the look of OS X 10.9, from Apple's installer files."));
     more_note->setWordWrap(true);
 
     auto* form = new QFormLayout(this);

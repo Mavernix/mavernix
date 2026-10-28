@@ -69,7 +69,9 @@ Row {
             children: (menu.entries ?? []).map((entry, entryNumber) => ({
                 id: (menuNumber + 1) * entriesPerMenu + entryNumber + 1,
                 label: entry.label ?? "",
-                enabled: entry.command !== undefined || entry.action !== undefined,
+                // Emptying an empty wastebasket is greyed, as there is nothing to do.
+                enabled: (entry.command !== undefined || entry.action !== undefined)
+                         && !(entry.action === "empty_trash" && (panel.shell?.trashIsEmpty ?? false)),
                 separator: entry.separator ?? false,
                 checkable: false, checked: false, shortcut: [], children: []
             }))

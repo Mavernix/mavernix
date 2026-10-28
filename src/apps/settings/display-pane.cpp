@@ -85,8 +85,8 @@ DisplayPane::DisplayPane(Choices& choices, QWidget* parent) : QWidget(parent), c
     const QVariant held = choices.value(QStringLiteral("display"), QStringLiteral("scale"));
     const bool is_automatic = !held.isValid() || (held.toString() == QLatin1String("auto"));
 
-    automatic = new QRadioButton(word("display_automatic", "Decide by the screen"));
-    chosen = new QRadioButton(word("display_chosen", "Choose"));
+    automatic = new QRadioButton(word("display_automatic", "Automatic, for this screen"));
+    chosen = new QRadioButton(word("display_chosen", "Custom"));
     automatic->setChecked(is_automatic);
     chosen->setChecked(!is_automatic);
 
@@ -171,7 +171,7 @@ DisplayPane::DisplayPane(Choices& choices, QWidget* parent) : QWidget(parent), c
             showLooksLike();
         }
     });
-    form->addRow(word("display_size", "Size:"), choice);
+    form->addRow(word("display_size", "Size of text and pictures:"), choice);
 
     // With several screens: which one has the menu bar and the dock, and
     // where each other one stands next to it. Takes effect at once; the

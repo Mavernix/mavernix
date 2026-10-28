@@ -95,21 +95,33 @@ StartupPane::StartupPane(Choices& choices, QWidget* parent) : QWidget(parent)
     // Said when nothing in the list would start.
     QString note;
     const QVariant users_autostart = choices.value(QStringLiteral("session"), QStringLiteral("users_autostart"));
-    if (users_autostart.isValid() && !users_autostart.toBool())
+    const bool switched_off = users_autostart.isValid() && !users_autostart.toBool();
+    if (switched_off)
     {
-        note = word("startup_switched_off", "This desktop does not start these programs ([session] users_autostart).");
+        note = word("startup_switched_off", "Starting these programs at login is turned off.");
     }
     else if (QStandardPaths::findExecutable(QStringLiteral("dex")).isEmpty())
     {
-        note = word("startup_no_dex", "These programs are not started, because dex is not installed.");
+        note = word("startup_no_dex",
+            "These programs don't open yet: a small helper program, “dex”, is missing. Install the package dex, "
+            "for example with your system's software centre, and they open from the next login.");
     }
     if (!note.isEmpty())
     {
         auto* note_label = new QLabel(note);
         note_label->setWordWrap(true);
         note_label->setFixedWidth(intro_width_px);
-        note_label->setEnabled(false);
         rows->addWidget(note_label);
+    }
+    // Turned off in the config: a button turns it back on, rather than a file to edit.
+    if (switched_off)
+    {
+        auto* turn_on = new QPushButton(word("startup_turn_on", "Open Them at Login"));
+        connect(turn_on, &QPushButton::clicked, this, [&choices, turn_on]() {
+            choices.set(QStringLiteral("session"), QStringLiteral("users_autostart"), true);
+            turn_on->setEnabled(false);
+        });
+        rows->addWidget(turn_on, 0, Qt::AlignLeft);
     }
 
     connect(list, &QListWidget::itemChanged, this, [this](QListWidgetItem* item) {
