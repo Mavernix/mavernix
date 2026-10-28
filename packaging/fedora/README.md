@@ -45,3 +45,9 @@ sudo dnf install ./*.rpm
 
 A successful container installation does not confirm a working graphical login.
 A Fedora desktop test is still required before calling these packages supported.
+
+## Quickshell build option
+
+The optional built-in crash reporter is disabled (`CRASH_HANDLER=OFF`) because
+Fedora 44 does not provide the required cpptrace build dependency. Other features
+and the test suite remain enabled.

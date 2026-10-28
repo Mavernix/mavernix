@@ -18,7 +18,6 @@ BuildRequires:  qt6-qtwayland-devel
 BuildRequires:  qt6-qtshadertools-devel
 BuildRequires:  spirv-tools
 BuildRequires:  cmake(CLI11)
-BuildRequires:  cmake(cpptrace)
 BuildRequires:  cmake(VulkanHeaders)
 BuildRequires:  pkgconfig(jemalloc)
 BuildRequires:  pkgconfig(libdrm)
@@ -40,13 +39,15 @@ Requires:       qt6-qtwayland
 %description
 Quickshell is a toolkit for building desktop shells using Qt Quick.
 This package enables Wayland, system tray, audio, networking, Bluetooth,
-notifications and authentication integrations.
+notifications and authentication integrations. The optional built-in crash
+reporter is disabled because cpptrace is unavailable in Fedora 44.
 
 %prep
 %autosetup
 
 %build
-%cmake -GNinja -DBUILD_TESTING=ON -DDISTRIBUTOR="Mavernix Fedora RPM" -DINSTALL_QMLDIR=%{_libdir}/qt6/qml -DGIT_REVISION=4f508be500dea6e5732cc3d50382a0048b17e7b1 -DFETCHCONTENT_FULLY_DISCONNECTED=ON
+# Fedora 44 has no cpptrace package; disable only the optional crash reporter.
+%cmake -GNinja -DCRASH_HANDLER=OFF -DBUILD_TESTING=ON -DDISTRIBUTOR="Mavernix Fedora RPM" -DINSTALL_QMLDIR=%{_libdir}/qt6/qml -DGIT_REVISION=4f508be500dea6e5732cc3d50382a0048b17e7b1 -DFETCHCONTENT_FULLY_DISCONNECTED=ON
 %cmake_build
 
 %install
