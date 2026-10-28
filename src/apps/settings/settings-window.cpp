@@ -27,6 +27,7 @@
 #include "theme-pane.hpp"
 #include "icons-pane.hpp"
 #include "mouse-pane.hpp"
+#include "network-pane.hpp"
 #include "trackpad-pane.hpp"
 #include "toolkits-pane.hpp"
 #include "windows-pane.hpp"
@@ -52,6 +53,7 @@ static const KnownPane known_panes[] = {
     {"windows", "preferences-system-windows", "Windows"},
     {"extensions", "preferences-plugin", "Extensions"},
     {"toolkits", "preferences-system", "GTK & Qt"},
+    {"network", "preferences-system-network", "Network"},
     {"bluetooth", "preferences-system-bluetooth", "Bluetooth"},
     {"keyboard", "input-keyboard", "Keyboard"},
     {"defaults", "applications-other", "Default Apps"},
@@ -139,7 +141,7 @@ SettingsWindow::SettingsWindow(Choices& choices) : choices(choices)
                 std::fprintf(stderr,
                     "mavernix-settings: the config asks for a pane \"%s\", "
                     "which this program does not have; known: theme, desktop, dock, icons, sound, trackpad, mouse, energy, "
-                    "display, desktops, windows, toolkits, extensions, bluetooth, keyboard, defaults\n",
+                    "display, desktops, windows, toolkits, extensions, network, bluetooth, keyboard, defaults\n",
                     qPrintable(name));
                 continue;
             }
@@ -228,6 +230,10 @@ QWidget* SettingsWindow::makePane(const QString& name)
     if (name == QLatin1String("mouse"))
     {
         return new MousePane(choices);
+    }
+    if (name == QLatin1String("network"))
+    {
+        return new NetworkPane(choices);
     }
     if (name == QLatin1String("energy"))
     {

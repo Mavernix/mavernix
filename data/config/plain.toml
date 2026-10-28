@@ -396,7 +396,7 @@ name = "Settings"
 groups = [
     ["theme", "desktop", "dock", "icons", "desktops", "windows", "defaults", "startup", "toolkits"],
     ["display", "energy", "keyboard", "mouse", "trackpad", "sound"],
-    ["bluetooth"],
+    ["network", "bluetooth"],
     ["extensions"],
 ]
 
@@ -490,6 +490,28 @@ trackpad_title = "Touchpad"
 trackpad_tap = "Tap to click"
 trackpad_natural_scroll = "Natural scrolling"
 trackpad_natural_scroll_note = "The page moves with the fingers"
+network_title = "Network"
+network_wifi = "Wi-Fi"
+network_ethernet = "Ethernet"
+network_status = "Status:"
+network_connected = "Connected"
+network_not_connected = "Not Connected"
+network_connecting = "Connecting…"
+network_off = "Off"
+network_turn_on = "Turn Wi-Fi On"
+network_turn_off = "Turn Wi-Fi Off"
+network_name = "Network Name:"
+network_no_network = "No network selected"
+network_join_other = "Join Other Network…"
+network_forget = "Forget This Network"
+network_address = "IP Address:"
+network_router = "Router:"
+network_wifi_connected = "Wi-Fi is connected to “%1” and has the IP address %2."
+network_cable_connected = "Ethernet is connected and has the IP address %1."
+network_wifi_not_connected = "Wi-Fi is on but not connected to a network."
+network_cable_unplugged = "Cable Unplugged"
+network_password_for = "The Wi-Fi network “%1” requires a password."
+network_enterprise = "“%1” signs in with a user name or a certificate. Set it up with NetworkManager's connection editor (nm-connection-editor)."
 mouse_title = "Mouse"
 mouse_speed = "Tracking speed:"
 mouse_speed_slow = "Slow"
