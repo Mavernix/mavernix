@@ -426,10 +426,46 @@ PanelWindow {
         return addresses
     }
 
+    // Files held over the trash: its name shows, as under the pointer.
+    property bool dropOverTrash: false
+
     DropArea {
         anchors.fill: parent
         // No `keys`: with them a drag from another program is never let in.
+
+        // While one file is held over the dock, the tiles part where it would
+        // land, as for a tile dragged along the dock. Several files go to the
+        // end of the last group, as before.
+        function follow(drag) {
+            dock.dropOverTrash = dock.overTrash(drag.x)
+            const addresses = dock.droppedAddresses(drag)
+            const single = addresses.length === 1 && String(addresses[0]).startsWith("file://")
+            if (dock.dropOverTrash || !single) {
+                if (dock.dragged?.dropped ?? false) {
+                    dock.giveUpDrag()
+                }
+                return
+            }
+            if (dock.dragged === null) {
+                const path = decodeURIComponent(String(addresses[0]).substring("file://".length))
+                dock.dragged = { listedAs: dock.droppedEntry(path), iconSource: "", fromOutside: true,
+                                 dropped: true }
+            }
+            if (dock.dragged.dropped ?? false) {
+                dock.followDrag(drag.x, drag.y)
+            }
+        }
+
+        onEntered: drag => follow(drag)
+        onPositionChanged: drag => follow(drag)
+        onExited: {
+            dock.dropOverTrash = false
+            if (dock.dragged?.dropped ?? false) {
+                dock.giveUpDrag()
+            }
+        }
         onDropped: drop => {
+            dock.dropOverTrash = false
             const addresses = dock.droppedAddresses(drop)
             if (addresses.length === 0) {
                 return
@@ -438,7 +474,14 @@ PanelWindow {
             if (dock.overTrash(drop.x)) {
                 dock.trashDropped(addresses)
                 drop.accept(Qt.MoveAction)
+            } else if ((dock.dragged?.dropped ?? false) && !dock.draggedOut) {
+                dock.endDrag()
+                drop.accept(Qt.LinkAction)
             } else {
+                // Let go above the gap: kept at the end, as before.
+                if (dock.dragged?.dropped ?? false) {
+                    dock.giveUpDrag()
+                }
                 dock.keepDropped(addresses)
                 drop.accept(Qt.LinkAction)
             }
@@ -1093,9 +1136,10 @@ PanelWindow {
             smallestAppearScale: dock.looks.tile_appear_scale ?? 1
 
             // Not while a menu is open: its place needs no label.
-            pointerOver: dock.menuIndex < 0 && dock.folderIndex < 0 && dock.dragged === null
-                         && dock.pointerInside
-                         && dock.pointerX >= x && dock.pointerX < x + width
+            pointerOver: (dock.dropOverTrash && place.isTrash)
+                         || (dock.menuIndex < 0 && dock.folderIndex < 0 && dock.dragged === null
+                             && dock.pointerInside
+                             && dock.pointerX >= x && dock.pointerX < x + width)
 
             // The last tile pointed at keeps the label while it fades out.
             onHoveredChanged: {
