@@ -3,7 +3,8 @@ name: Fedora RPM
 on:
   workflow_dispatch:
   push:
-    branches: [fedora-rpm]
+    branches: [main, fedora-rpm]
+    tags: ['v*']
     paths:
       - '.github/workflows/fedora-rpm.yml'
       - 'packaging/fedora/**'
@@ -116,16 +117,16 @@ jobs:
           dnf install -y "${packages[@]}"
           test "$(pkg-config --modversion wayfire)" = 0.11.0
       - name: Prepare Mavernix sources
+        env:
+          RELEASE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
         run: |
-          mkdir -p /root/rpmbuild/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}
-          cp packaging/fedora/mavernix.spec /root/rpmbuild/SPECS/
-          spectool -g -C /root/rpmbuild/SOURCES /root/rpmbuild/SPECS/mavernix.spec
+          python3 packaging/fedora/prepare-source.py --topdir /root/rpmbuild --tag "$RELEASE_TAG"
       - name: Install build dependencies
         run: dnf builddep -y /root/rpmbuild/SPECS/mavernix.spec
       - name: Build and test Mavernix RPMs
         run: rpmbuild --define '_topdir /root/rpmbuild' -ba /root/rpmbuild/SPECS/mavernix.spec
       - name: Inspect runtime requirements
-        run: rpm -qp --requires /root/rpmbuild/RPMS/x86_64/mavernix-0*.rpm
+        run: rpm -qp --requires /root/rpmbuild/RPMS/x86_64/mavernix-[0-9]*.rpm
       - name: Upload RPMs and source RPM
         uses: actions/upload-artifact@v4
         with:
@@ -179,7 +180,7 @@ jobs:
       - name: Select the four runtime packages
         run: |
           mkdir runtime-rpms
-          mapfile -t packages < <(find packages -type f \( -name 'wf-config-0*.x86_64.rpm' -o -name 'wayfire-0*.x86_64.rpm' -o -name 'quickshell-0*.x86_64.rpm' -o -name 'mavernix-0*.x86_64.rpm' \))
+          mapfile -t packages < <(find packages -type f \( -name 'wf-config-0*.x86_64.rpm' -o -name 'wayfire-0*.x86_64.rpm' -o -name 'quickshell-0*.x86_64.rpm' -o -name 'mavernix-[0-9]*.x86_64.rpm' \))
           test "${#packages[@]}" -eq 4
           cp "${packages[@]}" runtime-rpms/
       - name: Install together in a clean Fedora container
@@ -222,3 +223,46 @@ jobs:
           path: runtime-rpms/
           if-no-files-found: error
           retention-days: 7
+
+
+  release:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    needs: install-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    concurrency:
+      group: fedora-release-${{ github.ref }}
+      cancel-in-progress: false
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      RELEASE_TAG: ${{ github.ref_name }}
+    steps:
+      - name: Download tested runtime packages
+        uses: actions/download-artifact@v4
+        with:
+          name: mavernix-fedora-44-runtime
+          path: runtime-rpms
+      - name: Download matching sources
+        uses: actions/download-artifact@v4
+        with:
+          name: mavernix-fedora-44-sources
+          path: source-rpms
+      - name: Assemble release downloads
+        run: |
+          (cd runtime-rpms && sha256sum -c SHA256SUMS)
+          (cd source-rpms && sha256sum -c SHA256SUMS)
+          mkdir release-files
+          cp runtime-rpms/*.rpm runtime-rpms/README.md release-files/
+          tar -czf "release-files/mavernix-${RELEASE_TAG}-fedora-44-x86_64.tar.gz" -C runtime-rpms .
+          tar -czf "release-files/mavernix-${RELEASE_TAG}-fedora-44-sources.tar.gz" -C source-rpms .
+          (cd release-files && sha256sum *.rpm *.tar.gz README.md > SHA256SUMS)
+      - name: Publish tested Fedora packages and sources
+        run: |
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" release-files/* --clobber
+          else
+            gh release create "$RELEASE_TAG" release-files/* --verify-tag --generate-notes
+          fi
