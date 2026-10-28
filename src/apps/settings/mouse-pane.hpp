@@ -1,5 +1,6 @@
-// The settings of a mouse: how fast the pointer moves, whether a faster
-// movement takes it further, and which way the wheel scrolls.
+// The settings of a mouse: which way the wheel scrolls, how fast the
+// pointer moves and the wheel scrolls, whether a faster movement takes the
+// pointer further, and which button is the primary one.
 
 #pragma once
 
@@ -19,9 +20,15 @@ class MousePane : public QWidget
   private:
     // One of the [input] settings.
     void change(const QString& key, const QVariant& value);
-    void writeSpeed();
+    // Writes both sliders' values.
+    void writeSliders();
+    // A slider with "Slow" and "Fast" under its ends.
+    QWidget* speedSlider(QSlider*& slider, int stops, int at);
 
     Choices& choices;
     QSlider* speed = nullptr;
+    QSlider* scrolling = nullptr;
     QTimer* write_later = nullptr;
+    QString slow_word;
+    QString fast_word;
 };

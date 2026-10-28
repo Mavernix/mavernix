@@ -480,6 +480,10 @@ mouse_acceleration = "Acceleration"
 mouse_acceleration_note = "A faster movement takes the pointer further"
 mouse_natural_scroll = "Natural scrolling"
 mouse_natural_scroll_note = "The page moves with the wheel"
+mouse_scroll_speed = "Scrolling speed:"
+mouse_primary = "Primary mouse button:"
+mouse_primary_left = "Left"
+mouse_primary_right = "Right"
 display_title = "Display"
 display_screen = "Screen:"
 display_resolution = "Resolution:"
@@ -561,6 +565,10 @@ natural_scroll = false
 # mouse_acceleration = true
 # touchpad_speed = 0.0
 # touchpad_acceleration = true
+# How far a step of the wheel scrolls, times the usual (1); left out: 1.
+# mouse_scroll_speed = 1.0
+# The primary button on the right, for the left hand; left out: false.
+# left_handed = false
 
 [lock]
 # The lock screen checks the password with PAM, using this /etc/pam.d/

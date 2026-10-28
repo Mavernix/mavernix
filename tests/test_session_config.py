@@ -253,6 +253,9 @@ class TestPointerSettings(SessionTestCase):
         self.assertIn("mouse_accel_profile = flat", lines)
         self.assertIn("touchpad_accel_profile = adaptive", lines)
         self.assertFalse(any(line.startswith("touchpad_cursor_speed") for line in lines))
+        more = make_wayfire_config.input_section({"input": {"mouse_scroll_speed": 2.5, "left_handed": True}}, {})
+        self.assertIn("mouse_scroll_speed = 2.5", more)
+        self.assertIn("left_handed_mode = true", more)
         with self.assertRaises(SystemExit):
             make_wayfire_config.input_section({"input": {"mouse_speed": 2}}, {})
 
