@@ -8,25 +8,43 @@ on:
     paths:
       - '.github/workflows/fedora-rpm.yml'
       - 'packaging/fedora/**'
+
 permissions:
   contents: read
 
 jobs:
-  dependencies:
+  wf-config:
     runs-on: ubuntu-latest
     container: fedora:44
-    timeout-minutes: 15
+    timeout-minutes: 30
 
     steps:
-      - name: Install package query tools
-        run: dnf install -y dnf5-plugins
+      - name: Install RPM tools
+        run: dnf install -y git rpm-build rpmdevtools dnf5-plugins
 
-      - name: Check available dependency versions
+      - uses: actions/checkout@v4
+
+      - name: Prepare sources
         run: |
-          dnf repoquery --available --latest-limit=1 \
-            wayfire wayfire-devel \
-            wf-config wf-config-devel \
-            'wlroots*devel' \
-            quickshell \
-            qt6-qtbase-private-devel \
-            tomlplusplus-devel
+          rpmdev-setuptree
+          cp packaging/fedora/wf-config.spec /root/rpmbuild/SPECS/
+          spectool -g -R /root/rpmbuild/SPECS/wf-config.spec
+
+      - name: Install build dependencies
+        run: dnf builddep -y /root/rpmbuild/SPECS/wf-config.spec
+
+      - name: Build and test RPMs
+        run: rpmbuild -ba /root/rpmbuild/SPECS/wf-config.spec
+
+      - name: Test package installation
+        run: |
+          dnf install -y /root/rpmbuild/RPMS/*/wf-config-*.rpm
+          pkg-config --modversion wf-config
+
+      - name: Upload RPMs
+        uses: actions/upload-artifact@v4
+        with:
+          name: wf-config-fedora-44
+          path: /root/rpmbuild/RPMS/**/*.rpm
+          if-no-files-found: error
+          retention-days: 7
