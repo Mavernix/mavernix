@@ -8,9 +8,11 @@
 #include <QProcess>
 #include <QPushButton>
 #include <QSignalBlocker>
+#include <QSlider>
 #include <QStandardPaths>
 
 #include "choices.hpp"
+#include "pane-parts.hpp"
 #include "sound-devices.hpp"
 
 QStringList SoundPane::packs()
@@ -141,11 +143,38 @@ SoundPane::SoundPane(Choices& choices, QWidget* parent) : QWidget(parent)
         return chooser;
     };
 
+    // How loud the output is, and how loud the microphone records, through
+    // WirePlumber's wpctl; greyed if it is not installed.
+    const QString quiet_word = word("sound_volume_low", "Quiet");
+    const QString loud_word = word("sound_volume_high", "Loud");
+    const auto volume_slider = [this, quiet_word, loud_word](const QString& target) {
+        auto* slider = new QSlider(Qt::Horizontal);
+        slider->setRange(0, 100);
+        slider->setMinimumWidth(220);
+        QProcess reading;
+        reading.start(QStringLiteral("wpctl"), {QStringLiteral("get-volume"), target});
+        // "Volume: 0.45" or "Volume: 0.45 [MUTED]".
+        const bool read = reading.waitForFinished(1000) && reading.exitCode() == 0;
+        const QStringList said = QString::fromUtf8(reading.readAllStandardOutput()).split(QLatin1Char(' '));
+        slider->setEnabled(read && said.size() > 1);
+        if (said.size() > 1)
+        {
+            slider->setValue(qRound(said[1].trimmed().toDouble() * 100));
+        }
+        connect(slider, &QSlider::valueChanged, this, [target](int percent) {
+            QProcess::startDetached(QStringLiteral("wpctl"),
+                {QStringLiteral("set-volume"), target, QString::number(percent / 100.0, 'f', 2)});
+        });
+        return with_end_words(slider, quiet_word, loud_word);
+    };
+
     auto* form = new QFormLayout(this);
     form->setLabelAlignment(Qt::AlignRight | Qt::AlignTop);
     form->setFormAlignment(Qt::AlignHCenter | Qt::AlignTop);
     form->addRow(word("sound_output", "Output:"), device_chooser(SoundDevices::Kind::Output));
+    form->addRow(word("sound_output_volume", "Output volume:"), volume_slider(QStringLiteral("@DEFAULT_AUDIO_SINK@")));
     form->addRow(word("sound_input", "Input:"), device_chooser(SoundDevices::Kind::Input));
+    form->addRow(word("sound_input_volume", "Input volume:"), volume_slider(QStringLiteral("@DEFAULT_AUDIO_SOURCE@")));
     form->addRow(word("sound_alert", "Alert sound:"), alert);
     form->addRow(word("sound_pack", "Sound pack:"), pack);
     form->addRow(QString(), try_it);
