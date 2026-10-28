@@ -220,6 +220,26 @@ class TestScreenScale(SessionTestCase):
         self.assertFalse(any(line.startswith("custom_mode") for line in written("2560x1600@120000")))
 
 
+    def test_an_unplaced_screen_keeps_where_it_is(self):
+        # With several screens, rewriting the config keeps the running
+        # arrangement; the config's own position still wins.
+        sys.path[:0] = [self.folder.name, str(SESSION_SOURCE_DIR)]
+        try:
+            import make_wayfire_config
+        finally:
+            del sys.path[:2]
+        screens = {"DP-1": {"width": 2560, "dpi": 93.0}, "HDMI-A-1": {"width": 1920, "dpi": 96.0}}
+        current = {"DP-1": "0,0", "HDMI-A-1": "2560,300"}
+        with unittest.mock.patch.object(make_wayfire_config, "connected_screens", return_value=screens), \
+                unittest.mock.patch.object(make_wayfire_config, "screen_positions", return_value=current):
+            kept = make_wayfire_config.display_sections({})
+            placed = make_wayfire_config.display_sections(
+                {"display": {"screens": {"HDMI-A-1": {"position": "0,1440"}}}})
+        self.assertIn("position = 2560,300", kept[1])
+        self.assertIn("position = 0,1440", placed[1])
+        self.assertEqual(1, sum(line.startswith("position") for line in placed[1]))
+
+
 class TestKdeColours(SessionTestCase):
     def test_default_scheme_is_the_themes(self):
         # A KDE program set to "Default" takes Breeze's scheme by its file

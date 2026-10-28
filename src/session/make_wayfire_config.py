@@ -9,8 +9,11 @@ NAME=COMMAND` (repeatable) starts a program with the session.
 """
 
 import argparse
+import json
 import os
 import shlex
+import socket
+import struct
 import sys
 import tomllib
 from pathlib import Path
@@ -345,11 +348,38 @@ def custom_mode(mode, screen):
     return cvt_reduced_modeline(width, height, refresh_hz)
 
 
+def screen_positions():
+    """Where the running compositor has put each screen: { "HDMI-A-1": "1920,0" }.
+
+    Empty outside a session, or if the compositor does not answer.
+    """
+    path = os.environ.get("WAYFIRE_SOCKET")
+    if not path:
+        return {}
+    body = json.dumps({"method": "window-rules/list-outputs", "data": {}}).encode()
+    try:
+        with socket.socket(socket.AF_UNIX) as connection:
+            connection.settimeout(2)
+            connection.connect(path)
+            connection.sendall(struct.pack("<I", len(body)) + body)
+            (length,) = struct.unpack("<I", connection.recv(4, socket.MSG_WAITALL))
+            outputs = json.loads(connection.recv(length, socket.MSG_WAITALL))
+    except (OSError, ValueError, struct.error):
+        return {}
+    if not isinstance(outputs, list):
+        return {}
+    return {output["name"]: f'{int(output["geometry"]["x"])},{int(output["geometry"]["y"])}'
+            for output in outputs if "name" in output and "geometry" in output}
+
+
 def display_sections(config):
     """Output sections from the config's [display] table.
 
     `scale` is a number or "auto"; [display.screens.NAME] overrides one
     screen. A screen plugged in later gets the compositor's default, 1.
+    With several screens, one the config does not place keeps where it is
+    now: rewriting the config would otherwise undo an arrangement made
+    while the session runs.
     """
     wishes = config.get("display", {})
     general = wishes.get("scale", "auto")
@@ -357,6 +387,9 @@ def display_sections(config):
     sections = []
     names = sorted(set(connected_screens()) | set(single))
     screens = connected_screens()
+    current = screen_positions()
+    if len(current) < 2:
+        current = {}
     for name in names:
         own = single.get(name, {})
         scale = own.get("scale", general)
@@ -375,6 +408,8 @@ def display_sections(config):
         for key in ("mode", "position", "transform"):
             if key in own:
                 lines.append(f"{key} = {own[key]}")
+        if "position" not in own and name in current:
+            lines.append(f"position = {current[name]}")
         modeline = custom_mode(own["mode"], screens.get(name, {})) if "mode" in own else None
         if modeline is not None:
             lines.append(f"custom_mode = {modeline}")
