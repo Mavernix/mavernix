@@ -79,13 +79,15 @@ StatusItem {
         }
     }
 
-    // In reach, strongest first; a network's several access points are one.
+    // In reach: the one in use, then the strongest first; a network's
+    // several access points are one.
     readonly property var networks: {
         if (wireless === null || !Networking.wifiEnabled) {
             return []
         }
         const named = wireless.networks.values.filter(network => network.name !== "")
-        return named.sort((one, other) => other.signalStrength - one.signalStrength)
+        return named.sort((one, other) => (other.connected - one.connected)
+                                          || (other.signalStrength - one.signalStrength))
     }
 
     function signalIcon(strength) {
