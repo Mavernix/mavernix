@@ -1,6 +1,5 @@
 #include "network-pane.hpp"
 
-#include <QComboBox>
 #include <QDBusArgument>
 #include <QDBusConnection>
 #include <QDBusInterface>
@@ -13,8 +12,8 @@
 #include <QDialogButtonBox>
 #include <QFormLayout>
 #include <QFrame>
-#include <QIcon>
 #include <QHBoxLayout>
+#include <QIcon>
 #include <QInputDialog>
 #include <QLabel>
 #include <QLineEdit>
@@ -54,6 +53,7 @@ static const uint wifi_type = 2;
 static const uint unavailable_state = 20;
 static const uint disconnected_state = 30;
 static const uint activated_state = 100;
+static const uint failed_state = 120;
 static const uint privacy_flag = 0x1;
 static const uint key_mgmt_802_1x = 0x200;
 
@@ -64,6 +64,10 @@ static const int call_timeout_ms = 1000;
 // While the pane is on screen, Wi-Fi networks are looked for this often.
 static const int scan_interval_ms = 15000;
 static const int dot_size = 12;
+static const int network_list_height_px = 150;
+
+// The network list keeps a network's name here, the services list nothing.
+static const int name_role = Qt::UserRole;
 
 static QVariantMap all_properties(const QString& path, const QString& interface)
 {
@@ -89,6 +93,13 @@ static QString path_of(const QVariant& value)
     return path == QLatin1String("/") ? QString() : path;
 }
 
+static void call_async(const QString& path, const QString& interface, const char* method, const QVariantList& arguments = {})
+{
+    QDBusMessage message = QDBusMessage::createMethodCall(service_name, path, interface, QLatin1String(method));
+    message.setArguments(arguments);
+    QDBusConnection::systemBus().asyncCall(message);
+}
+
 // A filled circle in the colour of a state, as before each connection.
 static QIcon state_dot(const QColor& colour)
 {
@@ -102,6 +113,24 @@ static QIcon state_dot(const QColor& colour)
     return QIcon(picture);
 }
 
+static QIcon signal_icon(int strength)
+{
+    const char* name = "network-wireless-signal-excellent";
+    if (strength < 25)
+    {
+        name = "network-wireless-signal-weak";
+    }
+    else if (strength < 50)
+    {
+        name = "network-wireless-signal-ok";
+    }
+    else if (strength < 75)
+    {
+        name = "network-wireless-signal-good";
+    }
+    return QIcon::fromTheme(QLatin1String(name), QIcon::fromTheme(QStringLiteral("network-wireless")));
+}
+
 NetworkPane::NetworkPane(Choices& choices, QWidget* parent) : QWidget(parent)
 {
     qDBusRegisterMetaType<ConnectionSettings>();
@@ -109,7 +138,7 @@ NetworkPane::NetworkPane(Choices& choices, QWidget* parent) : QWidget(parent)
     words = choices.configTable(QStringLiteral("settings")).value(QStringLiteral("words")).toMap();
 
     services = new QListWidget;
-    services->setFixedSize(source_list_size);
+    services->setFixedWidth(source_list_size.width());
     services->setIconSize(QSize(dot_size, dot_size));
     connect(services, &QListWidget::currentRowChanged, this, &NetworkPane::showChosen);
 
@@ -119,9 +148,8 @@ NetworkPane::NetworkPane(Choices& choices, QWidget* parent) : QWidget(parent)
     status->setFont(bold);
     switch_button = new QPushButton;
     connect(switch_button, &QPushButton::clicked, this, [this]() {
-        QDBusMessage change = QDBusMessage::createMethodCall(service_name, manager_path, properties_interface, QStringLiteral("Set"));
-        change << manager_interface << QStringLiteral("WirelessEnabled") << QVariant::fromValue(QDBusVariant(!wifi_on));
-        QDBusConnection::systemBus().asyncCall(change);
+        call_async(manager_path, properties_interface, "Set",
+            {manager_interface, QStringLiteral("WirelessEnabled"), QVariant::fromValue(QDBusVariant(!wifi_on))});
     });
     auto* status_row = new QHBoxLayout;
     status_row->addWidget(status);
@@ -133,40 +161,64 @@ NetworkPane::NetworkPane(Choices& choices, QWidget* parent) : QWidget(parent)
     const QFont small = scaled_font(explanation->font(), small_words_scale);
     explanation->setFont(small);
 
-    network_label = new QLabel(word("network_name", "Network Name:"));
-    network_choice = new QComboBox;
-    network_choice->setMinimumWidth(200);
-    connect(network_choice, &QComboBox::activated, this, &NetworkPane::choose);
-    forget_button = new QPushButton(word("network_forget", "Forget This Network"));
-    connect(forget_button, &QPushButton::clicked, this, &NetworkPane::forgetCurrent);
+    // Every network in reach and every saved one, each saying what it is.
+    network_list = new QListWidget;
+    network_list->setFixedHeight(network_list_height_px);
+    network_list->setIconSize(QSize(16, 16));
+    connect(network_list, &QListWidget::currentRowChanged, this, &NetworkPane::showButtons);
+    connect(network_list, &QListWidget::itemDoubleClicked, this, &NetworkPane::connectChosen);
+
+    connect_button = new QPushButton(word("network_connect", "Connect"));
+    disconnect_button = new QPushButton(word("network_disconnect", "Disconnect"));
+    forget_button = new QPushButton(word("network_forget", "Forget"));
+    hidden_button = new QPushButton(word("network_join_hidden", "Hidden Network…"));
+    connect(connect_button, &QPushButton::clicked, this, &NetworkPane::connectChosen);
+    connect(disconnect_button, &QPushButton::clicked, this, &NetworkPane::disconnectDevice);
+    connect(forget_button, &QPushButton::clicked, this, &NetworkPane::forgetChosen);
+    connect(hidden_button, &QPushButton::clicked, this, &NetworkPane::joinHidden);
+    auto* buttons = new QHBoxLayout;
+    buttons->addWidget(hidden_button);
+    buttons->addStretch();
+    buttons->addWidget(forget_button);
+    buttons->addWidget(disconnect_button);
+    buttons->addWidget(connect_button);
+
+    progress = new QLabel;
+    progress->setFont(small);
+    progress->setWordWrap(true);
+
+    wifi_part = new QWidget;
+    auto* wifi_rows = new QVBoxLayout(wifi_part);
+    wifi_rows->setContentsMargins(0, 0, 0, 0);
+    wifi_rows->addWidget(network_list);
+    wifi_rows->addLayout(buttons);
+    wifi_rows->addWidget(progress);
 
     address_line = new QLabel;
     router_line = new QLabel;
     address_line->setTextInteractionFlags(Qt::TextSelectableByMouse);
     router_line->setTextInteractionFlags(Qt::TextSelectableByMouse);
-
-    auto* form = new QFormLayout;
-    form->setLabelAlignment(Qt::AlignRight);
-    form->addRow(network_label, network_choice);
-    form->addRow(QString(), forget_button);
-    form->addRow(word("network_address", "IP Address:"), address_line);
-    form->addRow(word("network_router", "Router:"), router_line);
+    auto* addresses = new QFormLayout;
+    addresses->setLabelAlignment(Qt::AlignRight);
+    addresses->addRow(word("network_address", "IP Address:"), address_line);
+    addresses->addRow(word("network_router", "Router:"), router_line);
 
     auto* box = new QFrame;
     box->setFrameShape(QFrame::StyledPanel);
-    box->setFixedSize(detail_box_size);
+    box->setFixedWidth(detail_box_size.width() + 60);
     auto* box_rows = new QVBoxLayout(box);
     box_rows->setContentsMargins(box_margin_px, box_margin_px, box_margin_px, box_margin_px);
-    box_rows->setSpacing(pane_spacing_px);
+    box_rows->setSpacing(10);
     box_rows->addLayout(status_row);
     box_rows->addWidget(explanation);
-    box_rows->addLayout(form);
+    box_rows->addWidget(wifi_part);
+    box_rows->addLayout(addresses);
     box_rows->addStretch();
 
     auto* columns = new QHBoxLayout(this);
     columns->setSpacing(list_to_box_px);
-    columns->addWidget(services, 0, Qt::AlignTop);
-    columns->addWidget(box, 0, Qt::AlignTop);
+    columns->addWidget(services);
+    columns->addWidget(box);
 
     reading_soon = new QTimer(this);
     reading_soon->setSingleShot(true);
@@ -210,14 +262,9 @@ void NetworkPane::somethingChanged()
 void NetworkPane::showEvent(QShowEvent* event)
 {
     QWidget::showEvent(event);
-    scan();
     scanning->start();
-}
-
-void NetworkPane::hideEvent(QHideEvent* event)
-{
-    scanning->stop();
-    QWidget::hideEvent(event);
+    // Look at once rather than after the first interval.
+    scan();
 }
 
 void NetworkPane::scan()
@@ -226,11 +273,20 @@ void NetworkPane::scan()
     {
         if (device.wifi && wifi_on)
         {
-            QDBusMessage asking = QDBusMessage::createMethodCall(service_name, device.path, wireless_interface, QStringLiteral("RequestScan"));
-            asking << QVariantMap();
-            QDBusConnection::systemBus().asyncCall(asking);
+            call_async(device.path, wireless_interface, "RequestScan", {QVariantMap()});
         }
     }
+}
+
+void NetworkPane::hideEvent(QHideEvent* event)
+{
+    scanning->stop();
+    QWidget::hideEvent(event);
+}
+
+void NetworkPane::tell(const QString& text)
+{
+    progress->setText(text);
 }
 
 void NetworkPane::readAll()
@@ -308,6 +364,7 @@ void NetworkPane::readAll()
                 const uint rsn = seen.value(QStringLiteral("RsnFlags")).toUInt();
                 network.secured = (seen.value(QStringLiteral("Flags")).toUInt() & privacy_flag) || wpa || rsn;
                 network.enterprise = (wpa | rsn) & key_mgmt_802_1x;
+                network.connected = point == active && device.state == activated_state;
                 if (point == active)
                 {
                     device.network_name = network.name;
@@ -315,12 +372,50 @@ void NetworkPane::readAll()
                 // The strongest access point stands for the network.
                 if (!by_name.contains(network.name) || by_name[network.name].strength < network.strength)
                 {
+                    network.connected = network.connected || by_name.value(network.name).connected;
                     by_name.insert(network.name, network);
                 }
             }
+            // Saved networks stay listed when out of reach, so they can be forgotten.
+            for (auto known = saved.begin(); known != saved.end(); ++known)
+            {
+                by_name[known.key()].name = known.key();
+                by_name[known.key()].saved = known.value();
+            }
             device.networks = by_name.values();
-            std::sort(device.networks.begin(), device.networks.end(),
-                [](const Network& one, const Network& other) { return one.strength > other.strength; });
+            // The one in use, then those in reach by strength, then saved ones out of reach.
+            std::sort(device.networks.begin(), device.networks.end(), [](const Network& one, const Network& other) {
+                if (one.connected != other.connected)
+                {
+                    return one.connected;
+                }
+                if (one.access_point.isEmpty() != other.access_point.isEmpty())
+                {
+                    return !one.access_point.isEmpty();
+                }
+                return one.strength != other.strength ? one.strength > other.strength
+                                                      : one.name.localeAwareCompare(other.name) < 0;
+            });
+
+            // Say how joining went: once the card was busy, it either connects
+            // to the network or gives up.
+            if (!joining.isEmpty())
+            {
+                if (device.state > disconnected_state && device.state < activated_state)
+                {
+                    joining_seen_busy = true;
+                }
+                else if (device.state == activated_state && device.network_name == joining)
+                {
+                    tell(word("network_joined", "Connected to “%1”.").arg(joining));
+                    joining.clear();
+                }
+                else if (joining_seen_busy && (device.state == failed_state || device.state == disconnected_state))
+                {
+                    tell(word("network_join_failed", "Could not connect to “%1”. If it has a password, check it and try again.").arg(joining));
+                    joining.clear();
+                }
+            }
         }
         devices << device;
     }
@@ -357,139 +452,172 @@ void NetworkPane::readAll()
     showChosen();
 }
 
-void NetworkPane::showChosen()
+const NetworkPane::Device* NetworkPane::chosenDevice() const
 {
     const int index = services->currentRow();
-    const bool have = index >= 0 && index < devices.size();
-    const Device device = have ? devices[index] : Device();
-    const bool wifi = have && device.wifi;
-    const bool connected = have && device.state == activated_state;
+    return (index >= 0 && index < devices.size()) ? &devices[index] : nullptr;
+}
+
+const NetworkPane::Network* NetworkPane::chosenNetwork() const
+{
+    const Device* device = chosenDevice();
+    const QListWidgetItem* row = network_list->currentItem();
+    if (device == nullptr || row == nullptr)
+    {
+        return nullptr;
+    }
+    const QString name = row->data(name_role).toString();
+    for (const Network& network : device->networks)
+    {
+        if (network.name == name)
+        {
+            return &network;
+        }
+    }
+    return nullptr;
+}
+
+void NetworkPane::showChosen()
+{
+    const Device* device = chosenDevice();
+    const bool wifi = device != nullptr && device->wifi;
+    const bool connected = device != nullptr && device->state == activated_state;
 
     switch_button->setVisible(wifi);
     switch_button->setText(wifi_on ? word("network_turn_off", "Turn Wi-Fi Off") : word("network_turn_on", "Turn Wi-Fi On"));
-    network_label->setVisible(wifi && wifi_on);
-    network_choice->setVisible(wifi && wifi_on);
-    forget_button->setVisible(wifi && wifi_on);
-    forget_button->setEnabled(saved.contains(device.network_name));
-    address_line->setText(device.address.isEmpty() ? QStringLiteral("—") : device.address);
-    router_line->setText(device.router.isEmpty() ? QStringLiteral("—") : device.router);
+    wifi_part->setVisible(wifi && wifi_on);
+    address_line->setText(connected && !device->address.isEmpty() ? device->address : QStringLiteral("—"));
+    router_line->setText(connected && !device->router.isEmpty() ? device->router : QStringLiteral("—"));
 
+    const QString status_word = word("network_status", "Status:") + QLatin1Char(' ');
     if (!have_network_manager)
     {
         status->setText(QString());
         explanation->setText(word("network_no_manager", "NetworkManager is not running, so connections cannot be shown or changed."));
         return;
     }
-    if (!have)
+    if (device == nullptr)
     {
         status->setText(QString());
         explanation->setText(word("network_none", "This computer has no network connection NetworkManager looks after."));
         return;
     }
 
-    const QString status_word = word("network_status", "Status:");
     if (wifi && !wifi_on)
     {
-        status->setText(status_word + QLatin1Char(' ') + word("network_off", "Off"));
-        explanation->setText(QString());
+        status->setText(status_word + word("network_off", "Off"));
+        explanation->setText(word("network_wifi_off", "Turn Wi-Fi on to see the networks around you."));
     }
     else if (connected)
     {
-        status->setText(status_word + QLatin1Char(' ') + word("network_connected", "Connected"));
-        explanation->setText(wifi ? word("network_wifi_connected", "Wi-Fi is connected to “%1” and has the IP address %2.")
-                                        .arg(device.network_name, device.address)
-                                  : word("network_cable_connected", "Ethernet is connected and has the IP address %1.")
-                                        .arg(device.address));
+        status->setText(status_word + word("network_connected", "Connected"));
+        explanation->setText(wifi ? word("network_wifi_connected", "Connected to “%1”. Choose another network below and click Connect to switch.")
+                                        .arg(device->network_name)
+                                  : word("network_cable_connected", "Connected by cable."));
     }
-    else if (device.state <= unavailable_state && !wifi)
+    else if (device->state <= unavailable_state && !wifi)
     {
-        status->setText(status_word + QLatin1Char(' ') + word("network_cable_unplugged", "Cable Unplugged"));
-        explanation->setText(word("network_cable_unplugged_note", "Either the cable is not plugged in, or the device at its other end is not responding."));
+        status->setText(status_word + word("network_cable_unplugged", "Cable Unplugged"));
+        explanation->setText(word("network_cable_unplugged_note", "Plug in a network cable, or check the device at its other end."));
     }
     else
     {
-        status->setText(status_word + QLatin1Char(' ') + word("network_not_connected", "Not Connected"));
-        explanation->setText(wifi ? word("network_wifi_not_connected", "Wi-Fi is on but not connected to a network.") : QString());
+        status->setText(status_word + word("network_not_connected", "Not Connected"));
+        explanation->setText(wifi ? word("network_wifi_choose", "Choose a network below and click Connect.") : QString());
     }
 
     if (wifi && wifi_on)
     {
-        const QSignalBlocker quiet(network_choice);
-        network_choice->clear();
-        if (device.network_name.isEmpty())
-        {
-            network_choice->addItem(word("network_no_network", "No network selected"));
-        }
-        for (const Network& network : device.networks)
-        {
-            // A lock before those that need a password.
-            const QIcon lock = network.secured
-                                   ? QIcon::fromTheme(QStringLiteral("network-wireless-encrypted"),
-                                         QIcon::fromTheme(QStringLiteral("changes-prevent")))
-                                   : QIcon();
-            network_choice->addItem(lock, network.name, network.name);
-            if (network.name == device.network_name)
-            {
-                network_choice->setCurrentIndex(network_choice->count() - 1);
-            }
-        }
-        network_choice->insertSeparator(network_choice->count());
-        network_choice->addItem(word("network_join_other", "Join Other Network…"), QStringLiteral("\x01other"));
+        showNetworks(*device);
     }
 }
 
-void NetworkPane::choose(int index)
+void NetworkPane::showNetworks(const Device& device)
 {
-    const QString wanted = network_choice->itemData(index).toString();
-    if (wanted == QLatin1String("\x01other"))
+    const QListWidgetItem* before = network_list->currentItem();
+    const QString chosen_before = before ? before->data(name_role).toString() : QString();
+    const QSignalBlocker quiet(network_list);
+    network_list->clear();
+    for (const Network& network : device.networks)
     {
-        joinOther();
-        return;
-    }
-    const int row = services->currentRow();
-    if (wanted.isEmpty() || row < 0 || row >= devices.size())
-    {
-        return;
-    }
-    for (const Network& network : devices[row].networks)
-    {
-        if (network.name == wanted)
+        // What it is, in words, after its name.
+        QStringList notes;
+        if (network.connected)
         {
-            join(network);
-            return;
+            notes << word("network_note_connected", "Connected");
+        }
+        else if (network.name == joining)
+        {
+            notes << word("network_note_connecting", "Connecting…");
+        }
+        else if (!network.saved.isEmpty())
+        {
+            notes << word("network_note_saved", "Saved");
+        }
+        if (network.access_point.isEmpty())
+        {
+            notes << word("network_note_away", "not in range");
+        }
+        if (network.secured)
+        {
+            notes << word("network_note_password", "password");
+        }
+        const QString label = notes.isEmpty() ? network.name : network.name + QStringLiteral("  —  ") + notes.join(QStringLiteral(", "));
+        auto* row = new QListWidgetItem(network.access_point.isEmpty() ? QIcon() : signal_icon(network.strength), label, network_list);
+        row->setData(name_role, network.name);
+        if (network.connected)
+        {
+            QFont font = row->font();
+            font.setBold(true);
+            row->setFont(font);
+        }
+        if (network.name == chosen_before)
+        {
+            network_list->setCurrentItem(row);
         }
     }
+    showButtons();
 }
 
-QString NetworkPane::savedConnectionFor(const QString& network_name) const
+void NetworkPane::showButtons()
 {
-    return saved.value(network_name);
+    const Network* network = chosenNetwork();
+    const Device* device = chosenDevice();
+    connect_button->setEnabled(network != nullptr && !network->connected && !network->access_point.isEmpty());
+    disconnect_button->setEnabled(device != nullptr && device->state == activated_state);
+    forget_button->setEnabled(network != nullptr && !network->saved.isEmpty());
 }
 
 void NetworkPane::addAndActivate(const QMap<QString, QVariantMap>& settings, const QString& device, const QString& point)
 {
-    QDBusMessage adding = QDBusMessage::createMethodCall(service_name, manager_path, manager_interface, QStringLiteral("AddAndActivateConnection"));
-    adding << QVariant::fromValue(settings) << QVariant::fromValue(QDBusObjectPath(device))
-           << QVariant::fromValue(QDBusObjectPath(point.isEmpty() ? QStringLiteral("/") : point));
-    QDBusConnection::systemBus().asyncCall(adding);
+    call_async(manager_path, manager_interface, "AddAndActivateConnection",
+        {QVariant::fromValue(settings), QVariant::fromValue(QDBusObjectPath(device)),
+         QVariant::fromValue(QDBusObjectPath(point.isEmpty() ? QStringLiteral("/") : point))});
 }
 
-void NetworkPane::join(const Network& network)
+void NetworkPane::connectChosen()
 {
-    const Device& device = devices[services->currentRow()];
-    const QString known = savedConnectionFor(network.name);
-    if (!known.isEmpty())
+    const Network* chosen = chosenNetwork();
+    const Device* device = chosenDevice();
+    if (chosen == nullptr || device == nullptr || chosen->connected || chosen->access_point.isEmpty())
     {
-        QDBusMessage activating = QDBusMessage::createMethodCall(service_name, manager_path, manager_interface, QStringLiteral("ActivateConnection"));
-        activating << QVariant::fromValue(QDBusObjectPath(known)) << QVariant::fromValue(QDBusObjectPath(device.path))
-                   << QVariant::fromValue(QDBusObjectPath(network.access_point));
-        QDBusConnection::systemBus().asyncCall(activating);
         return;
     }
-    if (network.enterprise)
+    const Network network = *chosen;
+    if (network.enterprise && network.saved.isEmpty())
     {
-        explanation->setText(word("network_enterprise", "“%1” signs in with a user name or a certificate. Set it up with NetworkManager's connection editor (nm-connection-editor).").arg(network.name));
-        showChosen();
+        tell(word("network_enterprise", "“%1” signs in with a user name or a certificate. Set it up with NetworkManager's connection editor (nm-connection-editor).").arg(network.name));
+        return;
+    }
+
+    joining = network.name;
+    joining_seen_busy = false;
+    tell(word("network_joining", "Connecting to “%1”…").arg(network.name));
+    if (!network.saved.isEmpty())
+    {
+        call_async(manager_path, manager_interface, "ActivateConnection",
+            {QVariant::fromValue(QDBusObjectPath(network.saved)), QVariant::fromValue(QDBusObjectPath(device->path)),
+             QVariant::fromValue(QDBusObjectPath(network.access_point))});
         return;
     }
 
@@ -503,23 +631,46 @@ void NetworkPane::join(const Network& network)
             QString(), &agreed);
         if (!agreed)
         {
-            showChosen();
+            joining.clear();
+            tell(QString());
             return;
         }
         settings.insert(QStringLiteral("802-11-wireless-security"), QVariantMap{{QStringLiteral("psk"), password}});
     }
-    addAndActivate(settings, device.path, network.access_point);
+    addAndActivate(settings, device->path, network.access_point);
 }
 
-void NetworkPane::joinOther()
+void NetworkPane::disconnectDevice()
 {
-    const int row = services->currentRow();
-    if (row < 0 || row >= devices.size())
+    const Device* device = chosenDevice();
+    if (device != nullptr)
+    {
+        call_async(device->path, device_interface, "Disconnect");
+        tell(QString());
+    }
+}
+
+void NetworkPane::forgetChosen()
+{
+    const Network* network = chosenNetwork();
+    if (network == nullptr || network->saved.isEmpty())
+    {
+        return;
+    }
+    call_async(network->saved, connection_interface, "Delete");
+    tell(word("network_forgotten", "“%1” is forgotten: its password is no longer kept, and the computer won't join it by itself.")
+             .arg(network->name));
+}
+
+void NetworkPane::joinHidden()
+{
+    const Device* device = chosenDevice();
+    if (device == nullptr)
     {
         return;
     }
     QDialog asking(this);
-    asking.setWindowTitle(word("network_join_other", "Join Other Network…"));
+    asking.setWindowTitle(word("network_join_hidden", "Hidden Network…"));
     auto* name = new QLineEdit;
     auto* password = new QLineEdit;
     password->setEchoMode(QLineEdit::Password);
@@ -529,13 +680,12 @@ void NetworkPane::joinOther()
     connect(buttons, &QDialogButtonBox::accepted, &asking, &QDialog::accept);
     connect(buttons, &QDialogButtonBox::rejected, &asking, &QDialog::reject);
     auto* form = new QFormLayout(&asking);
-    form->addRow(new QLabel(word("network_join_other_intro", "Enter the name of the network to join, and its password if it has one.")));
+    form->addRow(new QLabel(word("network_join_hidden_intro", "A hidden network doesn't show up in the list. Enter its name, and its password if it has one.")));
     form->addRow(word("network_name", "Network Name:"), name);
     form->addRow(word("network_password", "Password:"), password);
     form->addRow(buttons);
     if (asking.exec() != QDialog::Accepted || name->text().isEmpty())
     {
-        showChosen();
         return;
     }
 
@@ -550,20 +700,8 @@ void NetworkPane::joinOther()
         settings.insert(QStringLiteral("802-11-wireless-security"), QVariantMap{{QStringLiteral("key-mgmt"), QStringLiteral("wpa-psk")},
                                                                                 {QStringLiteral("psk"), password->text()}});
     }
-    addAndActivate(settings, devices[row].path, QString());
-}
-
-void NetworkPane::forgetCurrent()
-{
-    const int row = services->currentRow();
-    if (row < 0 || row >= devices.size())
-    {
-        return;
-    }
-    const QString known = savedConnectionFor(devices[row].network_name);
-    if (!known.isEmpty())
-    {
-        QDBusConnection::systemBus().asyncCall(
-            QDBusMessage::createMethodCall(service_name, known, connection_interface, QStringLiteral("Delete")));
-    }
+    joining = name->text();
+    joining_seen_busy = false;
+    tell(word("network_joining", "Connecting to “%1”…").arg(joining));
+    addAndActivate(settings, device->path, QString());
 }

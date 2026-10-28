@@ -1,18 +1,18 @@
 // The Network pane: the computer's connections (Wi-Fi and cable) with their
-// state and addresses, turning Wi-Fi on and off, choosing a Wi-Fi network,
-// joining a hidden one and forgetting a saved one. It talks to
-// NetworkManager over the system bus; nothing is kept in the desktop's
-// settings.
+// state and addresses. For Wi-Fi it lists every network in reach and every
+// saved one, with plain buttons to connect, disconnect and forget, and a
+// line that says what is happening. It talks to NetworkManager over the
+// system bus; nothing is kept in the desktop's settings.
 
 #pragma once
 
 #include <QList>
+#include <QMap>
 #include <QString>
 #include <QVariantMap>
 #include <QWidget>
 
 class Choices;
-class QComboBox;
 class QLabel;
 class QListWidget;
 class QPushButton;
@@ -35,15 +35,19 @@ class NetworkPane : public QWidget
     void somethingChanged();
 
   private:
-    // A Wi-Fi network in reach, by name; several access points are one.
+    // A Wi-Fi network in reach or saved, by name; several access points are one.
     struct Network
     {
         QString name;
+        // Empty if it is saved but not in reach.
         QString access_point;
         int strength = 0;
         bool secured = false;
         // Signs in with a user name or certificate, not a password.
         bool enterprise = false;
+        // The saved connection's object path; empty if never joined.
+        QString saved;
+        bool connected = false;
     };
     // A device NetworkManager manages: a Wi-Fi card or a cable's port.
     struct Device
@@ -61,13 +65,17 @@ class NetworkPane : public QWidget
 
     void readAll();
     void showChosen();
-    void choose(int index);
-    void join(const Network& network);
-    void joinOther();
-    void forgetCurrent();
+    void showNetworks(const Device& device);
+    void showButtons();
+    const Device* chosenDevice() const;
+    const Network* chosenNetwork() const;
+    void connectChosen();
+    void disconnectDevice();
+    void forgetChosen();
+    void joinHidden();
     void scan();
     void addAndActivate(const QMap<QString, QVariantMap>& settings, const QString& device, const QString& point);
-    QString savedConnectionFor(const QString& network_name) const;
+    void tell(const QString& text);
 
     QVariantMap words;
     QString word(const char* key, const char* fallback) const;
@@ -76,17 +84,24 @@ class NetworkPane : public QWidget
     QLabel* status = nullptr;
     QPushButton* switch_button = nullptr;
     QLabel* explanation = nullptr;
-    QLabel* network_label = nullptr;
-    QComboBox* network_choice = nullptr;
+    QListWidget* network_list = nullptr;
+    QPushButton* connect_button = nullptr;
+    QPushButton* disconnect_button = nullptr;
     QPushButton* forget_button = nullptr;
+    QPushButton* hidden_button = nullptr;
+    QLabel* progress = nullptr;
     QLabel* address_line = nullptr;
     QLabel* router_line = nullptr;
+    QWidget* wifi_part = nullptr;
     QTimer* reading_soon = nullptr;
     QTimer* scanning = nullptr;
 
     bool wifi_on = false;
     bool have_network_manager = false;
     QList<Device> devices;
-    // Saved connections: Wi-Fi network name -> connection's object path.
+    // Saved Wi-Fi connections: network name -> connection's object path.
     QMap<QString, QString> saved;
+    // The network being joined, to say how it went; empty if none.
+    QString joining;
+    bool joining_seen_busy = false;
 };
