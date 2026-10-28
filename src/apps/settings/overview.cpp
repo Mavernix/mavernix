@@ -167,7 +167,8 @@ Overview::Overview(const QList<QList<Entry>>& groups, const QVariantMap& looks, 
             button->setGeometry(first_cell_middle - cell_pitch / 2 + (place % columns) * cell_pitch,
                 top + (place / columns) * line_pitch, cell_pitch, line_pitch + group_bottom);
             connect(button, &QAbstractButton::clicked, this, [this, name = entry.name]() { emit chosen(name); });
-            buttons.append({button, entry.name, QString(entry.title).replace(QLatin1Char('\n'), QLatin1Char(' '))});
+            buttons.append(
+                {button, entry.name, QString(entry.title).replace(QLatin1Char('\n'), QLatin1Char(' ')), entry.keywords});
         }
         top += height + lines_between;
     }
@@ -183,7 +184,7 @@ void Overview::mark(const QString& text)
 {
     for (const Button& entry : buttons)
     {
-        const bool paled = !text.isEmpty() && !entry.title.contains(text, Qt::CaseInsensitive);
+        const bool paled = !text.isEmpty() && !entry.matches(text);
         entry.button->setStrength(paled ? paled_opacity : 1.0);
     }
 }
@@ -192,7 +193,7 @@ QString Overview::firstWith(const QString& text) const
 {
     for (const Button& entry : buttons)
     {
-        if (entry.title.contains(text, Qt::CaseInsensitive))
+        if (entry.matches(text))
         {
             return entry.name;
         }

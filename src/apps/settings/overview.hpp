@@ -21,6 +21,8 @@ class Overview : public QWidget
         QString name;
         QString title;
         QString icon;
+        // Space-separated words that also find it.
+        QString keywords;
     };
 
     Overview(const QList<QList<Entry>>& groups, const QVariantMap& looks, QWidget* parent = nullptr);
@@ -50,6 +52,13 @@ class Overview : public QWidget
         OverviewCell* button;
         QString name;
         QString title;
+        QString keywords;
+
+        // Whether a search for `text` finds it, by its title or a keyword.
+        bool matches(const QString& text) const
+        {
+            return title.contains(text, Qt::CaseInsensitive) || keywords.contains(text, Qt::CaseInsensitive);
+        }
     };
     QList<Button> buttons;
 

@@ -38,26 +38,29 @@ struct KnownPane
     const char* name;
     const char* icon;
     const char* title;
+    // Other words people search for, space-separated; the config's
+    // [settings.words] NAME_keywords replaces them.
+    const char* keywords;
 };
 static const KnownPane known_panes[] = {
-    {"dock", "preferences-dock", "Dock"},
-    {"icons", "applications-other", "App Icons"},
-    {"theme", "preferences-desktop-theme", "Theme"},
-    {"desktop", "preferences-desktop-wallpaper", "Desktop"},
-    {"sound", "preferences-desktop-sound", "Sound"},
-    {"trackpad", "input-touchpad", "Touchpad"},
-    {"mouse", "input-mouse", "Mouse"},
-    {"energy", "preferences-system-power-management", "Energy"},
-    {"display", "preferences-desktop-display", "Display"},
-    {"desktops", "preferences-desktop-virtual", "Desktops"},
-    {"windows", "preferences-system-windows", "Windows"},
-    {"extensions", "preferences-plugin", "Extensions"},
-    {"toolkits", "preferences-system", "App Style"},
-    {"network", "preferences-system-network", "Network"},
-    {"bluetooth", "preferences-system-bluetooth", "Bluetooth"},
-    {"keyboard", "input-keyboard", "Keyboard"},
-    {"defaults", "applications-other", "Default Apps"},
-    {"startup", "preferences-system-startup", "Startup"},
+    {"dock", "preferences-dock", "Dock", "taskbar launcher magnification hide autohide size"},
+    {"icons", "applications-other", "App Icons", "application program icon picture change"},
+    {"theme", "preferences-desktop-theme", "Theme", "look appearance dark light colours colors style"},
+    {"desktop", "preferences-desktop-wallpaper", "Desktop", "wallpaper background picture image name"},
+    {"sound", "preferences-desktop-sound", "Sound", "volume audio speaker headphones microphone input output alert beep"},
+    {"trackpad", "input-touchpad", "Touchpad", "touchpad tap click scroll natural gestures"},
+    {"mouse", "input-mouse", "Mouse", "pointer cursor speed acceleration scroll wheel left handed button"},
+    {"energy", "preferences-system-power-management", "Energy", "power battery sleep suspend screen off lock lid saver"},
+    {"display", "preferences-desktop-display", "Display", "screen monitor resolution refresh rate scale size brightness arrange"},
+    {"desktops", "preferences-desktop-virtual", "Desktops", "workspaces spaces virtual mission control"},
+    {"windows", "preferences-system-windows", "Windows", "snap tile title bar buttons double click drag move resize"},
+    {"extensions", "preferences-plugin", "Extensions", "plugins add-ons addons"},
+    {"toolkits", "preferences-system", "App Style", "gtk qt programs apps look theme"},
+    {"network", "preferences-system-network", "Network", "wifi wi-fi wlan wireless internet ethernet cable lan ip router password"},
+    {"bluetooth", "preferences-system-bluetooth", "Bluetooth", "pair headphones keyboard mouse speaker devices"},
+    {"keyboard", "input-keyboard", "Keyboard", "shortcuts keys hotkeys layout language input sources typing repeat"},
+    {"defaults", "applications-other", "Default Apps", "default programs browser mail open with"},
+    {"startup", "preferences-system-startup", "Startup", "login autostart start programs items"},
 };
 
 SettingsWindow::SettingsWindow(Choices& choices) : choices(choices)
@@ -165,7 +168,9 @@ SettingsWindow::SettingsWindow(Choices& choices) : choices(choices)
             pane_pages.insert(name, pages->addWidget(page));
             // A title may be broken in two lines for the overview.
             pane_titles.insert(name, QString(title).replace(QLatin1Char('\n'), QLatin1Char(' ')));
-            group.append({name, title, QLatin1String(known->icon)});
+            const QString keywords =
+                words.value(name + QStringLiteral("_keywords"), QLatin1String(known->keywords)).toString();
+            group.append({name, title, QLatin1String(known->icon), keywords});
         }
         groups.append(group);
     }
