@@ -25,6 +25,7 @@ PanelWindow {
 
     // What is being asked, or null while the dialog is away:
     //   { title, text, button, cancel, icon, seconds, command }
+    // An empty `cancel` leaves the cancel button out, for a plain message.
     // `text` may contain %1 for the seconds left. `command` is run on yes.
     // A request may also ask for something to be typed:
     //   field: { placeholder, secret }   a field under the text
@@ -346,6 +347,8 @@ PanelWindow {
                         themeDirectory: overlay.themeDirectory
                         width: buttons.buttonWidth
                         text: overlay.request?.cancel ?? ""
+                        // A message with only "OK" has no cancel.
+                        visible: text !== ""
                         onClicked: overlay.cancel()
                     }
                     PushButton {

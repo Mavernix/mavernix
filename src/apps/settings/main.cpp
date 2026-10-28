@@ -6,9 +6,11 @@
 // The session's settings are found through DESKTOP_SHELL_SETTINGS.
 
 #include <QApplication>
+#include <QTimer>
 #include <QFont>
 
 #include "choices.hpp"
+#include "network-pane.hpp"
 #include "settings-window.hpp"
 
 int main(int argc, char** argv)
@@ -33,6 +35,14 @@ int main(int argc, char** argv)
         window.showPane(arguments[1]);
     }
     window.show();
+    // "network join-hidden": straight to joining a hidden network.
+    if (arguments.size() > 2 && arguments[2] == QLatin1String("join-hidden"))
+    {
+        if (auto* network = window.findChild<NetworkPane*>())
+        {
+            QTimer::singleShot(0, network, &NetworkPane::joinHidden);
+        }
+    }
 
     return application.exec();
 }

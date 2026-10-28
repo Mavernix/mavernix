@@ -117,6 +117,7 @@ StatusItem {
     readonly property int switchId: 1
     readonly property int settingsId: 2
     readonly property int otherId: 3
+    readonly property int disconnectId: 4
     readonly property int networkBaseId: 1000
 
     function entry(id, label, enabled) {
@@ -140,6 +141,10 @@ StatusItem {
             items.push(entry(0, on ? (words.on_label ?? "Wi-Fi: On") : (words.off_label ?? "Wi-Fi: Off"), false))
             items.push(entry(switchId, on ? (words.turn_off_label ?? "Turn Wi-Fi Off")
                                           : (words.turn_on_label ?? "Turn Wi-Fi On"), true))
+            if (on && wirelessNetwork !== null) {
+                items.push(entry(disconnectId, (words.disconnect_label ?? "Disconnect from “%1”")
+                                                   .replace("%1", wirelessNetwork.name), true))
+            }
             if (on) {
                 items.push(separator)
                 if (networks.length === 0) {
@@ -174,8 +179,13 @@ StatusItem {
             programMenu.choose(id)
         } else if (id === switchId) {
             Networking.wifiEnabled = !Networking.wifiEnabled
-        } else if (id === settingsId || id === otherId) {
+        } else if (id === disconnectId) {
+            wirelessNetwork?.disconnect()
+        } else if (id === settingsId) {
             Quickshell.execDetached(words.settings_command)
+        } else if (id === otherId) {
+            // Straight to the settings' dialog for a hidden network.
+            Quickshell.execDetached(words.settings_command.concat(["join-hidden"]))
         } else if (id >= networkBaseId) {
             join(networks[id - networkBaseId])
         }
@@ -190,9 +200,8 @@ StatusItem {
             return
         }
         if (needsSetUp(network)) {
-            if (hasSettings) {
-                Quickshell.execDetached(words.settings_command)
-            }
+            tell((words.enterprise_label ?? "“%1” signs in with a user name or a certificate. Set it up with NetworkManager's connection editor (nm-connection-editor).")
+                     .replace("%1", network.name))
             return
         }
         joining = network
@@ -201,6 +210,12 @@ StatusItem {
         } else {
             askPassword(network, false)
         }
+    }
+
+    // A message with only "OK".
+    function tell(text) {
+        panel.confirmDialog?.ask({ title: text, text: "", icon: words.password_icon ?? "network-wireless",
+                                   button: words.ok_label ?? "OK", cancel: "" })
     }
 
     function askPassword(network, again) {
@@ -236,6 +251,10 @@ StatusItem {
                 item.askPassword(network, true)
             } else {
                 item.joining = null
+                if (network !== null) {
+                    item.tell((item.words.failed_label ?? "Could not join “%1”. Move closer to it, or try again in a moment.")
+                                  .replace("%1", network.name))
+                }
             }
         }
     }

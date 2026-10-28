@@ -25,6 +25,10 @@ class NetworkPane : public QWidget
   public:
     NetworkPane(Choices& choices, QWidget* parent = nullptr);
 
+    // Asks for a hidden network's name and password and joins it; the Wi-Fi
+    // menu's "Join Other Network…" opens the pane with it.
+    void joinHidden();
+
   protected:
     // Networks are looked for only while the pane is on screen.
     void showEvent(QShowEvent* event) override;
@@ -72,7 +76,6 @@ class NetworkPane : public QWidget
     void connectChosen();
     void disconnectDevice();
     void forgetChosen();
-    void joinHidden();
     void scan();
     void addAndActivate(const QMap<QString, QVariantMap>& settings, const QString& device, const QString& point);
     void tell(const QString& text);
@@ -104,4 +107,7 @@ class NetworkPane : public QWidget
     // The network being joined, to say how it went; empty if none.
     QString joining;
     bool joining_seen_busy = false;
+    // The network was saved just now: if joining fails, it is unsaved again,
+    // so that the next try asks for the password anew.
+    bool joining_is_new = false;
 };

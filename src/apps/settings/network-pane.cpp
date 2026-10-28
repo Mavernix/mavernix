@@ -412,7 +412,11 @@ void NetworkPane::readAll()
                 }
                 else if (joining_seen_busy && (device.state == failed_state || device.state == disconnected_state))
                 {
-                    tell(word("network_join_failed", "Could not connect to “%1”. If it has a password, check it and try again.").arg(joining));
+                    if (joining_is_new && saved.contains(joining))
+                    {
+                        call_async(saved.value(joining), connection_interface, "Delete");
+                    }
+                    tell(word("network_join_failed", "Could not connect to “%1”. If it has a password, check it and click Connect to try again.").arg(joining));
                     joining.clear();
                 }
             }
@@ -612,6 +616,7 @@ void NetworkPane::connectChosen()
 
     joining = network.name;
     joining_seen_busy = false;
+    joining_is_new = network.saved.isEmpty();
     tell(word("network_joining", "Connecting to “%1”…").arg(network.name));
     if (!network.saved.isEmpty())
     {
@@ -702,6 +707,7 @@ void NetworkPane::joinHidden()
     }
     joining = name->text();
     joining_seen_busy = false;
+    joining_is_new = true;
     tell(word("network_joining", "Connecting to “%1”…").arg(joining));
     addAndActivate(settings, device->path, QString());
 }
