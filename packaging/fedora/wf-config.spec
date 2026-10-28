@@ -7,7 +7,7 @@ License:        MIT
 URL:            https://github.com/WayfireWM/wf-config
 Source0:        %{url}/archive/refs/tags/v%{version}/%{name}-%{version}.tar.gz
 
-BuildRewuires:  cmake
+BuildRequires:  cmake
 BuildRequires:  gcc-c++
 BuildRequires:  meson
 BuildRequires:  ninja-build
