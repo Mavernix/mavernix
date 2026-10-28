@@ -3,6 +3,7 @@
 #include <QCheckBox>
 #include <QComboBox>
 #include <QFormLayout>
+#include <QGridLayout>
 #include <QGuiApplication>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -69,10 +70,14 @@ DockPane::DockPane(Choices& choices, QWidget* parent) : QWidget(parent), choices
     // The shell follows at once.
     const QVariantMap item_names = words.value(QStringLiteral("menu_bar_items")).toMap();
     const QStringList listed = choices.value(QStringLiteral("panel"), QStringLiteral("right")).toStringList();
+    // In two columns, so that the list stays short.
     auto* items = new QWidget;
-    auto* item_rows = new QVBoxLayout(items);
+    auto* item_rows = new QGridLayout(items);
     item_rows->setContentsMargins(0, 0, 0, 0);
-    item_rows->setSpacing(4);
+    item_rows->setVerticalSpacing(2);
+    item_rows->setHorizontalSpacing(18);
+    const int per_column = (listed.size() + 1) / 2;
+    int place = 0;
     for (const QString& name : listed)
     {
         // Items without a friendly name (a custom one) keep their own.
@@ -87,7 +92,8 @@ DockPane::DockPane(Choices& choices, QWidget* parent) : QWidget(parent), choices
             }
             this->choices.set(QStringLiteral("panel"), QStringLiteral("hidden"), hidden);
         });
-        item_rows->addWidget(shown);
+        item_rows->addWidget(shown, place % per_column, place / per_column);
+        place++;
     }
     form->addRow(word("menu_bar_show", "Show in the menu bar:"), items);
 
