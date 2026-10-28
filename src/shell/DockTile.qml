@@ -18,6 +18,8 @@ Item {
     // The shell's UserChoices, or null.
     property var choices: null
     required property var entry
+    // For a running program that has no desktop entry: its windows' app ID.
+    property string appId: ""
     property var minimizedWindow: null
     // For a tile that is neither an application nor a window.
     property string picture: ""
@@ -63,15 +65,23 @@ Item {
             return picture
         }
         if (entry === null) {
-            return ""
+            return appId !== "" ? themeIcons.path(appId, "application-x-executable") : ""
         }
         return themeIcons.forEntry(entry, "application-x-executable")
     }
     readonly property real iconSize: width - 2 * margin
     readonly property real iconX: x + margin
 
-    readonly property var windows: entry === null ? [] : ToplevelManager.toplevels.values.filter(
-        window => DesktopEntries.heuristicLookup(window.appId) === tile.entry)
+    readonly property var windows: {
+        if (entry !== null) {
+            return ToplevelManager.toplevels.values.filter(
+                window => DesktopEntries.heuristicLookup(window.appId) === tile.entry)
+        }
+        if (appId !== "") {
+            return ToplevelManager.toplevels.values.filter(window => window.appId === tile.appId)
+        }
+        return []
+    }
     readonly property bool running: minimizedWindow === null && windows.length > 0
 
     // In pixels; the dock moves the tile up by this and the reflection down.
@@ -149,7 +159,10 @@ Item {
         if (name !== "") {
             return name
         }
-        return minimizedWindow !== null ? minimizedWindow.title : (entry?.name ?? "")
+        if (minimizedWindow !== null) {
+            return minimizedWindow.title
+        }
+        return entry?.name ?? appId
     }
     // Set by the dock, which tracks the pointer across all tiles for
     // magnification; a hover handler here would hide it from the dock.
@@ -195,6 +208,9 @@ Item {
             }
             return
         }
+        if (entry === null) {
+            return
+        }
         entry.execute()
         launching = true
         bounceAnimation.start()
@@ -204,7 +220,8 @@ Item {
         id: press
         anchors.fill: parent
         acceptedButtons: Qt.LeftButton | Qt.RightButton
-        enabled: tile.entry !== null || tile.minimizedWindow !== null || tile.command.length > 0
+        enabled: tile.entry !== null || tile.appId !== "" || tile.minimizedWindow !== null
+                 || tile.command.length > 0
                  || tile.shellAction !== "" || tile.folder !== ""
 
         // In pixels.

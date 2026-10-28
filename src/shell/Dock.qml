@@ -200,12 +200,19 @@ PanelWindow {
             groups.push([])
         }
 
+        // A running program without a desktop entry still gets a tile, by its
+        // windows' app ID; it cannot be kept, having nothing to start again.
+        const listedAppIds = []
         for (const window of ToplevelManager.toplevels.values) {
             const entry = DesktopEntries.heuristicLookup(window.appId)
             if (entry !== null && !listed.includes(entry)) {
                 groups[0].push({ isSeparator: false, entry: entry, window: null, isTrash: false,
                                  kept: false, listedAs: entry.id })
                 listed.push(entry)
+            } else if (entry === null && window.appId !== "" && !listedAppIds.includes(window.appId)) {
+                groups[0].push({ isSeparator: false, entry: null, window: null, isTrash: false,
+                                 kept: false, appId: window.appId })
+                listedAppIds.push(window.appId)
             }
         }
 
@@ -256,6 +263,8 @@ PanelWindow {
                     + " " + sameNamedBefore(place.window)
             } else if ((place.custom ?? null) !== null) {
                 place.key = "custom " + JSON.stringify(place.custom)
+            } else if ((place.appId ?? "") !== "") {
+                place.key = "program " + place.appId
             } else {
                 place.key = "entry " + place.entry.id
             }
@@ -1041,6 +1050,7 @@ PanelWindow {
                 DockLayout.tileEdges(restLeft, resting?.width ?? 0, dock.pushNow)
 
             entry: place.entry
+            appId: place.appId ?? ""
             choices: dock.choices
             minimizedWindow: place.window
             readonly property var custom: place.custom ?? null
@@ -1175,17 +1185,20 @@ PanelWindow {
         }
 
         // A running program can be kept or let go; a kept idle one only removed.
-        const options = []
-        if (tile.running) {
-            const keep = menuEntry(keepId, words.keep ?? "Keep in dock")
-            keep.checkable = true
-            keep.checked = place.kept
-            options.push(keep)
-        } else {
-            options.push(menuEntry(removeId, words.remove ?? "Remove from dock"))
+        // One without a desktop entry (no listedAs) cannot be kept.
+        if (place.listedAs !== undefined) {
+            const options = []
+            if (tile.running) {
+                const keep = menuEntry(keepId, words.keep ?? "Keep in dock")
+                keep.checkable = true
+                keep.checked = place.kept
+                options.push(keep)
+            } else {
+                options.push(menuEntry(removeId, words.remove ?? "Remove from dock"))
+            }
+            items.push(menuEntry(optionsId, words.options ?? "Options", true, options))
+            items.push(menuSeparator())
         }
-        items.push(menuEntry(optionsId, words.options ?? "Options", true, options))
-        items.push(menuSeparator())
         items.push(tile.running ? menuEntry(quitId, words.quit ?? "Quit")
                                 : menuEntry(openId, words.open ?? "Open"))
         return items
