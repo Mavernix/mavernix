@@ -37,7 +37,7 @@ BuildRequires:  pkgconfig(yyjson)
 BuildRequires:  pkgconfig(wlroots-0.20)
 BuildRequires:  pkgconfig(wf-config) = 0.11.0
 Requires:       wf-config%{?_isa} = 0.11.0
-Recommends:     xorg-x11-server-Xwayland
+BuildRequires:  xorg-x11-server-Xwayland
 
 %description
 A modular Wayland compositor based on wlroots.
