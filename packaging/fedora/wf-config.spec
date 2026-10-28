@@ -43,7 +43,7 @@ Headers and pkg-config metadata for building against wf-config.
 
 %files
 %license LICENSE
-%{_libdir}/libwf-config.so.1*
+%{_libdir}/libwf-config.so.*
 
 %files devel
 %{_includedir}/wayfire/
