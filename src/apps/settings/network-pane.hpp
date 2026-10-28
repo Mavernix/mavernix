@@ -78,7 +78,10 @@ class NetworkPane : public QWidget
     void forgetChosen();
     void scan();
     void addAndActivate(const QMap<QString, QVariantMap>& settings, const QString& device, const QString& point);
+    // A line under the list saying what is happening.
     void tell(const QString& text);
+    // The line under the status.
+    void explain(const QString& text);
 
     QVariantMap words;
     QString word(const char* key, const char* fallback) const;
@@ -89,7 +92,6 @@ class NetworkPane : public QWidget
     QLabel* explanation = nullptr;
     QListWidget* network_list = nullptr;
     QPushButton* connect_button = nullptr;
-    QPushButton* disconnect_button = nullptr;
     QPushButton* forget_button = nullptr;
     QPushButton* hidden_button = nullptr;
     QLabel* progress = nullptr;

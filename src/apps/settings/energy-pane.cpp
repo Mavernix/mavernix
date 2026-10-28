@@ -12,6 +12,7 @@
 #include <QLabel>
 #include <QSlider>
 #include <QTimer>
+#include <QVBoxLayout>
 
 #include "choices.hpp"
 #include "pane-parts.hpp"
@@ -23,6 +24,8 @@ static const int minutes_per_hour = 60;
 // Wide enough that neighbouring stops are easy to tell apart, narrow
 // enough that the longer label and the longest time fit beside it.
 static const int slider_width_px = 260;
+// The notes under the lock tick box are no wider than this.
+static const int lock_note_width_px = 340;
 // How long after the last step made with the keys the times are written.
 // Each write of [idle] makes the session rewrite the compositor's config,
 // so holding an arrow key must not write at every stop.
@@ -74,10 +77,28 @@ EnergyPane::EnergyPane(Choices& choices, QWidget* parent) : QWidget(parent), cho
     }
     connect(locks, &QCheckBox::toggled, this, [this]() { write(); });
 
+    // Under the tick box: what it means (the config's energy_lock_note), and
+    // a warning when the lock never comes by itself. Lines are broken here:
+    // a label that wraps by itself asks for far more height than it fills.
+    auto* lock_group = new QWidget;
+    auto* lock_rows = new QVBoxLayout(lock_group);
+    lock_rows->setContentsMargins(0, 0, 0, 0);
+    lock_rows->setSpacing(2);
+    lock_rows->addWidget(locks);
+    const QString meaning = word("energy_lock_note", "");
+    if (!meaning.isEmpty())
+    {
+        auto* meaning_label = new QLabel;
+        meaning_label->setFont(scaled_font(meaning_label->font(), small_words_scale));
+        meaning_label->setEnabled(false);
+        meaning_label->setContentsMargins(22, 0, 0, 0);
+        meaning_label->setText(in_lines_of(meaning, meaning_label->fontMetrics(), lock_note_width_px));
+        lock_rows->addWidget(meaning_label);
+    }
     lock_note = new QLabel;
-    lock_note->setWordWrap(true);
     lock_note->setFont(scaled_font(lock_note->font(), small_words_scale));
-    lock_note->setFixedWidth(slider_width_px + 80);
+    lock_note->setContentsMargins(22, 0, 0, 0);
+    lock_rows->addWidget(lock_note);
     connect(screen_off, &QSlider::valueChanged, this, &EnergyPane::showLockNote);
     connect(sleep, &QSlider::valueChanged, this, &EnergyPane::showLockNote);
     connect(locks, &QCheckBox::toggled, this, &EnergyPane::showLockNote);
@@ -88,8 +109,7 @@ EnergyPane::EnergyPane(Choices& choices, QWidget* parent) : QWidget(parent), cho
     form->setVerticalSpacing(14);
     form->addRow(word("energy_screen_off", "Switch the screen off after:"), screen_off_row);
     form->addRow(word("energy_sleep", "Put the computer to sleep after:"), sleep_row);
-    form->addRow(QString(), locks);
-    form->addRow(QString(), lock_note);
+    form->addRow(QString(), lock_group);
     showLockNote();
 
     // What the shell does with it (src/shell/Idle.qml); "sleep" is the
@@ -122,14 +142,6 @@ EnergyPane::EnergyPane(Choices& choices, QWidget* parent) : QWidget(parent), cho
         });
     }
 
-    const QString note = word("energy_lock_note", "");
-    if (!note.isEmpty())
-    {
-        auto* note_label = new QLabel(note);
-        note_label->setWordWrap(true);
-        note_label->setEnabled(false);
-        form->addRow(QString(), note_label);
-    }
 }
 
 QHBoxLayout* EnergyPane::timeSlider(const QString& key, QSlider*& slider)
@@ -250,8 +262,9 @@ void EnergyPane::showLockNote()
     const int never = stops.size() - 1;
     const bool never_idle = screen_off->value() == never && sleep->value() == never;
     lock_note->setVisible(locks->isChecked() && never_idle);
-    lock_note->setText(words.value(QStringLiteral("energy_lock_never"),
+    const QString warning = words.value(QStringLiteral("energy_lock_never"),
         QStringLiteral("The screen never switches off and the computer never sleeps, so it won't lock by itself. "
-                       "Lock it any time from the menu at the right of the menu bar."))
-                           .toString());
+                       "Lock it any time from the menu bar."))
+                                .toString();
+    lock_note->setText(in_lines_of(warning, lock_note->fontMetrics(), lock_note_width_px));
 }

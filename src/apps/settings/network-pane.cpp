@@ -65,6 +65,13 @@ static const int call_timeout_ms = 1000;
 static const int scan_interval_ms = 15000;
 static const int dot_size = 12;
 static const int network_list_height_px = 150;
+// The window cannot be resized: the connections' list is narrow, and the box
+// beside it takes the rest of the pane's width.
+static const int services_width_px = 150;
+static const int box_width_px = intro_width_px - services_width_px - list_to_box_px;
+// Text in the box is broken into lines no wider than this, by hand: a label
+// that wraps by itself asks for far more height than it fills.
+static const int box_text_px = box_width_px - 2 * box_margin_px - 8;
 
 // The network list keeps a network's name here, the services list nothing.
 static const int name_role = Qt::UserRole;
@@ -138,7 +145,7 @@ NetworkPane::NetworkPane(Choices& choices, QWidget* parent) : QWidget(parent)
     words = choices.configTable(QStringLiteral("settings")).value(QStringLiteral("words")).toMap();
 
     services = new QListWidget;
-    services->setFixedWidth(source_list_size.width());
+    services->setFixedWidth(services_width_px);
     services->setIconSize(QSize(dot_size, dot_size));
     connect(services, &QListWidget::currentRowChanged, this, &NetworkPane::showChosen);
 
@@ -157,7 +164,6 @@ NetworkPane::NetworkPane(Choices& choices, QWidget* parent) : QWidget(parent)
     status_row->addWidget(switch_button);
 
     explanation = new QLabel;
-    explanation->setWordWrap(true);
     const QFont small = scaled_font(explanation->font(), small_words_scale);
     explanation->setFont(small);
 
@@ -168,24 +174,32 @@ NetworkPane::NetworkPane(Choices& choices, QWidget* parent) : QWidget(parent)
     connect(network_list, &QListWidget::currentRowChanged, this, &NetworkPane::showButtons);
     connect(network_list, &QListWidget::itemDoubleClicked, this, &NetworkPane::connectChosen);
 
+    // One button connects to the chosen network, or disconnects from it if
+    // it is the one in use: three buttons fit the box where four did not.
     connect_button = new QPushButton(word("network_connect", "Connect"));
-    disconnect_button = new QPushButton(word("network_disconnect", "Disconnect"));
     forget_button = new QPushButton(word("network_forget", "Forget"));
     hidden_button = new QPushButton(word("network_join_hidden", "Hidden Network…"));
-    connect(connect_button, &QPushButton::clicked, this, &NetworkPane::connectChosen);
-    connect(disconnect_button, &QPushButton::clicked, this, &NetworkPane::disconnectDevice);
+    connect(connect_button, &QPushButton::clicked, this, [this]() {
+        const Network* chosen = chosenNetwork();
+        if (chosen != nullptr && chosen->connected)
+        {
+            disconnectDevice();
+        }
+        else
+        {
+            connectChosen();
+        }
+    });
     connect(forget_button, &QPushButton::clicked, this, &NetworkPane::forgetChosen);
     connect(hidden_button, &QPushButton::clicked, this, &NetworkPane::joinHidden);
     auto* buttons = new QHBoxLayout;
     buttons->addWidget(hidden_button);
     buttons->addStretch();
     buttons->addWidget(forget_button);
-    buttons->addWidget(disconnect_button);
     buttons->addWidget(connect_button);
 
     progress = new QLabel;
     progress->setFont(small);
-    progress->setWordWrap(true);
 
     wifi_part = new QWidget;
     auto* wifi_rows = new QVBoxLayout(wifi_part);
@@ -205,7 +219,7 @@ NetworkPane::NetworkPane(Choices& choices, QWidget* parent) : QWidget(parent)
 
     auto* box = new QFrame;
     box->setFrameShape(QFrame::StyledPanel);
-    box->setFixedWidth(detail_box_size.width() + 60);
+    box->setFixedWidth(box_width_px);
     auto* box_rows = new QVBoxLayout(box);
     box_rows->setContentsMargins(box_margin_px, box_margin_px, box_margin_px, box_margin_px);
     box_rows->setSpacing(10);
@@ -286,7 +300,12 @@ void NetworkPane::hideEvent(QHideEvent* event)
 
 void NetworkPane::tell(const QString& text)
 {
-    progress->setText(text);
+    progress->setText(in_lines_of(text, progress->fontMetrics(), box_text_px));
+}
+
+void NetworkPane::explain(const QString& text)
+{
+    explanation->setText(in_lines_of(text, explanation->fontMetrics(), box_text_px));
 }
 
 void NetworkPane::readAll()
@@ -497,37 +516,37 @@ void NetworkPane::showChosen()
     if (!have_network_manager)
     {
         status->setText(QString());
-        explanation->setText(word("network_no_manager", "NetworkManager is not running, so connections cannot be shown or changed."));
+        explain(word("network_no_manager", "NetworkManager is not running, so connections cannot be shown or changed."));
         return;
     }
     if (device == nullptr)
     {
         status->setText(QString());
-        explanation->setText(word("network_none", "This computer has no network connection NetworkManager looks after."));
+        explain(word("network_none", "This computer has no network connection NetworkManager looks after."));
         return;
     }
 
     if (wifi && !wifi_on)
     {
         status->setText(status_word + word("network_off", "Off"));
-        explanation->setText(word("network_wifi_off", "Turn Wi-Fi on to see the networks around you."));
+        explain(word("network_wifi_off", "Turn Wi-Fi on to see the networks around you."));
     }
     else if (connected)
     {
         status->setText(status_word + word("network_connected", "Connected"));
-        explanation->setText(wifi ? word("network_wifi_connected", "Connected to “%1”. Choose another network below and click Connect to switch.")
+        explain(wifi ? word("network_wifi_connected", "Connected to “%1”. Choose another network below and click Connect to switch.")
                                         .arg(device->network_name)
                                   : word("network_cable_connected", "Connected by cable."));
     }
     else if (device->state <= unavailable_state && !wifi)
     {
         status->setText(status_word + word("network_cable_unplugged", "Cable Unplugged"));
-        explanation->setText(word("network_cable_unplugged_note", "Plug in a network cable, or check the device at its other end."));
+        explain(word("network_cable_unplugged_note", "Plug in a network cable, or check the device at its other end."));
     }
     else
     {
         status->setText(status_word + word("network_not_connected", "Not Connected"));
-        explanation->setText(wifi ? word("network_wifi_choose", "Choose a network below and click Connect.") : QString());
+        explain(wifi ? word("network_wifi_choose", "Choose a network below and click Connect.") : QString());
     }
 
     if (wifi && wifi_on)
@@ -587,8 +606,9 @@ void NetworkPane::showButtons()
 {
     const Network* network = chosenNetwork();
     const Device* device = chosenDevice();
-    connect_button->setEnabled(network != nullptr && !network->connected && !network->access_point.isEmpty());
-    disconnect_button->setEnabled(device != nullptr && device->state == activated_state);
+    const bool in_use = network != nullptr && network->connected && device != nullptr && device->state == activated_state;
+    connect_button->setText(in_use ? word("network_disconnect", "Disconnect") : word("network_connect", "Connect"));
+    connect_button->setEnabled(in_use || (network != nullptr && !network->access_point.isEmpty()));
     forget_button->setEnabled(network != nullptr && !network->saved.isEmpty());
 }
 
