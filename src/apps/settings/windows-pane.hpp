@@ -1,6 +1,7 @@
-// The settings of how windows are handled with the pointer: whether they
-// snap to the screen's sides, and the key that moves and resizes a window
-// from anywhere on it.
+// The settings of how windows are handled: whether they snap to the
+// screen's sides, the key that moves and resizes a window from anywhere on
+// it, what a double click on a title bar does, and which side the window
+// buttons are on.
 
 #pragma once
 

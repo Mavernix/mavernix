@@ -49,34 +49,6 @@ DockPane::DockPane(Choices& choices, QWidget* parent) : QWidget(parent), choices
         this->choices.set(QStringLiteral("dock"), QStringLiteral("magnification"), on);
     });
 
-    // A double click on a title bar ([window] title_double_click): a choice
-    // rather than a minimise tick box, as other desktops enlarge the window.
-    auto* double_click = new QComboBox;
-    const struct
-    {
-        const char* value;
-        const char* word_key;
-        const char* fallback;
-    } double_click_choices[] = {
-        {"none", "window_double_click_none", "do nothing"},
-        {"minimize", "window_double_click_minimize", "minimize"},
-        {"maximize", "window_double_click_maximize", "enlarge and restore"},
-    };
-    const QString chosen_double_click =
-        choices.value(QStringLiteral("window"), QStringLiteral("title_double_click")).toString();
-    for (const auto& choice : double_click_choices)
-    {
-        double_click->addItem(word(choice.word_key, choice.fallback), QLatin1String(choice.value));
-        if (chosen_double_click == QLatin1String(choice.value))
-        {
-            double_click->setCurrentIndex(double_click->count() - 1);
-        }
-    }
-    connect(double_click, &QComboBox::activated, this, [this, double_click](int index) {
-        this->choices.set(
-            QStringLiteral("window"), QStringLiteral("title_double_click"), double_click->itemData(index).toString());
-    });
-
     auto* hides = new QCheckBox(word("dock_autohide", "Hide the dock until the pointer is at the screen's edge"));
     hides->setChecked(choices.value(QStringLiteral("dock"), QStringLiteral("autohide")).toBool());
     connect(hides, &QCheckBox::toggled, this,
@@ -90,7 +62,6 @@ DockPane::DockPane(Choices& choices, QWidget* parent) : QWidget(parent), choices
         with_end_words(size, word("dock_size_small", "Small"), word("dock_size_large", "Large")));
     form->addRow(magnification,
         with_end_words(magnified_size, word("dock_magnification_min", "Min"), word("dock_magnification_max", "Max")));
-    form->addRow(word("window_double_click", "A double click on a title bar:"), double_click);
     form->addRow(QString(), hides);
 }
 

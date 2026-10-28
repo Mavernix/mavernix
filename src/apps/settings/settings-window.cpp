@@ -52,7 +52,7 @@ static const KnownPane known_panes[] = {
     {"desktops", "preferences-desktop-virtual", "Desktops"},
     {"windows", "preferences-system-windows", "Windows"},
     {"extensions", "preferences-plugin", "Extensions"},
-    {"toolkits", "preferences-system", "GTK & Qt"},
+    {"toolkits", "preferences-system", "App Style"},
     {"network", "preferences-system-network", "Network"},
     {"bluetooth", "preferences-system-bluetooth", "Bluetooth"},
     {"keyboard", "input-keyboard", "Keyboard"},
