@@ -2,7 +2,7 @@
 
 ## Program switcher
 
-The plate that shows the programs with windows while the switching key is held (`src/shell/ProgramSwitcher.qml`). Without the table there is no switcher.
+While you hold the switching key, a plate shows every program that has windows (`src/shell/ProgramSwitcher.qml`). Without the table there's no switcher.
 
 ```toml
 [fonts]
@@ -17,14 +17,14 @@ mark = { color = "#3a6ea540", radius = 8 }          # any fill: the box around t
 mark_reach = 6                      # how far it reaches beyond the icon
 # The marked program's name, under its icon: its colour, how far under the
 # icon it begins, and optionally a plate of its own (a fill, a height, the
-# room beside the name).
+# space beside the name).
 name = { color = "#202020", gap = 10, padding = 6 }
-appear_after_ms = 150               # the plate shows only once the key has been held this long
+appear_after_ms = 150               # the plate only shows once the key has been held this long
 ```
 
 ## Notifications
 
-The banner in which a program's notification shows up for a few seconds, in the screen's top corner at the end side. Its fonts are `[fonts].banner_title` and `[fonts].banner_text`; how it comes and goes is `[animation.banner]`.
+When a program sends a notification, it shows up in a banner for a few seconds, in the screen's top corner on the end side. The banner's fonts are `[fonts].banner_title` and `[fonts].banner_text`. `[animation.banner]` sets how it comes and goes.
 
 ```toml
 [notifications.banner]
@@ -32,8 +32,8 @@ width = 340
 top_gap = 10                   # below the panel (or the screen's top, if the panel is elsewhere)
 edge_gap = 10                  # from the screen's side
 gap = 8                        # between two banners
-# One background per number of text lines under the title (none, one, two),
-# each any fill, and the banner's height for each.
+# One background for each number of text lines under the title (none, one,
+# two), each any fill, and the banner's height for each.
 backgrounds = [{ color = "#f4f4f4", radius = 6 }, { color = "#f4f4f4", radius = 6 }, { color = "#f4f4f4", radius = 6 }]
 heights = [44, 60, 76]
 background_margins = [0, 0, 0, 0]   # optional: room inside a background picture around the panel, for its shadow (top, right, bottom, left)
@@ -53,7 +53,7 @@ duration_ms = 150
 curve = "ease-out"             # optional
 ```
 
-Coming and going may also differ, each described like the table above:
+Arriving and leaving can also be different. Describe each one like the table above:
 
 ```toml
 [animation.banner]
@@ -61,11 +61,11 @@ arrive = { kind = "drop", duration_ms = 400, curve = "ease-out" }
 leave = { kind = "slide", fade = true, duration_ms = 570, curve = "ease-in" }
 ```
 
-How long a banner stays is behaviour and is in the desktop config (`[notifications] banner_seconds`).
+How long a banner stays is behaviour, so it's in the desktop config (`[notifications] banner_seconds`).
 
 ## The list of past notifications
 
-A panel at the screen's far side that lists the notifications whose banners have gone, program by program. Fonts: `[fonts].notification_list` (titles, in bold, and texts), `notification_list_heading` (the heading and the programs' names), `notification_list_time`. It slides in as `[animation.notification_list]` says (`kind` "slide" or "none", `duration_ms`, `curve`).
+Once a banner has gone, its notification lands in a list. That's a panel at the screen's far side, sorted program by program. Its fonts are `[fonts].notification_list` (titles, in bold, and texts), `notification_list_heading` (the heading and the programs' names) and `notification_list_time`. `[animation.notification_list]` sets how it slides in (`kind` "slide" or "none", `duration_ms`, `curve`).
 
 ```toml
 [notifications.list]
@@ -84,7 +84,7 @@ line_height = 16
 time_right = 12
 entry_bottom_padding = 8
 divider_color = "#00000018"              # optional: a line between entries
-empty_text_top = 200                     # where the one line of an empty list stands
+empty_text_top = 200                     # where the single line of an empty list sits
 close_image = "images/close.png"         # optional pictures: the close button,
 close_pressed_image = "images/close-pressed.png"
 close_right = 6                          #   its distance from the entry's end,
@@ -95,7 +95,7 @@ unread_top = 9
 
 ## Volume display
 
-What shows the loudness on screen for a moment after it was changed by key. A theme without `[volume_display]` has none. How long it stays and how long it takes to fade is `[animation.volume_display]` (`stay_ms`, `fade_out_ms`).
+When you change the volume with a key, this shows the level on screen for a moment. A theme without `[volume_display]` doesn't have one. `[animation.volume_display]` sets how long it stays and how long it takes to fade (`stay_ms`, `fade_out_ms`).
 
 ```toml
 [volume_display]
@@ -111,7 +111,7 @@ icon_color = "#ffffff"         # in this colour
 volume = "images/volume.png"
 muted = "images/volume-muted.png"
 
-[volume_display.segments]      # as many of `count` are filled as the output is loud
+[volume_display.segments]      # the louder the output, the more of the `count` segments are filled
 count = 16
 width = 8
 height = 6
@@ -124,7 +124,12 @@ empty_color = "#ffffff40"
 
 ## Lock screen
 
-What is shown while the session is locked: the desktop's background under a veil, and a box with the user's picture and name and the field for the password. The name's font is `[fonts].lock_name`, the field's text `[fonts].interface`. A wrong password may set off `[animation.lock_wrong]`: `kind` "shake" or "none"; for a shake `swing_ms`, the time of one half-swing, and either `swings`, how far the box goes at each (below zero to the left; after the last it comes to rest), or `distance` and `times` for as many even swings to both sides.
+While the session is locked, you see the desktop's background under a veil, and a box with the user's picture, their name and the password field. The name uses `[fonts].lock_name` and the field's text uses `[fonts].interface`.
+
+A wrong password can set off `[animation.lock_wrong]`. Its `kind` is "shake" or "none". A shake takes `swing_ms`, the time of one half-swing, and then either:
+
+- `swings`: how far the box goes on each swing (below zero is to the left). After the last one it comes to rest.
+- or `distance` and `times`, for that many even swings to both sides.
 
 ```toml
 [animation.lock_wrong]
@@ -139,7 +144,7 @@ times = 3
 [lock]
 text_color = "#202020"
 backdrop_veil = { color = "#00000090" }   # any fill, laid over the background
-name_baseline = 124            # the row below the box's top on which the name stands
+name_baseline = 124            # how far below the box's top the name's baseline sits
 
 [lock.box]
 width = 280
@@ -170,7 +175,9 @@ color = "#ffffff8c"
 
 ## Application grid
 
-The grid of all installed applications that covers the screen. Its names' font is `[fonts].app_grid_label`, the search field's text `[fonts].interface`; how it comes and goes is `[animation.app_grid]` (`kind` "fade" or "none", `duration_ms`, and optionally `close_duration_ms` if going takes a different time from coming). Its pages stand side by side in a strip that follows a pull on a touchpad or a drag; how the strip comes to rest on a page, after a pull or a turn by key, wheel or dot, is `[animation.app_grid_page]` (`kind` "slide" or "none", `duration_ms`, `curve`).
+A grid of all installed applications that covers the screen. The names use `[fonts].app_grid_label` and the search field's text uses `[fonts].interface`. `[animation.app_grid]` sets how the grid comes and goes: `kind` "fade" or "none", `duration_ms`, and optionally `close_duration_ms` if closing should take a different time than opening.
+
+The pages sit side by side in a strip that follows a swipe on a touchpad or a drag. `[animation.app_grid_page]` sets how the strip settles on a page after a swipe, or after you turn the page with a key, the wheel or a dot (`kind` "slide" or "none", `duration_ms`, `curve`).
 
 ```toml
 [app_grid]
@@ -183,7 +190,7 @@ row_pitch = 140
 columns_shift = 0              # optional: moves all columns sideways from an even spread about the screen's middle
 first_row_top = 110            # the first row's icons' tops
 icon_size = 64
-label_baseline = 84            # the row below an icon's top on which its name's letters stand
+label_baseline = 84            # how far below an icon's top its name's baseline sits
 label_color = "#ffffff"
 label_shadow_color = "#000000a0"   # optional: a dark edge under the names
 
@@ -201,11 +208,11 @@ text_color = "#ffffff"
 size = 8
 pitch = 18
 center_above_bottom = 100
-color = "#ffffff"              # the shown page's
+color = "#ffffff"              # the current page's dot
 other_color = "#ffffff50"
 ```
 
-The dock's tile that opens the grid asks for the icon the config names for it; a theme can give its own picture for an icon name on such tiles:
+The dock tile that opens the grid asks for the icon the config names for it. A theme can give its own picture for an icon name on tiles like that:
 
 ```toml
 [dock.icons]
@@ -214,7 +221,7 @@ The dock's tile that opens the grid asks for the icon the config names for it; a
 
 ## Window overview
 
-The view of all windows side by side, to pick one. It is the compositor's stock overview; this table holds what that lets a theme set, and all of it is optional. How long its motion takes is `[animation.window_overview] duration_ms`.
+This shows all windows side by side so you can pick one. It's the compositor's stock overview. This table holds what that overview lets a theme set, and all of it is optional. `[animation.window_overview] duration_ms` sets how long its motion takes.
 
 ```toml
 [window_overview]
@@ -223,7 +230,7 @@ drawn_by = "shell"             # who draws it: "shell" (the fields under "The sh
 spacing = 30                   # between windows
 outer_margin = 30              # between the windows and the screen's edges
 other_windows_opacity = 0.85   # windows that are not the active one
-titles = "all"                 # whose title is written over its window: "all", "pointer" (the one under it) or "none"
+titles = "all"                 # which windows get their title written over them: "all", "pointer" (the one under it) or "none"
 title_font_size = 12
 title_position = "bottom"      # "top", "center" or "bottom"
 title_color = "#ffffff"
@@ -232,7 +239,7 @@ title_background = "#000000b0"
 
 ### The shell's overview
 
-With `drawn_by = "shell"` the desktop steps back onto a stage on a backdrop, and the windows are laid out in view, each program's together with its icon and name under them. Fonts: `[fonts].window_overview_label`. How long opening takes: `[animation.window_overview]` (`duration_ms`, `curve`).
+With `drawn_by = "shell"`, the desktop steps back onto a stage on a backdrop, and the windows are laid out in view. Each program's windows are grouped together, with its icon and name under them. The labels use `[fonts].window_overview_label`. `[animation.window_overview]` sets how long opening takes (`duration_ms`, `curve`).
 
 ```toml
 [window_overview]
@@ -245,11 +252,11 @@ windows_top_share = 0.12              # the area the windows lie in: its top and
 windows_bottom_share = 0.84           # screen's height, and its distance from the screen's sides
 windows_side_margin = 40
 most_window_scale = 0.8               # windows are never shown larger than this share of their size
-group_gap = 40                        # between the groups of two programs
+group_gap = 40                        # between two programs' groups
 group_icon_size = 32
 group_icon_rise = 0                   # the icon's middle above the group's bottom edge
-# Optional: a soft shadow the icon stands on, a picture of the theme's drawn
-# `size` wide and high with its middle `drop` below the icon's.
+# Optional: a soft shadow for the icon to stand on. It's a picture from the
+# theme, drawn `size` wide and high, with its middle `drop` below the icon's.
 group_icon_shadow = { image = "images/icon-shadow.png", size = 96, drop = 4 }
 group_name_gap = 4
 label_color = "#ffffff"
@@ -265,21 +272,21 @@ mark_color = "#c8c8c8"
 name_gap = 14
 slide = 30                            # how far the strip slides in from above
 picture_gap = 80                      # between two desktops' pictures; the row stands in the screen's middle
-# Optional: the button that takes a desktop away, its middle on the
-# picture's top left corner once the pointer has rested there.
+# Optional: the button that removes a desktop. Once the pointer has rested
+# on a picture, the button sits with its middle on the picture's top left corner.
 close_button = { image = "images/close.png", pressed = "images/close-pressed.png", size = 30 }
 close_delay_ms = 800
-# Optional: the tile that adds a desktop, a paler desktop picture that comes
-# out of the far top corner when the pointer is near: the share of it that
-# comes into view, how pale it is, how fast it comes, and a picture on it.
+# Optional: the tile that adds a desktop. It's a paler desktop picture that
+# comes out of the far top corner when the pointer gets near. Set how much of
+# it comes into view, how pale it is, how fast it comes, and a picture on it.
 add_tile = { image = "images/add.png", image_size = [24, 23], shown_share = 0.5, opacity = 0.6, slide_ms = 150 }
 ```
 
-A theme without the strip has no way of adding or removing a desktop in the overview; the number is then the config's (`[desktops] count`).
+Without the strip, there's no way to add or remove a desktop in the overview. The number of desktops then comes from the config (`[desktops] count`).
 
 ## Screenshot flash
 
-A desktop may answer a picture of the screen with a short flash (the config's `[screenshot] flash`). How it looks:
+When you take a screenshot, the desktop can answer with a short flash (the config's `[screenshot] flash`). The theme sets how it looks:
 
 ```toml
 [screenshot_flash]
@@ -293,7 +300,9 @@ curve = "ease-out"
 
 ## Search
 
-A box that hangs from the panel near its far end: a strip with a label and a field, and under it what was found, each kind's name in a column of its own at the left. The box itself is drawn as a menu's (`[menu]`: rim, shadow, corner radius; square at the top). Fonts: `[fonts].search` (the field's text and the results' names), `search_heading` (the kinds' names), `search_label` (the label); without them, `menu`. The words, and what is searched, are the desktop config's (`[search]`).
+Search is a box that hangs from the panel near its far end. At the top is a strip with a label and a field. Below that are the results, with each kind's name in its own column on the left. The box itself is drawn like a menu's (`[menu]`: rim, shadow, corner radius), but square at the top.
+
+Fonts: `[fonts].search` (the field's text and the results' names), `search_heading` (the kinds' names) and `search_label` (the label). Without them, it uses `menu`. The words, and what gets searched, come from the desktop config (`[search]`).
 
 ```toml
 [search]
@@ -340,4 +349,4 @@ cross_thickness = 1.5
 background = "#f6f6f6f7"
 ```
 
-The panel's item that opens the search asks for the icon `edit-find`; while the search is open the item is drawn as an item with its menu open.
+The panel item that opens the search asks for the icon `edit-find`. While the search is open, the item is drawn like an item with its menu open.

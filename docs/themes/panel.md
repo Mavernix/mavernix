@@ -1,6 +1,6 @@
 # Panel
 
-The bar along a screen edge. Which edge, and what it shows, is in the desktop config; the theme says how it looks.
+The panel is the bar along one edge of the screen. The desktop config decides which edge and what it shows. Your theme decides how it looks.
 
 ```toml
 [fonts]
@@ -24,27 +24,29 @@ logo = "images/logo.png"              # optional picture for the "logo" item
 logo_spacing = 8                      # optional: gap after the logo, if it should differ from item_spacing
 ```
 
-A fill with opacity below 1, such as a translucent picture, lets the desktop show through the panel.
+If the fill's opacity is below 1 (a translucent picture, say), the desktop shows through the panel.
 
 ## Status items
 
-The small icons at the panel's end (sound, network, battery, other programs' icons; see [panel items](../panel-items.md)). All of this is optional.
+These are the small icons at the end of the panel: sound, network, battery and other programs' icons (see [panel items](../panel-items.md)). Everything here is optional.
 
 ```toml
 [panel.status]
-spacing = 12        # gap between neighbouring status items and after the clock; without it, item_spacing
-                    # (an open item's highlight reaches half of it beyond the item on each side)
+spacing = 12        # gap between neighbouring status items and after the clock; item_spacing without it
+                    # (an open item's highlight reaches half of it past the item on each side)
 text_gap = 4        # gap between an item's text and its icon
-icon_size = 16      # the size at which icons from the icon theme are shown
+icon_size = 16      # the size icons from the icon theme are shown at
 
-[panel.status.gaps]             # any names; optional: another gap than `spacing` before the item showing this icon
+[panel.status.gaps]             # any names; optional: a different gap than `spacing` before the item showing this icon
 "preferences-system-notifications" = 9
 
-[panel.status.icons]            # any names: a picture of the theme's own for an icon name
+[panel.status.icons]            # any names: your theme's own picture for an icon name
 "audio-volume-high" = "images/status/volume-high.png"
 "network-wireless-signal-good" = "images/status/wifi-3.png"
 ```
 
-A status item asks for an icon by the name Linux desktops use for it (freedesktop.org's icon naming, without the "-symbolic" ending). If this table has a picture for the name, that is shown, at its own size; otherwise the icon theme's (`[icons]`) one-colour icon of that name. In both cases only the picture's shape counts: it is painted in `text_color`, and in `title_highlight_text_color` while the item's menu is open. So the pictures here should be one-colour drawings on a clear background, and a status item that this table does not know still fits the theme.
+A status item asks for its icon by the name Linux desktops use for it (freedesktop.org's icon naming, without the "-symbolic" ending). If this table has a picture for that name, it's shown at its own size. If not, you get the one-colour icon of that name from the icon theme (`[icons]`).
+
+Either way, only the picture's shape counts. It's painted in `text_color`, and in `title_highlight_text_color` while the item's menu is open. So make the pictures here one-colour drawings on a clear background. That way, a status item this table doesn't know about still fits your theme.
 
 The names the built-in items ask for: `audio-volume-muted`, `-low`, `-medium`, `-high`; `network-wired`, `network-offline`, `network-wireless-offline`, `network-wireless-signal-none`, `-weak`, `-ok`, `-good`, `-excellent`; `bluetooth-active`, `bluetooth-disabled`; `battery-level-0` to `battery-level-100` in tens, `battery-good-charging`, `battery-full-charged`, `battery-missing`.

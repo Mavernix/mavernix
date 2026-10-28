@@ -23,7 +23,7 @@ On a fresh install it looks pretty plain, and that's on purpose. The fun starts 
 | Mac OS X 10.3 Panther | | soon |
 | Mac OS 9 | | maybe.. |
 
-Mavernix ships none of Apple's files; each look is built from your copy of the installer.
+Mavernix doesn't ship any of Apple's files. Every look is built from your own copy of the installer.
 
 <p align="center">
   <img src="docs/images/sea-lion.jpg" alt="The Sea Lion look, dark on the left and light on the right">
@@ -37,13 +37,13 @@ Mavernix is built and tested on Arch Linux. It is in the AUR as [`mavernix`](htt
 yay -S mavernix
 ```
 
-Then pick Mavernix at your login screen. To build it yourself instead, see [docs/building.md](docs/building.md).
+Then pick Mavernix on your login screen. Want to build it yourself? See [docs/building.md](docs/building.md).
 
-You can also try it without installing: `dev/run-in-container` runs it in a Podman container.
+Just want to look around first? `dev/run-in-container` runs it in a Podman container, no install needed.
 
 ## Contributing
 
-Bug reports, themes and fixes to the docs are welcome, no C++ needed. See [CONTRIBUTING.md](CONTRIBUTING.md).
+Bug reports, themes and docs fixes are all welcome, and you don't need to know any C++. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Docs
 

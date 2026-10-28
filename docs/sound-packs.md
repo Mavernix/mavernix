@@ -1,21 +1,25 @@
 # Sound packs
 
-The desktop's sounds come from a **sound pack**: a folder of sound files, each named after the event it is played for. Packs are separate from themes: a theme names the pack that goes with it, and any other can be chosen instead, in the settings window's Sound pane or with `pack = "NAME"` under `[sounds]` in the desktop config.
+The desktop's sounds come from a **sound pack**: a folder of sound files, each one named after the event it plays for.
 
-## What a pack is
+Packs and themes are separate things. A theme names the pack that goes with it, but you can pick any other pack instead. Do that in the Sound pane in Settings, or with `pack = "NAME"` under `[sounds]` in the desktop config.
+
+## What's in a pack
 
 ```
 NAME/
-    index.theme          three lines, see below
+    index.theme          three short sections, see below
     stereo/
         trash-empty.wav
         message.wav
         ...
 ```
 
-This is the layout Linux desktops use for sound themes (freedesktop.org's sound theme specification), so a sound theme installed on the system is a pack too, and a pack made here works in other desktops. Files may be `.wav`, `.oga` or `.ogg`; WAV is best, because the desktop keeps WAV sounds ready in memory and plays them without delay.
+This is the same layout other Linux desktops use for sound themes (freedesktop.org's sound theme specification). That means any sound theme installed on your system already works as a pack, and a pack you make here works on other desktops too.
 
-`index.theme`:
+Files can be `.wav`, `.oga` or `.ogg`. WAV is best: the desktop keeps WAV sounds ready in memory, so they play without any delay.
+
+`index.theme` looks like this:
 
 ```
 [Sound Theme]
@@ -26,9 +30,9 @@ Directories=stereo
 OutputProfile=stereo
 ```
 
-## Where packs are looked for
+## Where packs are found
 
-By name, in `sounds/` under each of these, first found wins:
+Packs are looked up by name in the `sounds/` folder under each of these, in order. The first match wins.
 
 | Folder | For |
 |---|---|
@@ -36,30 +40,35 @@ By name, in `sounds/` under each of these, first found wins:
 | the desktop theme's `share/sounds/` | a pack that comes with a theme (the imported Sea Lion theme brings one) |
 | `/usr/share/sounds/` | packs installed on the system |
 
-## Making one
+## Making your own
 
-Make a folder `~/.local/share/sounds/MyPack/stereo/`, put sound files into it named after the events below, add the `index.theme`, and choose "MyPack" in the settings window. A pack need not have every event: an event without a file is silent.
+1. Make a folder `~/.local/share/sounds/MyPack/stereo/`.
+2. Put sound files into it, named after the events below.
+3. Add the `index.theme`.
+4. Pick "MyPack" in Settings.
 
-A pack may also bring several alert sounds to choose among, as files named `alert-NAME.wav`; the settings window then offers them, and the one chosen is played for the alert events (`bell`, `dialog-warning`, `dialog-error`) instead of the pack's own files for those.
+That's it :) A pack doesn't need a file for every event. An event without one just stays silent.
+
+A pack can also come with several alert sounds to choose from, as files named `alert-NAME.wav`. Settings then offers them, and the one you pick plays for the alert events (`bell`, `dialog-warning`, `dialog-error`) instead of the pack's own files for those.
 
 ## The events
 
-Names are those of freedesktop.org's sound naming specification where it has one.
+Where freedesktop.org's sound naming specification has a name for an event, that's the name used here.
 
-| Event | Played when |
+| Event | Plays when |
 |---|---|
-| `desktop-login` | the desktop has come up |
-| `audio-volume-change` | the loudness was changed (keys, the wheel over the panel's volume item, mute) |
+| `desktop-login` | the desktop has started |
+| `audio-volume-change` | the volume changed (with the keys, the scroll wheel over the panel's volume item, or mute) |
 | `message` | a notification appears |
-| `dialog-question` | the desktop asks before doing something (restart, emptying the trash) |
-| `trash-empty` | the trash became empty |
+| `dialog-question` | the desktop asks before doing something (restarting, emptying the trash) |
+| `trash-empty` | the trash was emptied |
 | `file-trash` | something was moved to the trash |
 | `dock-item-remove` | something was removed from the dock |
-| `screen-capture` | a picture of the screen was taken (the screenshot keys) |
-| `bell`, `dialog-warning`, `dialog-error` | a program beeps, warns or reports an error (raised by programs, not by the desktop itself yet) |
+| `screen-capture` | a screenshot was taken (with the screenshot keys) |
+| `bell`, `dialog-warning`, `dialog-error` | a program beeps, warns or reports an error (only programs raise these, the desktop itself doesn't yet) |
 
-Anything can raise an event, also one of its own invention: `mavernix-sound EVENT` (a command in every session's path) plays the pack's sound for it, if it has one.
+Anything can play an event, even one you made up: `mavernix-sound EVENT` plays the pack's sound for it, if the pack has one. The command is on the path in every session.
 
-## The packs that come with the desktop
+## Packs that come with the desktop
 
-None: the plain desktop is silent. The Sea Lion theme brings a pack of its own, `SeaLion`, made by the Theme Installer; any pack installed on the system (`freedesktop`, for one) can be chosen in Settings, Sound.
+None. The plain desktop is silent. The Sea Lion theme brings its own pack, `SeaLion`, which the Theme Installer makes for you. You can also pick any pack installed on your system (`freedesktop`, for example) in Settings, Sound.

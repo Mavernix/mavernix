@@ -1,8 +1,8 @@
 # Dock
 
-A row of application icons standing on a shelf at the bottom of the screen. Which applications, and whether icons grow under the pointer, is behaviour and lives in the config.
+The dock is a row of application icons standing on a shelf at the bottom of the screen. Which applications are in it, and whether icons grow under the pointer, is behaviour, so that's set in the config.
 
-Several sizes follow the tile size. Such a value is written as a pair `[factor, offset]` and means *factor × tile size + offset*.
+Some sizes follow the tile size. You write those as a pair `[factor, offset]`, which means *factor × tile size + offset*.
 
 ```toml
 [dock]
@@ -17,7 +17,7 @@ end_padding = [0.475, 0]  # how far the shelf reaches beyond the row, each side
 row_shift = 0             # moves the row sideways from the centred position
 end_trim = 0              # shortens the shelf's right end
 
-# When the row is too long for the screen, tiles shrink: if
+# Tiles shrink when the row is too long for the screen, that is when
 # tile × (tiles + fit_spare_tiles) is more than screen width + fit_overhang.
 fit_spare_tiles = 2
 fit_overhang = 12
@@ -47,7 +47,7 @@ height_above_base = [1.0, -4]
 background = { color = "#2b3138e6", radius = 10 }
 ```
 
-**On the shelf.** All of these tables except `indicator`, `separator` and `launch_bounce` are optional.
+**On the shelf.** These tables are all optional, except `indicator`, `separator` and `launch_bounce`.
 
 ```toml
 [dock.indicator]          # the light under a running application
@@ -102,9 +102,9 @@ padding = 11              # space beside the text
 pointer_width = 12        # a triangle under the bubble's middle; 0 for none
 pointer_height = 6
 gap = 28                  # from the tile's top up to the pointer's tip
-fade_out_ms = 167         # it appears at once and fades away
+fade_out_ms = 167         # it appears instantly and fades away
 
-[dock.launch_bounce]      # while an application starts, its icon is thrown up and falls back
+[dock.launch_bounce]      # while an application starts, its icon bounces up and falls back
 half_period_ms = 350      # time up, and time down
 height = [0.2, 4.4]       # of the tile's size
 longest_ms = 120000       # give up after this
@@ -112,19 +112,19 @@ longest_ms = 120000       # give up after this
 
 ## The menus on the dock's tiles
 
-A secondary press on a tile or a separator opens a menu above it. It looks like any other menu unless the theme says otherwise: `[dock.menu]` holds whatever is to differ from `[menu]`, key for key, and two things of its own.
+A secondary press on a tile or a separator opens a menu above it. It looks like any other menu unless the theme says otherwise. Put whatever should differ from `[menu]` into `[dock.menu]`, key for key. It also has two keys of its own.
 
 ```toml
 [dock.menu]                    # any key of [menu], and:
 background = "#202020f0"
 text_color = "#ffffff"
-pointer = { width = 24, height = 12 }   # optional: a triangle from the menu's bottom edge towards the tile, in the menu's background and rim
+pointer = { width = 24, height = 12 }   # optional: a triangle from the menu's bottom edge pointing at the tile, drawn in the menu's background and rim
 tile_gap = 4                   # between the menu (or its pointer's tip) and the tile's icon
 ```
 
 ## Minimised windows
 
-A minimised window has a tile of its own in the dock's last group. A theme chooses what the tile shows:
+A minimised window gets its own tile in the dock's last group. The theme picks what that tile shows:
 
 ```toml
 [dock.minimized]
@@ -132,23 +132,31 @@ shows = "picture"   # "picture": a small picture of the window; "icon" (the defa
 badge_share = 0.4   # with a picture: the application's icon in the tile's lower far corner, this share of the tile; 0 for none
 ```
 
-The picture fills the tile in the window's longer direction and stands in the middle of the other. It is taken when the minimise effect (`[animation.minimize]`) is over; the tile is empty until then.
+The picture fills the tile along the window's longer side and is centred along the other. It's taken once the minimise effect (`[animation.minimize]`) is over, and the tile stays empty until then.
 
 ## Removing a tile
 
-A tile dragged out of the dock and let go is removed. A theme may give pictures to show where it was dropped; without the table the tile simply goes.
+When you drag a tile out of the dock and let go, it's removed. A theme can add pictures that play where it was dropped. Without the table, the tile just disappears.
 
 ```toml
 [dock.remove_effect]
 image = "images/remove.png"   # the pictures, one below the other in one file
-frames = 5                    # how many
-size = 64                     # how large one is drawn
-frame_ms = 50                 # how long each stays
+frames = 5                    # how many pictures there are
+size = 64                     # the size each one is drawn at
+frame_ms = 50                 # how long each one shows
 ```
 
 ## Folders in the dock
 
-A place in the dock may be a folder (the config's doing); a press shows its contents: as a list, which is a menu like those above; as a grid of icons in a box that points at the tile; or as a fan, the files one above the other rising from the tile, each with its name beside it. The names' font is `[fonts].dock_folder`. How the grid comes and goes is `[animation.dock_folder]` (`kind` "grow", which enlarges it out of its tile as it fades in, "fade" or "none"; `duration_ms`, optionally `close_duration_ms`); for the fan it is `[animation.dock_folder_fan]` (`kind` "rise", which lets the entries climb out of the tile along the fan's line, or "none").
+A place in the dock can be a folder (the config decides that). Pressing it shows what's inside in one of three ways:
+
+- as a list, which is a menu like the ones above
+- as a grid of icons in a box that points at the tile
+- as a fan: the files stacked one above the other, rising from the tile, each with its name beside it
+
+The names use `[fonts].dock_folder`.
+
+`[animation.dock_folder]` sets how the grid comes and goes. Its `kind` is "grow" (the grid grows out of its tile as it fades in), "fade" or "none". It takes `duration_ms` and, optionally, `close_duration_ms`. For the fan it's `[animation.dock_folder_fan]`, with `kind` "rise" (the entries climb out of the tile along the fan's line) or "none".
 
 ```toml
 [dock.folder]
@@ -157,12 +165,12 @@ open_image = "images/folder-open-tile.png"   # optional: the tile's picture whil
 [dock.folder.fan]
 icon_size = 40
 pitch = 46                # from one entry to the next
-turn_per_entry = 0        # degrees each entry is turned further than the one below: the fan's line is then an arc; 0 is a straight column
-most_entries = 8          # the fan shows so many at most, counting the last one, which opens the folder and says how many files are not shown
+turn_per_entry = 0        # degrees each entry turns past the one below it, which bends the fan's line into an arc; 0 is a straight column
+most_entries = 8          # the most entries the fan shows, counting the last one, which opens the folder and says how many files aren't shown
 label_gap = 6             # between a name's bubble and its icon
 label_lift = 0            # optional: how far the bubble's middle stands above the icon's
-label_width = 220         # a longer name loses its middle
-label = { background = "#202020f0", text_color = "#ffffff", height = 22, padding = 8 }   # optional: the bubbles' looks, if not those of [dock.label]
+label_width = 220         # longer names get cut in the middle
+label = { background = "#202020f0", text_color = "#ffffff", height = 22, padding = 8 }   # optional: how the bubbles look, if different from [dock.label]
 open_image = "images/open-folder.png"   # optional, as in the grid below
 open_image_size = 56                   # optional, likewise
 
@@ -173,8 +181,8 @@ cell_height = 92
 first_row_top = 30        # from the box's top edge to the first row's icons
 bottom_padding = 6        # below the last row
 icon_size = 48
-label_baseline = 66       # the row below an icon's top on which its name stands
-label_width = 88          # a longer name loses its middle
+label_baseline = 66       # how far below an icon's top its name's baseline sits
+label_width = 88          # longer names get cut in the middle
 label_color = "#202020"
 label_shadow_color = "#000000a0"   # optional
 title_baseline = 19       # the folder's name, centred at the top
@@ -184,7 +192,7 @@ open_image = "images/open-folder.png"   # optional: the picture of the last entr
 open_image_size = 56                   # optional: its size, if not that of an icon
 ```
 
-Without more, the grid's box is drawn like the dock's menus. A theme with pictures for it adds:
+By default the grid's box is drawn like the dock's menus. To use pictures for it instead, add:
 
 ```toml
 [dock.folder.grid.box]
@@ -197,7 +205,7 @@ pointer_height = 13            # how far its pointer reaches below the box
 
 ## The slab shelf
 
-**A slab shelf** is a flat board seen from above and in front: a top surface the icons stand on, a front face below it, and a bright line where the two meet. Its ends lean outwards towards the viewer, so the front edge is wider than the back edge. The row of icons is as wide as the back edge.
+**A slab shelf** is a flat board you see from above and in front. It has a top surface the icons stand on, a front face below it, and a bright line where the two meet. Its ends lean outwards towards you, so the front edge is wider than the back edge. The row of icons is as wide as the back edge.
 
 ```toml
 [dock.shelf]
@@ -209,8 +217,8 @@ face_height = 3           # height of the front face
 line_height = 1           # height of the bright line on the surface's front edge
 back_corner_radius = 3    # rounding where an end meets the back edge
 
-# The front corners are rounded too, and their size grows with the shelf:
-# the size at two shelf heights; in between and beyond it changes evenly.
+# The front corners are rounded too, and they grow with the shelf. Give their
+# size at two shelf heights. In between and beyond, it changes evenly.
 front_corner_heights = [32, 128]
 front_corner_sizes = [4, 12]
 

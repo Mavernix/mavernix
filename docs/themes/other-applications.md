@@ -7,7 +7,7 @@
 theme = "Adwaita"         # the name of an icon theme
 ```
 
-Applications and the desktop's own parts (the dock) take icons by name from this icon theme. It may be one installed on the system, or one the desktop theme brings along: a theme's `share/` folder is added to the folders where programs look such things up, so `share/icons/NAME/` is found. A theme without this table uses the system's icons.
+Applications and the desktop's own parts (the dock) take their icons by name from this icon theme. It can be one that's installed on the system, or one your desktop theme brings along. A theme's `share/` folder is added to the folders where programs look these things up, so `share/icons/NAME/` gets found. If your theme leaves this table out, you get the system's icons.
 
 ## Mouse pointers
 
@@ -17,17 +17,23 @@ theme = "Adwaita"         # the name of a cursor theme
 size = 24                 # its size at a screen scale of 1, in pixels
 ```
 
-The mouse pointer everywhere: over the desktop and its parts (the compositor's), in GTK programs (dconf's `cursor-theme`) and in programs that draw their own (`XCURSOR_THEME`, `XCURSOR_SIZE`). Like the icon theme, it may be installed on the system or come with the desktop theme as `share/icons/NAME/cursors/`: the session puts the theme's `share/icons` first in `XCURSOR_PATH`. A cursor theme and an icon theme may share one folder and one name. A theme without this table gets the system's pointers.
+This sets the mouse pointer everywhere:
+
+- over the desktop and its parts (the compositor's pointer)
+- in GTK programs (dconf's `cursor-theme`)
+- in programs that draw their own (`XCURSOR_THEME`, `XCURSOR_SIZE`)
+
+Just like the icon theme, it can be installed on the system or come with your desktop theme as `share/icons/NAME/cursors/`. The session puts the theme's `share/icons` first in `XCURSOR_PATH`. A cursor theme and an icon theme can share one folder and one name. If your theme leaves this table out, you get the system's pointers.
 
 ## Controls inside applications
 
-How buttons, checkboxes and the like look in ordinary applications. No program of the desktop draws these; `src/session/make_app_theme.py` translates this table into themes for the applications' toolkits (Kvantum for Qt, CSS for GTK). A theme without this table leaves applications alone. What the table does not describe keeps a stock look.
+This is how buttons, checkboxes and the like look in ordinary applications. No program of the desktop draws these itself. Instead, `src/session/make_app_theme.py` turns this table into themes for the applications' toolkits (Kvantum for Qt, CSS for GTK). If your theme leaves the table out, applications are left alone. Anything the table doesn't describe keeps a stock look.
 
 ```toml
 [controls]
-kvantum_base = "KvFlatLight"   # the stock Kvantum theme that supplies everything not described here
-dark = false                   # optional: true for a dark theme, so that GTK starts from its dark variant
-                               #   and programs that ask "is the desktop dark?" are told so
+kvantum_base = "KvFlatLight"   # the stock Kvantum theme that covers everything not described here
+dark = false                   # optional: true for a dark theme, so GTK starts from its dark variant
+                               #   and programs that ask "is the desktop dark?" are told yes
 window_color = "#efefef"       # the body of windows and dialogs
 text_color = "#202020"
 base_color = "#ffffff"         # optional: the background of lists and text areas
@@ -46,13 +52,13 @@ fill = ["#4a80b8", "#3a6ea5"]  # one colour, or two running from top to bottom
 top_line = "#5a8cc0"           # optional: one-pixel lines along its top...
 bottom_line = "#2f5c8c"        # ...and bottom
 text_color = "#ffffff"
-hover_fill = ["#00000014"]     # optional: the item under the pointer; without it, no mark
+hover_fill = ["#00000014"]     # optional: the item under the pointer; no mark without it
 
 [controls.button]              # optional: push buttons, as pictures
-# Toolkits take a picture's edge for the control's edge: they add the strips
+# Toolkits treat a picture's edge as the control's edge. They add the strips
 # to the label's height and centre the label between them. So cut off any
-# empty room around the visible button, or the button comes out too tall with
-# its label off the middle; and choose the strips so that the label's middle
+# empty room around the visible button, or the button comes out too tall
+# with its label off-centre. Then pick the strips so the label's middle
 # lands where the original puts it.
 slice = [5, 20, 5, 20]         # top, right, bottom, left strips that keep their size
 normal = "images/controls/button.png"
@@ -61,7 +67,7 @@ disabled = "images/controls/button-disabled.png"
 default = "images/controls/button-default.png"            # the window's default button
 default_pressed = "images/controls/button-default-pressed.png"
 
-[controls.text_field]          # optional: fields to type in, as pictures
+[controls.text_field]          # optional: fields you type in, as pictures
 slice = [3, 2, 1, 2]
 normal = "images/controls/text-field.png"
 disabled = "images/controls/text-field-disabled.png"       # optional
@@ -85,23 +91,23 @@ slice = [5, 16, 7, 6]
 normal = "images/controls/popup.png"
 pressed = "images/controls/popup-pressed.png"              # optional
 disabled = "images/controls/popup-disabled.png"            # optional
-includes_arrows = true         # optional: the picture's right strip shows the mark; the toolkit's own arrow is left out
+includes_arrows = true         # optional: the picture's right strip shows the mark, so the toolkit's own arrow is left out
 text_inset = 12                # optional: where the text starts, from the picture's left edge
 
 [controls.progress_bar]        # optional
 track = "images/controls/progress-track.png"               # the empty bar; its height is the bar's
 track_slice = [1, 1, 2, 1]
 fill = "images/controls/progress-fill.png"                 # shown inside the track's edge strips, over the filled length
-shows_percentage = true                                    # optional: whether the bar may carry its number (GTK only; Kvantum has no such setting)
+shows_percentage = true                                    # optional: whether the bar may show its number (GTK only; Kvantum has no such setting)
 
 [controls.tool_button]         # optional: the buttons of a window's tool bar, as pictures (Qt only so far)
-# Like [controls.button]: a picture's edge is the control's edge, so cut off
-# empty room and choose strips that add up to the height the button should have.
+# Same as [controls.button]: a picture's edge is the control's edge, so cut
+# off empty room and pick strips that add up to the height the button should have.
 slice = [4, 6, 4, 6]
 normal = "images/controls/tool-button.png"
 pressed = "images/controls/tool-button-pressed.png"        # optional, like the next one
 disabled = "images/controls/tool-button-disabled.png"
-# A theme without this table draws tool bar buttons plain: no frame, only the icon or text.
+# Without this table, tool bar buttons are drawn plain: no frame, just the icon or text.
 
 [controls.slider]              # optional
 track = "images/controls/slider-track.png"                 # the groove; its height is the groove's
@@ -122,6 +128,6 @@ off = { normal = "…", pressed = "…", disabled = "…" }
 on = { normal = "…", pressed = "…", disabled = "…" }
 ```
 
-Pictures may come with an "@2x" version, as everywhere.
+As everywhere else, pictures can come with an "@2x" version.
 
-The colours here also reach KDE's programs, which take theirs from settings of their own rather than from the Qt style: the translator writes them a colour scheme with the window, list, selection and text colours.
+These colours also reach KDE's programs. Those take their colours from their own settings rather than from the Qt style, so the translator writes them a colour scheme with the window, list, selection and text colours.
