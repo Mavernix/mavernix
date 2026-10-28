@@ -1,0 +1,27 @@
+name: Fedora RPM
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dependencies:
+    runs-on: ubuntu-latest
+    container: fedora:44
+    timeout-minutes: 15
+
+    steps:
+      - name: Install package query tools
+        run: dnf install -y dnf5-plugins
+
+      - name: Check available dependency versions
+        run: |
+          dnf repoquery --available --latest-limit=1 \
+            wayfire wayfire-devel \
+            wf-config wf-config-devel \
+            'wlroots*devel' \
+            quickshell \
+            qt6-qtbase-private-devel \
+            tomlplusplus-devel
