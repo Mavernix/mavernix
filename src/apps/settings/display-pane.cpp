@@ -1,10 +1,16 @@
 #include "display-pane.hpp"
 
+#include <QDBusConnection>
+#include <QDBusMessage>
+#include <QDBusPendingCall>
+#include <QDir>
+#include <QFile>
 #include <QFormLayout>
 #include <QGuiApplication>
 #include <QLabel>
 #include <QRadioButton>
 #include <QScreen>
+#include <QSignalBlocker>
 #include <QSlider>
 #include <QTimer>
 #include <QVBoxLayout>
@@ -14,6 +20,39 @@
 #include "choices.hpp"
 #include "display-modes.hpp"
 #include "pane-parts.hpp"
+
+// The screen's backlight, as the kernel offers it: the first one under
+// /sys/class/backlight. Empty if the screen has none (most desktop screens).
+static QString backlight_name()
+{
+    const QStringList names = QDir(QStringLiteral("/sys/class/backlight")).entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+    return names.isEmpty() ? QString() : names.first();
+}
+
+static int backlight_value(const QString& name, const char* file)
+{
+    QFile reading(QStringLiteral("/sys/class/backlight/%1/%2").arg(name, QLatin1String(file)));
+    return reading.open(QIODevice::ReadOnly) ? reading.readAll().trimmed().toInt() : 0;
+}
+
+// The share of the full brightness, from 0 to 100.
+static int backlight_percent(const QString& name)
+{
+    const int largest = backlight_value(name, "max_brightness");
+    return largest > 0 ? qRound(100.0 * backlight_value(name, "brightness") / largest) : 0;
+}
+
+// Through the login manager, which lets the person at the computer set the
+// backlight without being an administrator.
+static void set_backlight_percent(const QString& name, int percent)
+{
+    const int largest = backlight_value(name, "max_brightness");
+    QDBusMessage setting = QDBusMessage::createMethodCall(QStringLiteral("org.freedesktop.login1"),
+        QStringLiteral("/org/freedesktop/login1/session/auto"), QStringLiteral("org.freedesktop.login1.Session"),
+        QStringLiteral("SetBrightness"));
+    setting << QStringLiteral("backlight") << name << uint(qRound(largest * percent / 100.0));
+    QDBusConnection::systemBus().asyncCall(setting);
+}
 
 // The scales on offer, from everything drawn largest to most room.
 static const double scale_stops[] = {2.0, 1.75, 1.5, 1.25, 1.0};
@@ -133,6 +172,20 @@ DisplayPane::DisplayPane(Choices& choices, QWidget* parent) : QWidget(parent), c
     });
     form->addRow(word("display_size", "Size:"), choice);
 
+    // Brightness, for a screen with a backlight; the brightness keys change it too.
+    backlight = backlight_name();
+    if (!backlight.isEmpty())
+    {
+        brightness = new QSlider(Qt::Horizontal);
+        // Not down to 0, which would leave a black screen and no way to see the slider.
+        brightness->setRange(5, 100);
+        brightness->setMinimumWidth(220);
+        brightness->setValue(backlight_percent(backlight));
+        connect(brightness, &QSlider::valueChanged, this, [this](int percent) { set_backlight_percent(backlight, percent); });
+        form->addRow(word("display_brightness", "Brightness:"),
+            with_end_words(brightness, word("display_brightness_low", "Dim"), word("display_brightness_high", "Bright")));
+    }
+
     // The lists were made last but stand first.
     QList<QWidget*> tab_order = modes->lists();
     tab_order << automatic << chosen << scale;
@@ -161,4 +214,15 @@ void DisplayPane::showLooksLike()
         words.value(QStringLiteral("display_looks_like"), QStringLiteral("Room for %1 × %2")).toString();
     looks_like->setText(
         text.arg(std::lround(screen_pixels.width() / at)).arg(std::lround(screen_pixels.height() / at)));
+}
+
+void DisplayPane::showEvent(QShowEvent* event)
+{
+    QWidget::showEvent(event);
+    // The keys may have changed it while the pane was away.
+    if (brightness != nullptr)
+    {
+        const QSignalBlocker quiet(brightness);
+        brightness->setValue(backlight_percent(backlight));
+    }
 }

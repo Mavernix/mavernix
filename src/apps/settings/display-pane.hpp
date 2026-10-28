@@ -6,6 +6,7 @@
 
 #include <QList>
 #include <QSize>
+#include <QString>
 #include <QVariantMap>
 #include <QWidget>
 
@@ -21,6 +22,9 @@ class DisplayPane : public QWidget
 
   public:
     DisplayPane(Choices& choices, QWidget* parent = nullptr);
+
+  protected:
+    void showEvent(QShowEvent* event) override;
 
   private:
     // Not called while the slider is dragged: the desktop follows at once,
@@ -40,4 +44,7 @@ class DisplayPane : public QWidget
     QLabel* looks_like;
     // Several key steps in a row make one change of the screen.
     QTimer* write_later;
+    // The backlight's name under /sys/class/backlight; the slider is null without one.
+    QString backlight;
+    QSlider* brightness = nullptr;
 };
