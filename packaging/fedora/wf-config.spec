@@ -30,6 +30,27 @@ Headers and pkg-config metadata for building against wf-config.
 
 %prep
 %autosetup
+# Stop the forked lock-test child before it executes subsequent tests.
+python3 - <<'PY'
+from pathlib import Path
+
+path = Path("test/file_test.cpp")
+source = path.read_text()
+old = """        flock(fd, LOCK_UN);
+        close(fd);
+    }
+
+    /* Wait for other process to lock the file */"""
+new = """        flock(fd, LOCK_UN);
+        close(fd);
+        _exit(0);
+    }
+
+    /* Wait for other process to lock the file */"""
+assert source.count(old) == 1, "Lock-test source changed; review patch"
+path.write_text(source.replace(old, new))
+PY
+
 
 %build
 %meson -Dtests=enabled
