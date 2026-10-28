@@ -53,6 +53,8 @@ Headers, helper libraries and pkg-config metadata for Wayfire plugins.
 %prep
 %autosetup
 cp subprojects/wf-utils/LICENSE LICENSE-wf-utils
+cp subprojects/wf-json/LICENSE LICENSE-wf-json
+cp subprojects/wf-touch/LICENSE LICENSE-wf-touch
 %build
 %meson -Duse_system_wfconfig=enabled -Duse_system_wlroots=enabled -Dtests=enabled -Dbuild_locales=disabled -Dxwayland=enabled
 %meson_build
@@ -66,7 +68,7 @@ cp subprojects/wf-utils/LICENSE LICENSE-wf-utils
 
 %files
 %license LICENSE
-%license LICENSE-wf-utils
+%license LICENSE-wf-utils LICENSE-wf-json LICENSE-wf-touch
 %{_bindir}/wayfire
 %{_libdir}/wayfire/
 %{_libdir}/libwf-utils.so.*
@@ -77,6 +79,7 @@ cp subprojects/wf-utils/LICENSE LICENSE-wf-utils
 %{_libdir}/libwayfire-blur-base.so
 
 %files devel
+%license LICENSE LICENSE-wf-utils LICENSE-wf-json LICENSE-wf-touch
 %{_bindir}/wayfire-plugin
 %{_includedir}/wayfire/
 %{_libdir}/pkgconfig/wayfire.pc

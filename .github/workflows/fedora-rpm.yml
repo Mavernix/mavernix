@@ -41,7 +41,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: wf-config-fedora-44
-          path: /root/rpmbuild/RPMS/**/*.rpm
+          path: |
+            /root/rpmbuild/RPMS/**/*.rpm
+            /root/rpmbuild/SRPMS/*.src.rpm
           if-no-files-found: error
           retention-days: 7
 
@@ -60,7 +62,7 @@ jobs:
           name: wf-config-fedora-44
           path: dependencies
       - name: Install wf-config
-        run: dnf install -y dependencies/x86_64/wf-config-0*.rpm dependencies/x86_64/wf-config-devel-*.rpm
+        run: dnf install -y dependencies/RPMS/x86_64/wf-config-0*.rpm dependencies/RPMS/x86_64/wf-config-devel-*.rpm
       - name: Prepare Wayfire sources
         run: |
           mkdir -p /root/rpmbuild/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}
@@ -168,6 +170,7 @@ jobs:
     container: fedora:44
     timeout-minutes: 30
     steps:
+      - uses: actions/checkout@v4
       - name: Download built RPMs
         uses: actions/download-artifact@v4
         with:
@@ -191,6 +194,24 @@ jobs:
           wayfire --version
           test -f /usr/share/wayland-sessions/mavernix.desktop
           test -d /usr/share/mavernix
+      - name: Collect matching sources and build instructions
+        run: |
+          mkdir -p source-rpms/build-instructions
+          mapfile -t sources < <(find packages -type f -name '*.src.rpm')
+          test "${#sources[@]}" -eq 4
+          cp "${sources[@]}" source-rpms/
+          cp .github/workflows/fedora-rpm.yml source-rpms/build-instructions/
+          cp -r packaging/fedora source-rpms/build-instructions/
+          cp packaging/fedora/README.md runtime-rpms/README.md
+          cp packaging/fedora/README.md source-rpms/README.md
+          (cd source-rpms && sha256sum *.src.rpm > SHA256SUMS)
+      - name: Upload matching source package set
+        uses: actions/upload-artifact@v4
+        with:
+          name: mavernix-fedora-44-sources
+          path: source-rpms/
+          if-no-files-found: error
+          retention-days: 7
       - name: Generate download checksums
         working-directory: runtime-rpms
         run: sha256sum *.rpm > SHA256SUMS
