@@ -13,6 +13,7 @@
 #include <QIcon>
 #include <QLabel>
 #include <QListWidget>
+#include <QMessageBox>
 #include <QPushButton>
 #include <QSignalBlocker>
 #include <QTimer>
@@ -66,6 +67,8 @@ BluetoothPane::BluetoothPane(Choices& choices, QWidget* parent) : QWidget(parent
         const QVariantMap device = known.value(path);
         if (!device.value(QStringLiteral("Paired")).toBool())
         {
+            // Trusted and connected once paired (readAll), as from the menu.
+            pairing_path = path;
             call(path, device_interface, "Pair");
         }
         else if (device.value(QStringLiteral("Connected")).toBool())
@@ -79,6 +82,14 @@ BluetoothPane::BluetoothPane(Choices& choices, QWidget* parent) : QWidget(parent
     });
     connect(forget_button, &QPushButton::clicked, this, [this]() {
         const QString path = devices->currentItem()->data(Qt::UserRole).toString();
+        const QString name = known.value(path).value(QStringLiteral("Alias")).toString();
+        const auto sure = QMessageBox::question(this, word("bluetooth_forget", "Forget"),
+            word("bluetooth_forget_question", "Forget “%1”? To use it again, it has to be paired anew.").arg(name),
+            QMessageBox::Cancel | QMessageBox::Yes, QMessageBox::Cancel);
+        if (sure != QMessageBox::Yes)
+        {
+            return;
+        }
         QDBusMessage forgetting = QDBusMessage::createMethodCall(
             service_name, adapter_path, QLatin1String(adapter_interface), QStringLiteral("RemoveDevice"));
         forgetting << QVariant::fromValue(QDBusObjectPath(path));
@@ -187,6 +198,17 @@ void BluetoothPane::readAll()
         {
             const QSignalBlocker quiet(powered);
             powered->setChecked(radio_on);
+        }
+        // A device paired from here is trusted, so it may reconnect by itself, and connected.
+        const QVariantMap paired_now = known.value(pairing_path);
+        if (!pairing_path.isEmpty() && paired_now.value(QStringLiteral("Paired")).toBool())
+        {
+            QDBusMessage trusting = QDBusMessage::createMethodCall(
+                service_name, pairing_path, QLatin1String(properties_interface), QStringLiteral("Set"));
+            trusting << QLatin1String(device_interface) << QStringLiteral("Trusted") << QVariant::fromValue(QDBusVariant(true));
+            QDBusConnection::systemBus().asyncCall(trusting);
+            call(pairing_path, device_interface, "Connect");
+            pairing_path.clear();
         }
         powered->setEnabled(!adapter_path.isEmpty());
         // The pane was on screen before the radio was known: look now.

@@ -52,4 +52,6 @@ class BluetoothPane : public QWidget
     QString adapter_path;
     // By object path.
     QMap<QString, QVariantMap> known;
+    // The device being paired from here, to trust and connect once paired.
+    QString pairing_path;
 };

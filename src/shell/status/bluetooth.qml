@@ -1,6 +1,7 @@
 // Status item: Bluetooth. Its menu switches Bluetooth, lists known devices
-// with connect/disconnect submenus, and while open, looks for devices
-// nearby and pairs the one chosen.
+// (a click connects or disconnects one), and while open, looks for devices
+// nearby and pairs the one chosen; the shell's BluetoothPairing asks for a
+// PIN or code if the device needs one.
 
 import QtQuick
 import Quickshell
@@ -57,13 +58,19 @@ StatusItem {
                 item.pairingDevice = null
             }
         }
+        // Pairing ended without a pairing: turned down, or timed out.
+        function onPairingChanged() {
+            const device = item.pairingDevice
+            if (device !== null && !device.pairing && !device.paired) {
+                item.pairingDevice = null
+            }
+        }
     }
 
     // Entry ids: fixed ones, and per-device ones counted from a base.
     readonly property int switchId: 1
     readonly property int settingsId: 2
     readonly property int deviceBaseId: 1000
-    readonly property int deviceActionBaseId: 2000
     readonly property int nearbyBaseId: 3000
 
     function entry(id, label, enabled, children) {
@@ -82,16 +89,15 @@ StatusItem {
             if (devices.length > 0) {
                 items.push(separator)
                 items.push(entry(0, words.devices_label ?? "Devices", false))
+                // One entry each: ticked while connected, a click connects or
+                // disconnects it; the charge, if known, after the name.
                 for (let index = 0; index < devices.length; index++) {
                     const device = devices[index]
-                    const inside = []
+                    let label = device.name
                     if (device.batteryAvailable) {
-                        inside.push(entry(0, (words.battery_label ?? "Battery: %1%").replace("%1", Math.round(device.battery * 100)), false))
+                        label += "  " + (words.battery_label ?? "Battery: %1%").replace("%1", Math.round(device.battery * 100))
                     }
-                    inside.push(entry(deviceActionBaseId + index,
-                                      device.connected ? (words.disconnect_label ?? "Disconnect")
-                                                       : (words.connect_label ?? "Connect"), true))
-                    const deviceEntry = entry(deviceBaseId + index, device.name, true, inside)
+                    const deviceEntry = entry(deviceBaseId + index, label, true)
                     deviceEntry.checkable = true
                     deviceEntry.checked = device.connected
                     items.push(deviceEntry)
@@ -132,8 +138,8 @@ StatusItem {
                 pairingDevice = device
                 device.pair()
             }
-        } else if (id >= deviceActionBaseId) {
-            const device = devices[id - deviceActionBaseId]
+        } else if (id >= deviceBaseId) {
+            const device = devices[id - deviceBaseId]
             if (device === undefined) {
                 return
             }

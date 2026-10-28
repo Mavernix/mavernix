@@ -195,6 +195,11 @@ ShellRoot {
         dialog: confirmDialog
     }
 
+    BluetoothPairing {
+        settings: shell.settings
+        dialog: confirmDialog
+    }
+
     // [sounds] volume_step, a share of the full loudness.
     readonly property real volumeStep: (settings.config.sounds ?? ({})).volume_step ?? 0.05
 

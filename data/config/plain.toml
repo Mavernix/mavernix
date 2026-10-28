@@ -143,6 +143,18 @@ searching_label = "Searching…"
 pairing_label = "%1 (pairing…)"
 settings_label = "Bluetooth Settings…"
 settings_command = ["mavernix-settings", "bluetooth"]
+# Pairing questions; %1 is the device's name, %2 a code.
+pin_label = "Type the PIN for “%1”."
+pin_note = "It is often 0000 or 1234, or written in the device's manual."
+pin_placeholder = "PIN"
+confirm_label = "Does “%1” show the code %2?"
+confirm_note = "Pair only if the same code is shown on both."
+show_label = "Type %2 on “%1”, then press Return on it."
+authorize_label = "Allow “%1” to connect to this computer?"
+pair_label = "Pair"
+allow_label = "Allow"
+cancel_label = "Cancel"
+ok_label = "OK"
 
 [status.battery]
 show_percentage = true

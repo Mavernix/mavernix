@@ -9,6 +9,7 @@ moc_sources = qt.compile_moc(
     headers: [
         'active-window.hpp',
         'application-menu.hpp',
+        'bluetooth-agent.hpp',
         'compositor-socket.hpp',
         'desktops.hpp',
         'file-kind.hpp',
@@ -33,6 +34,7 @@ shared_module(
     [
         'active-window.cpp',
         'application-menu.cpp',
+        'bluetooth-agent.cpp',
         'compositor-socket.cpp',
         'desktops.cpp',
         'file-kind.cpp',
