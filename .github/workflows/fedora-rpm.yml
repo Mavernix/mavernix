@@ -120,6 +120,7 @@ jobs:
         env:
           RELEASE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
         run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
           python3 packaging/fedora/prepare-source.py --topdir /root/rpmbuild --tag "$RELEASE_TAG"
       - name: Install build dependencies
         run: dnf builddep -y /root/rpmbuild/SPECS/mavernix.spec
