@@ -4,11 +4,15 @@
 //
 //   { id, label, enabled, separator, checkable, checked, shortcut, children }
 //
+// An item may also have `pictures`: image addresses drawn small at its end
+// in the text's colour, such as a lock and a signal strength.
+//
 // This is an item, not a window: MenuOverlay.qml holds open menus in one
 // full-screen window. (Pop-up windows showed stale, stretched contents
 // after a change, and pointer positions came out wrong.)
 
 import QtQuick
+import QtQuick.Effects
 import QtQuick.Shapes
 import "ThemeValues.js" as ThemeValues
 
@@ -183,7 +187,8 @@ Item {
                     && (menu.hoveredIndex === index || menu.submenuIndex === index)
 
                 // The text inset, the label, and a shortcut or submenu arrow after a gap.
-                readonly property real endWidth: Math.max(shortcut.implicitWidth, arrow.implicitWidth)
+                readonly property real endWidth:
+                    Math.max(shortcut.implicitWidth, arrow.implicitWidth, endPictures.implicitWidth)
                 readonly property bool isSlider: modelData.slider !== undefined
                 readonly property real neededWidth:
                     isSlider ? (menu.looks.slider_min_width ?? 180) :
@@ -269,6 +274,32 @@ Item {
                     id: shortcut
                     text: menu.shortcutText(row.modelData.shortcut)
                     x: parent.width - menu.looks.shortcut_end_inset - implicitWidth
+                }
+
+                Row {
+                    id: endPictures
+                    visible: !row.isSeparator
+                    spacing: 4
+                    readonly property int side: Math.round(menu.font.size)
+                    x: parent.width - menu.looks.shortcut_end_inset - implicitWidth
+                    y: Math.round(label.y + label.baselineOffset - side * 0.4 - side / 2)
+                    Repeater {
+                        model: row.modelData.pictures ?? []
+                        Image {
+                            required property string modelData
+                            source: modelData
+                            width: endPictures.side
+                            height: endPictures.side
+                            sourceSize.width: width * Screen.devicePixelRatio
+                            sourceSize.height: height * Screen.devicePixelRatio
+                            fillMode: Image.PreserveAspectFit
+                            layer.enabled: true
+                            layer.effect: MultiEffect {
+                                colorization: 1
+                                colorizationColor: row.textColor
+                            }
+                        }
+                    }
                 }
 
                 // A triangle from submenu_arrow_shape, else the theme's character.

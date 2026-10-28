@@ -33,20 +33,23 @@ PanelTitle {
         if (iconName === "") {
             return ""
         }
-        if (themePicture !== undefined) {
-            return "file://" + panel.themeDirectory + "/" + themePicture
-        }
-        // The symbolic icon, else the ordinary one, else nothing.
-        const oneColour = themeIcons.find(iconName + "-symbolic")
-        if (oneColour !== "") {
-            return oneColour
-        }
-        const ordinary = themeIcons.find(iconName)
-        if (ordinary === "") {
+        const found = picture(iconName)
+        if (found === "") {
             console.warn("status item: neither the theme nor the icon theme has an icon named",
                          iconName, "- check the name, or add a picture to the theme's [panel.status.icons]")
         }
-        return ordinary
+        return found
+    }
+
+    // The theme's picture for an icon name, else the icon theme's symbolic
+    // icon, else its ordinary one; "" if there is none. Menus use it too.
+    function picture(name) {
+        const own = (statusLooks.icons ?? ({}))[name]
+        if (own !== undefined) {
+            return "file://" + panel.themeDirectory + "/" + own
+        }
+        const oneColour = themeIcons.find(name + "-symbolic")
+        return oneColour !== "" ? oneColour : themeIcons.find(name)
     }
     pictureHeight: themePicture !== undefined ? 0 : (statusLooks.icon_size ?? 16)
     textGap: statusLooks.text_gap ?? 4

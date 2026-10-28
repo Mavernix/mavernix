@@ -103,8 +103,26 @@ settings_label = "Sound Settings…"
 settings_command = ["mavernix-settings", "sound"]
 
 [status.network]
-# A tray program whose menu this item shows, so there is one network icon.
+# A network applet whose tray icon is left out, so there is one network
+# icon. It keeps running: NetworkManager asks it for saved passwords.
 tray_program = "nm-applet"
+# "own" for the Wi-Fi menu below, "program" for the applet's menu.
+menu = "own"
+settings_command = ["mavernix-settings", "network"]
+# The menu's wording; %1 is a network's or a cable's name.
+on_label = "Wi-Fi: On"
+off_label = "Wi-Fi: Off"
+turn_on_label = "Turn Wi-Fi On"
+turn_off_label = "Turn Wi-Fi Off"
+searching_label = "Looking for networks…"
+cable_label = "Connected by cable: %1"
+join_other_label = "Join Other Network…"
+settings_label = "Open Network Preferences…"
+password_label = "The Wi-Fi network “%1” requires a password."
+wrong_password_label = "The password for “%1” was not accepted. Try again."
+password_placeholder = "Password"
+join_label = "Join"
+cancel_label = "Cancel"
 
 [status.bluetooth]
 # The menu's wording.
