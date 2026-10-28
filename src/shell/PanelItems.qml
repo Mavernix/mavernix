@@ -285,7 +285,8 @@ Row {
                 panel: row.panel
                 itemRow: row
                 boxOverhang: row.statusSpacing / 2
-                text: Qt.formatDateTime(clock.date, row.panel.layout.clock_format ?? "hh:mm")
+                text: Qt.formatDateTime(clock.date, row.panel.choices?.value("panel", "clock_format")
+                                                    ?? row.panel.layout.clock_format ?? "hh:mm")
 
                 // A date line, if panel.clock_menu_date_format is set.
                 readonly property string dateFormat: row.panel.layout.clock_menu_date_format ?? ""

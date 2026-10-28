@@ -6,6 +6,7 @@
 #include <QGuiApplication>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QRegularExpression>
 #include <QScreen>
 #include <QSlider>
 #include <QVBoxLayout>
@@ -63,6 +64,52 @@ DockPane::DockPane(Choices& choices, QWidget* parent) : QWidget(parent), choices
     form->addRow(magnification,
         with_end_words(magnified_size, word("dock_magnification_min", "Min"), word("dock_magnification_max", "Max")));
     form->addRow(QString(), hides);
+
+    // The menu bar: which items show at its right end, and the clock's hours.
+    // The shell follows at once.
+    const QVariantMap item_names = words.value(QStringLiteral("menu_bar_items")).toMap();
+    const QStringList listed = choices.value(QStringLiteral("panel"), QStringLiteral("right")).toStringList();
+    auto* items = new QWidget;
+    auto* item_rows = new QVBoxLayout(items);
+    item_rows->setContentsMargins(0, 0, 0, 0);
+    item_rows->setSpacing(4);
+    for (const QString& name : listed)
+    {
+        // Items without a friendly name (a custom one) keep their own.
+        auto* shown = new QCheckBox(item_names.value(name, name).toString());
+        shown->setChecked(!choices.value(QStringLiteral("panel"), QStringLiteral("hidden")).toStringList().contains(name));
+        connect(shown, &QCheckBox::toggled, this, [this, name](bool on) {
+            QStringList hidden = this->choices.value(QStringLiteral("panel"), QStringLiteral("hidden")).toStringList();
+            hidden.removeAll(name);
+            if (!on)
+            {
+                hidden.append(name);
+            }
+            this->choices.set(QStringLiteral("panel"), QStringLiteral("hidden"), hidden);
+        });
+        item_rows->addWidget(shown);
+    }
+    form->addRow(word("menu_bar_show", "Show in the menu bar:"), items);
+
+    // Hours as 13:00 or as 1:00 PM; the rest of the theme's format stays.
+    const QString format = choices.value(QStringLiteral("panel"), QStringLiteral("clock_format")).toString();
+    auto* day_hours = new QCheckBox(word("menu_bar_24_hours", "Show the time with 24 hours"));
+    day_hours->setChecked(!format.contains(QLatin1String("AP"), Qt::CaseInsensitive));
+    connect(day_hours, &QCheckBox::toggled, this, [this](bool on) {
+        QString changed = this->choices.value(QStringLiteral("panel"), QStringLiteral("clock_format")).toString();
+        if (on)
+        {
+            changed.replace(QRegularExpression(QStringLiteral(" ?[Aa][Pp]")), QString());
+            changed.replace(QRegularExpression(QStringLiteral("\\bh{1,2}\\b")), QStringLiteral("HH"));
+        }
+        else
+        {
+            changed.replace(QRegularExpression(QStringLiteral("\\bH{1,2}\\b")), QStringLiteral("h"));
+            changed += QStringLiteral(" AP");
+        }
+        this->choices.set(QStringLiteral("panel"), QStringLiteral("clock_format"), changed);
+    });
+    form->addRow(QString(), day_hours);
 }
 
 int DockPane::currentIconSize() const

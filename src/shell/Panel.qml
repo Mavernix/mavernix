@@ -24,8 +24,10 @@ PanelWindow {
     property var choices: null
     // A panel end's items: the config's, with extensions' items added on the
     // inner side; an item the config lists itself stays where it is.
+    // Items the person hid in the settings (Dock & Menu Bar) are left out.
+    readonly property var hiddenItems: choices?.value("panel", "hidden") ?? layout.hidden ?? []
     function itemsAt(end) {
-        const listed = layout[end] ?? []
+        const listed = (layout[end] ?? []).filter(name => !hiddenItems.includes(name))
         const added = (extensions?.panelItems(end) ?? []).filter(name => !listed.includes(name))
         return end === "right" ? added.concat(listed) : listed.concat(added)
     }

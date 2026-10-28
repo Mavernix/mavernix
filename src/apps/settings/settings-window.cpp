@@ -43,10 +43,10 @@ struct KnownPane
     const char* keywords;
 };
 static const KnownPane known_panes[] = {
-    {"dock", "preferences-dock", "Dock", "taskbar launcher magnification hide autohide size"},
+    {"dock", "preferences-dock", "Dock & Menu Bar", "taskbar launcher magnification hide autohide size menu bar clock time 24 hour status icons"},
     {"icons", "applications-other", "App Icons", "application program icon picture change"},
     {"theme", "preferences-desktop-theme", "Theme", "look appearance dark light colours colors style"},
-    {"desktop", "preferences-desktop-wallpaper", "Desktop", "wallpaper background picture image name"},
+    {"desktop", "preferences-desktop-wallpaper", "Desktop", "wallpaper background picture image name icons files"},
     {"sound", "preferences-desktop-sound", "Sound", "volume audio speaker headphones microphone input output alert beep"},
     {"trackpad", "input-touchpad", "Touchpad", "touchpad tap click scroll natural gestures"},
     {"mouse", "input-mouse", "Mouse", "pointer cursor speed acceleration scroll wheel left handed button"},
