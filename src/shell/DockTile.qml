@@ -18,6 +18,9 @@ Item {
     // The shell's UserChoices, or null.
     property var choices: null
     required property var entry
+    // An icon that is not the icon theme's own (0 to 1, 0 for any size) spans
+    // at most this share of its square, as the theme's leave a margin.
+    property real foreignIconFill: 0
     // For a running program that has no desktop entry: its windows' app ID.
     property string appId: ""
     property var minimizedWindow: null
@@ -64,10 +67,11 @@ Item {
         if (picture !== "") {
             return picture
         }
-        if (entry === null) {
-            return appId !== "" ? themeIcons.path(appId, "application-x-executable") : ""
+        const name = entry !== null ? themeIcons.nameFor(entry) : appId
+        if (entry === null && appId === "") {
+            return ""
         }
-        return themeIcons.forEntry(entry, "application-x-executable")
+        return themeIcons.fitted(name, foreignIconFill, "application-x-executable")
     }
     readonly property real iconSize: width - 2 * margin
     readonly property real iconX: x + margin

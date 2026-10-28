@@ -1051,6 +1051,7 @@ PanelWindow {
 
             entry: place.entry
             appId: place.appId ?? ""
+            foreignIconFill: dock.looks.foreign_icon_fill ?? 0.9
             choices: dock.choices
             minimizedWindow: place.window
             readonly property var custom: place.custom ?? null

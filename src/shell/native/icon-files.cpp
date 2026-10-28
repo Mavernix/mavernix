@@ -3,6 +3,7 @@
 #include <QFileInfo>
 #include <QIcon>
 #include <QImage>
+#include <QPainter>
 #include <QtGui/private/qiconloader_p.h>
 
 #include <cstring>
@@ -160,6 +161,24 @@ QString IconFiles::sourceFor(const QString& name, int revision)
     return address;
 }
 
+bool IconFiles::isThemeOwn(const QString& name, int)
+{
+    if (name.isEmpty() || name.startsWith(QLatin1Char('/')))
+    {
+        return false;
+    }
+    const QString folder = QLatin1Char('/') + QIcon::themeName() + QLatin1Char('/');
+    const QThemeIconInfo info = QIconLoader::instance()->loadIcon(name);
+    for (const auto& entry : info.entries)
+    {
+        if (!entry->filename.contains(folder))
+        {
+            return false;
+        }
+    }
+    return !info.entries.empty();
+}
+
 ThemeIconProvider::ThemeIconProvider() : QQuickImageProvider(QQuickImageProvider::Pixmap) {}
 
 QPixmap ThemeIconProvider::requestPixmap(const QString& address, QSize* size, const QSize& requested_size)
@@ -170,12 +189,25 @@ QPixmap ThemeIconProvider::requestPixmap(const QString& address, QSize* size, co
     const QSize wanted = (requested_size.width() > 0 && requested_size.height() > 0)
                              ? requested_size
                              : QSize(default_side, default_side);
-    const QPixmap picture = name.startsWith(QLatin1Char('/')) ? QIcon(name).pixmap(wanted) : themePicture(name, wanted);
+    const QPixmap drawn = picture(name, wanted);
     if (size != nullptr)
     {
-        *size = picture.size();
+        *size = drawn.size();
     }
-    return picture;
+    return drawn;
+}
+
+QPixmap ThemeIconProvider::picture(const QString& name, const QSize& wanted)
+{
+    if (!name.startsWith(QLatin1Char('/')))
+    {
+        return themePicture(name, wanted);
+    }
+    if (is_drawing(name))
+    {
+        return QPixmap::fromImage(draw_with_librsvg(name, qMax(wanted.width(), wanted.height())));
+    }
+    return QIcon(name).pixmap(wanted);
 }
 
 QPixmap ThemeIconProvider::themePicture(const QString& name, const QSize& wanted)
@@ -210,6 +242,65 @@ QImage SvgIconProvider::requestImage(const QString& path, QSize* size, const QSi
     const QString file = path.startsWith(QLatin1Char('/')) ? path : QLatin1Char('/') + path;
     const int asked = qMax(requested_size.width(), requested_size.height());
     const QImage drawn = draw_with_librsvg(file, asked > 0 ? asked : default_side);
+    if (size != nullptr)
+    {
+        *size = drawn.size();
+    }
+    return drawn;
+}
+
+FittedIconProvider::FittedIconProvider() : QQuickImageProvider(QQuickImageProvider::Image) {}
+
+// The side of the smallest square around the parts at least this opaque.
+static const int shape_alpha = 24;
+
+static int shape_side(const QImage& image)
+{
+    int left = image.width(), right = -1, top = image.height(), bottom = -1;
+    for (int y = 0; y < image.height(); y++)
+    {
+        const QRgb* row = reinterpret_cast<const QRgb*>(image.constScanLine(y));
+        for (int x = 0; x < image.width(); x++)
+        {
+            if (qAlpha(row[x]) >= shape_alpha)
+            {
+                left = qMin(left, x);
+                right = qMax(right, x);
+                top = qMin(top, y);
+                bottom = qMax(bottom, y);
+            }
+        }
+    }
+    return right < 0 ? 0 : qMax(right - left + 1, bottom - top + 1);
+}
+
+QImage FittedIconProvider::requestImage(const QString& address, QSize* size, const QSize& requested_size)
+{
+    // "<fill>/<revision>/<name>"; a name may be a file's path, with slashes.
+    const double fill = address.section(QLatin1Char('/'), 0, 0).toDouble();
+    const QString name = address.section(QLatin1Char('/'), 2);
+    const int side = qMax(requested_size.width(), requested_size.height()) > 0
+                         ? qMax(requested_size.width(), requested_size.height())
+                         : default_side;
+    QImage drawn = ThemeIconProvider::picture(name, QSize(side, side))
+                       .toImage()
+                       .convertToFormat(QImage::Format_ARGB32_Premultiplied);
+
+    const int shape = shape_side(drawn);
+    const int square = qMax(drawn.width(), drawn.height());
+    if ((fill > 0) && (shape > 0) && (square > 0) && (double(shape) / square > fill))
+    {
+        const double shrink = fill * square / shape;
+        QImage fitted(drawn.size(), QImage::Format_ARGB32_Premultiplied);
+        fitted.fill(Qt::transparent);
+        QPainter painter(&fitted);
+        painter.setRenderHint(QPainter::SmoothPixmapTransform);
+        const QSizeF smaller = QSizeF(drawn.size()) * shrink;
+        const QPointF corner((drawn.width() - smaller.width()) / 2, (drawn.height() - smaller.height()) / 2);
+        painter.drawImage(QRectF(corner, smaller), drawn);
+        painter.end();
+        drawn = fitted;
+    }
     if (size != nullptr)
     {
         *size = drawn.size();

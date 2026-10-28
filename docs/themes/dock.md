@@ -29,6 +29,7 @@ magnification_reach = 3         # how many tiles to each side are affected
 magnification_ramp_ms = [1, 42] # switching on and off takes a + b × ln(1 + change / 2)
 
 pressed_darken = 0.4      # a pressed icon's colours are multiplied by this
+foreign_icon_fill = 0.9   # optional: an icon the icon theme doesn't have itself (a program's own) is shrunk to span at most this share of its square; 0 leaves it
 tile_slide_ms = 270       # tiles and the shelf's ends slide for this long when the row changes
 tile_appear_ms = 350      # a new tile grows in and fades in for this long...
 tile_appear_scale = 0.1   # ...starting from this share of its size

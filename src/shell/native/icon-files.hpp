@@ -32,6 +32,10 @@ class IconFiles : public QObject
     // be a file path. Pass `revision` so the binding updates with it.
     Q_INVOKABLE QString sourceFor(const QString& name, int revision);
 
+    // Whether the icon theme in use has this icon itself, rather than a
+    // theme it inherits (hicolor, where programs put their own).
+    Q_INVOKABLE bool isThemeOwn(const QString& name, int revision);
+
   signals:
     void revisionChanged();
 
@@ -55,8 +59,22 @@ class ThemeIconProvider : public QQuickImageProvider
     ThemeIconProvider();
     QPixmap requestPixmap(const QString& address, QSize* size, const QSize& requested_size) override;
 
+    // The theme's icon, or the file if `name` is a path.
+    static QPixmap picture(const QString& name, const QSize& wanted);
+
   private:
     static QPixmap themePicture(const QString& name, const QSize& wanted);
+};
+
+// "image://fitted-icon/<fill>/<revision>/<name>": the icon, shrunk around its
+// middle if its shape spans more than `fill` (0 to 1) of its square. Icons
+// that fill their whole square look bigger next to a theme's, which leave a
+// margin.
+class FittedIconProvider : public QQuickImageProvider
+{
+  public:
+    FittedIconProvider();
+    QImage requestImage(const QString& address, QSize* size, const QSize& requested_size) override;
 };
 
 // "image://svg-icon/<path>": an SVG file drawn with librsvg.
