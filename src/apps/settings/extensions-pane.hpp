@@ -34,7 +34,7 @@ class ExtensionsPane : public QWidget
     QVariantMap manifestOf(const QString& name) const;
 
     void change(const QString& name, bool on);
-    void changeSetting(const QString& name, const QString& key, bool on);
+    void changeSetting(const QString& name, const QString& key, const QVariant& value);
     void openOwnFolder() const;
 
     Choices& choices;

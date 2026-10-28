@@ -2,14 +2,17 @@
 
 #include <QCheckBox>
 #include <QDesktopServices>
+#include <QDoubleSpinBox>
 #include <QDir>
 #include <QFileInfo>
 #include <QFrame>
 #include <QGroupBox>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QLineEdit>
 #include <QListWidget>
 #include <QPushButton>
+#include <QSpinBox>
 #include <QStandardPaths>
 #include <QUrl>
 #include <QVBoxLayout>
@@ -260,8 +263,51 @@ void ExtensionsPane::showExtension(const QString& name)
     {
         const QString key = label.key();
         const QVariant value = chosen.contains(key) ? chosen.value(key) : settings_now.value(key);
+        // A number or a text: a field with its label above it.
         if (value.typeId() != QMetaType::Bool)
         {
+            QWidget* field = nullptr;
+            // Settings come as JSON, where every number is a double: a whole
+            // number gets a whole-number field.
+            const bool whole = value.typeId() == QMetaType::Double && value.toDouble() == double(qRound64(value.toDouble()));
+            if (value.typeId() == QMetaType::Double && !whole)
+            {
+                auto* number = new QDoubleSpinBox;
+                number->setRange(-1e6, 1e6);
+                number->setDecimals(2);
+                number->setValue(value.toDouble());
+                connect(number, &QDoubleSpinBox::editingFinished, this,
+                    [this, name, key, number]() { changeSetting(name, key, number->value()); });
+                field = number;
+            }
+            else if (whole || value.typeId() == QMetaType::Int || value.typeId() == QMetaType::LongLong)
+            {
+                auto* number = new QSpinBox;
+                number->setRange(-1000000, 1000000);
+                number->setValue(value.toInt());
+                connect(number, &QSpinBox::editingFinished, this,
+                    [this, name, key, number]() { changeSetting(name, key, number->value()); });
+                field = number;
+            }
+            else if (value.typeId() == QMetaType::QString)
+            {
+                auto* text = new QLineEdit(value.toString());
+                connect(text, &QLineEdit::editingFinished, this,
+                    [this, name, key, text]() { changeSetting(name, key, text->text()); });
+                field = text;
+            }
+            if (field == nullptr)
+            {
+                // Lists and tables stay in the extension's own file.
+                continue;
+            }
+            auto* labelled = new QWidget;
+            auto* labelled_rows = new QVBoxLayout(labelled);
+            labelled_rows->setContentsMargins(0, 0, 0, 0);
+            labelled_rows->setSpacing(2);
+            labelled_rows->addWidget(new QLabel(label.value().toString()));
+            labelled_rows->addWidget(field, 0, Qt::AlignLeft);
+            detail_settings_rows->addWidget(labelled);
             continue;
         }
         // A tick box does not wrap its words by itself.
@@ -276,10 +322,10 @@ void ExtensionsPane::showExtension(const QString& name)
     detail_settings->setEnabled(on);
 }
 
-void ExtensionsPane::changeSetting(const QString& name, const QString& key, bool on)
+void ExtensionsPane::changeSetting(const QString& name, const QString& key, const QVariant& value)
 {
     QVariantMap chosen = choices.value(QStringLiteral("extensions"), name).toMap();
-    chosen.insert(key, on);
+    chosen.insert(key, value);
     choices.set(QStringLiteral("extensions"), name, chosen);
 }
 
