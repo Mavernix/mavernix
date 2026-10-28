@@ -35,9 +35,7 @@ jobs:
         run: dnf builddep -y /root/rpmbuild/SPECS/wf-config.spec
 
       - name: Build and test RPMs
-        run:
-          rpmbuild --define '_topdir /root/rpmbuild' \
-            -ba /root/rpmbuild/SPECS/wf-config.spec
+        run: rpmbuild --define '_topdir /root/rpmbuild' -ba /root/rpmbuild/SPECS/wf-config.spec
 
       - name: Test package installation
         run: |
