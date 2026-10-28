@@ -3,8 +3,7 @@ name: Fedora RPM
 on:
   workflow_dispatch:
   push:
-    branches:
-      - fedora-rpm
+    branches: [fedora-rpm]
     paths:
       - '.github/workflows/fedora-rpm.yml'
       - 'packaging/fedora/**'
@@ -12,40 +11,79 @@ on:
 permissions:
   contents: read
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   wf-config:
     runs-on: ubuntu-latest
     container: fedora:44
     timeout-minutes: 30
-
     steps:
       - name: Install RPM tools
         run: dnf install -y git rpm-build rpmdevtools dnf5-plugins
-
       - uses: actions/checkout@v4
-
       - name: Prepare sources
         run: |
           mkdir -p /root/rpmbuild/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}
           cp packaging/fedora/wf-config.spec /root/rpmbuild/SPECS/
-          spectool -g -C /root/rpmbuild/SOURCES \
-            /root/rpmbuild/SPECS/wf-config.spec
-
+          spectool -g -C /root/rpmbuild/SOURCES /root/rpmbuild/SPECS/wf-config.spec
       - name: Install build dependencies
         run: dnf builddep -y /root/rpmbuild/SPECS/wf-config.spec
-
       - name: Build and test RPMs
         run: rpmbuild --define '_topdir /root/rpmbuild' -ba /root/rpmbuild/SPECS/wf-config.spec
-
       - name: Test package installation
         run: |
-          dnf install -y /root/rpmbuild/RPMS/*/wf-config-*.rpm
-          pkg-config --modversion wf-config
-
+          dnf install -y /root/rpmbuild/RPMS/x86_64/wf-config-0*.rpm /root/rpmbuild/RPMS/x86_64/wf-config-devel-*.rpm
+          test "$(pkg-config --modversion wf-config)" = 0.11.0
       - name: Upload RPMs
         uses: actions/upload-artifact@v4
         with:
           name: wf-config-fedora-44
           path: /root/rpmbuild/RPMS/**/*.rpm
+          if-no-files-found: error
+          retention-days: 7
+
+  wayfire:
+    needs: wf-config
+    runs-on: ubuntu-latest
+    container: fedora:44
+    timeout-minutes: 45
+    steps:
+      - name: Install RPM tools
+        run: dnf install -y git tar gzip rpm-build rpmdevtools dnf5-plugins
+      - uses: actions/checkout@v4
+      - name: Download wf-config RPMs
+        uses: actions/download-artifact@v4
+        with:
+          name: wf-config-fedora-44
+          path: dependencies
+      - name: Install wf-config
+        run: dnf install -y dependencies/x86_64/wf-config-0*.rpm dependencies/x86_64/wf-config-devel-*.rpm
+      - name: Prepare Wayfire sources
+        run: |
+          mkdir -p /root/rpmbuild/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}
+          cp packaging/fedora/wayfire.spec /root/rpmbuild/SPECS/
+          git clone --depth 1 --branch v0.11.0 https://github.com/WayfireWM/wayfire.git /tmp/wayfire-0.11.0
+          test "$(git -C /tmp/wayfire-0.11.0 rev-parse HEAD)" = d39902379c5737eebe1dc3a830659fa3f0fa22e0
+          git -C /tmp/wayfire-0.11.0 submodule update --init subprojects/wf-json subprojects/wf-utils subprojects/wf-touch
+          tar --exclude-vcs -czf /root/rpmbuild/SOURCES/wayfire-0.11.0.tar.gz -C /tmp wayfire-0.11.0
+      - name: Install build dependencies
+        run: dnf builddep -y /root/rpmbuild/SPECS/wayfire.spec
+      - name: Build and test Wayfire RPMs
+        run: rpmbuild --define '_topdir /root/rpmbuild' -ba /root/rpmbuild/SPECS/wayfire.spec
+      - name: Test package installation
+        run: |
+          dnf install -y /root/rpmbuild/RPMS/x86_64/wayfire-0*.rpm /root/rpmbuild/RPMS/x86_64/wayfire-devel-*.rpm
+          test "$(pkg-config --modversion wayfire)" = 0.11.0
+          wayfire --version
+      - name: Upload RPMs and source RPM
+        uses: actions/upload-artifact@v4
+        with:
+          name: wayfire-fedora-44
+          path: |
+            /root/rpmbuild/RPMS/**/*.rpm
+            /root/rpmbuild/SRPMS/*.src.rpm
           if-no-files-found: error
           retention-days: 7
