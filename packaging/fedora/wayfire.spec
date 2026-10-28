@@ -52,7 +52,7 @@ Headers, helper libraries and pkg-config metadata for Wayfire plugins.
 
 %prep
 %autosetup
-
+cp subprojects/wf-utils/LICENSE LICENSE-wf-utils
 %build
 %meson -Duse_system_wfconfig=enabled -Duse_system_wlroots=enabled -Dtests=enabled -Dbuild_locales=disabled -Dxwayland=enabled
 %meson_build
@@ -66,7 +66,7 @@ Headers, helper libraries and pkg-config metadata for Wayfire plugins.
 
 %files
 %license LICENSE
-%license subprojects/wf-utils/LICENSE
+%license LICENSE-wf-utils
 %{_bindir}/wayfire
 %{_libdir}/wayfire/
 %{_libdir}/libwf-utils.so.*
@@ -74,6 +74,7 @@ Headers, helper libraries and pkg-config metadata for Wayfire plugins.
 %{_datadir}/wayland-sessions/wayfire.desktop
 %{_datadir}/xdg-desktop-portal/wayfire-portals.conf
 %{_mandir}/man1/wayfire.1*
+%{_libdir}/libwayfire-blur-base.so
 
 %files devel
 %{_bindir}/wayfire-plugin
