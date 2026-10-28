@@ -377,7 +377,7 @@ name = "Settings"
 # The panes, grouped as on the first page.
 groups = [
     ["theme", "desktop", "dock", "icons", "desktops", "windows", "defaults", "startup", "toolkits"],
-    ["display", "energy", "keyboard", "trackpad", "sound"],
+    ["display", "energy", "keyboard", "mouse", "trackpad", "sound"],
     ["bluetooth"],
     ["extensions"],
 ]
@@ -472,6 +472,14 @@ trackpad_title = "Touchpad"
 trackpad_tap = "Tap to click"
 trackpad_natural_scroll = "Natural scrolling"
 trackpad_natural_scroll_note = "The page moves with the fingers"
+mouse_title = "Mouse"
+mouse_speed = "Tracking speed:"
+mouse_speed_slow = "Slow"
+mouse_speed_fast = "Fast"
+mouse_acceleration = "Acceleration"
+mouse_acceleration_note = "A faster movement takes the pointer further"
+mouse_natural_scroll = "Natural scrolling"
+mouse_natural_scroll_note = "The page moves with the wheel"
 display_title = "Display"
 display_screen = "Screen:"
 display_resolution = "Resolution:"
@@ -546,6 +554,13 @@ scale = "auto"
 keyboard_switch_key = "alt_shift"
 tap_to_click = true
 natural_scroll = false
+# mouse_natural_scroll = false
+# Pointer speed, from -1 (slow) to 1 (fast); left out: 0. Acceleration moves
+# the pointer further for a faster movement; left out: the device's own.
+# mouse_speed = 0.0
+# mouse_acceleration = true
+# touchpad_speed = 0.0
+# touchpad_acceleration = true
 
 [lock]
 # The lock screen checks the password with PAM, using this /etc/pam.d/

@@ -105,7 +105,7 @@ The themes are saved in `~/.local/share/mavernix/themes/`. Importing again repla
 
 The Settings window opens on a page with an icon for every pane. To jump straight to one, type its name into the search field.
 
-You can set up the dock, the desktop picture and which desktop you use, your displays, sound, Bluetooth, the trackpad, keyboard layouts and shortcuts, default programs, energy saving, windows, several desktops, and each program's icon. Changes apply right away.
+You can set up the dock, the desktop picture and which desktop you use, your displays, sound, Bluetooth, the mouse and trackpad, keyboard layouts and shortcuts, default programs, energy saving, windows, several desktops, and each program's icon. Changes apply right away.
 
 Anything that isn't in Settings is in the desktop's config. See [configuration](configuration.md).
 

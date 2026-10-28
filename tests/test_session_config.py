@@ -240,6 +240,23 @@ class TestScreenScale(SessionTestCase):
         self.assertEqual(1, sum(line.startswith("position") for line in placed[1]))
 
 
+class TestPointerSettings(SessionTestCase):
+    def test_speed_and_acceleration_reach_the_compositor(self):
+        sys.path[:0] = [self.folder.name, str(SESSION_SOURCE_DIR)]
+        try:
+            import make_wayfire_config
+        finally:
+            del sys.path[:2]
+        lines = make_wayfire_config.input_section(
+            {"input": {"mouse_speed": -0.5, "mouse_acceleration": False, "touchpad_acceleration": True}}, {})
+        self.assertIn("mouse_cursor_speed = -0.5", lines)
+        self.assertIn("mouse_accel_profile = flat", lines)
+        self.assertIn("touchpad_accel_profile = adaptive", lines)
+        self.assertFalse(any(line.startswith("touchpad_cursor_speed") for line in lines))
+        with self.assertRaises(SystemExit):
+            make_wayfire_config.input_section({"input": {"mouse_speed": 2}}, {})
+
+
 class TestKdeColours(SessionTestCase):
     def test_default_scheme_is_the_themes(self):
         # A KDE program set to "Default" takes Breeze's scheme by its file

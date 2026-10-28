@@ -489,6 +489,15 @@ def input_section(config, theme):
         lines.append(f"natural_scroll = {yes_or_no(wishes['natural_scroll'])}")
     if "mouse_natural_scroll" in wishes:
         lines.append(f"mouse_natural_scroll = {yes_or_no(wishes['mouse_natural_scroll'])}")
+    for device in ("mouse", "touchpad"):
+        if f"{device}_speed" in wishes:
+            speed = wishes[f"{device}_speed"]
+            if isinstance(speed, bool) or not isinstance(speed, (int, float)) or not -1 <= speed <= 1:
+                fail(f"[input] {device}_speed is {speed!r}; it must be a number from -1 to 1")
+            lines.append(f"{device}_cursor_speed = {speed}")
+        if f"{device}_acceleration" in wishes:
+            profile = "adaptive" if wishes[f"{device}_acceleration"] else "flat"
+            lines.append(f"{device}_accel_profile = {profile}")
     return lines
 
 

@@ -3,7 +3,7 @@
 
 moc_sources = qt.compile_moc(
     headers: ['settings-window.hpp', 'overview.hpp', 'dock-pane.hpp', 'desktop-pane.hpp', 'theme-pane.hpp', 'sound-pane.hpp',
-        'trackpad-pane.hpp', 'picture-chooser.hpp', 'energy-pane.hpp', 'display-pane.hpp',
+        'trackpad-pane.hpp', 'mouse-pane.hpp', 'picture-chooser.hpp', 'energy-pane.hpp', 'display-pane.hpp',
         'desktops-pane.hpp', 'windows-pane.hpp', 'toolkits-pane.hpp', 'extensions-pane.hpp', 'source-list-delegate.hpp', 'bluetooth-pane.hpp',
         'icons-pane.hpp', 'keyboard-pane.hpp', 'defaults-pane.hpp', 'shortcut-editor.hpp', 'program-shortcut-dialog.hpp',
         'shortcut-recorder.hpp', 'compositor-link.hpp', 'input-sources-pane.hpp', 'icon-chooser.hpp', 'startup-pane.hpp', 'display-modes.hpp'],
@@ -22,6 +22,7 @@ executable(
         'theme-pane.cpp',
         'sound-pane.cpp',
         'trackpad-pane.cpp',
+        'mouse-pane.cpp',
         'picture-chooser.cpp',
         'energy-pane.cpp',
         'display-pane.cpp',
