@@ -73,6 +73,17 @@ PanelWindow {
         if (groups.length === 0) {
             groups.push([])
         }
+        // A file goes among the files and folders, as on the original: into
+        // the last group, which a dock of one group gets as a new one.
+        if (dragged.dropped ?? false) {
+            if (groups.length < 2) {
+                groups.push([])
+            }
+            const before = groups.slice(0, -1).reduce((count, group) => count + group.length, 0)
+            const last = groups[groups.length - 1]
+            last.splice(Math.max(0, Math.min(dragLanding - before, last.length)), 0, dragged.listedAs)
+            return groups
+        }
         // At the seam between two groups the tile joins the earlier one.
         let left = dragLanding
         for (let number = 0; number < groups.length; number++) {
