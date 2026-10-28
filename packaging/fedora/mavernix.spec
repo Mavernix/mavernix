@@ -71,6 +71,8 @@ installer. Proprietary artwork is not included.
 
 %prep
 %autosetup
+cp src/compositor/decoration/LICENSE-wayfire LICENSE-decoration
+cp src/compositor/minimize/LICENSE-wayfire LICENSE-minimize
 
 %build
 %meson
@@ -78,14 +80,14 @@ installer. Proprietary artwork is not included.
 
 %install
 %meson_install
+%py3_shebang_fix %{buildroot}%{_libdir}/mavernix/session/compositor_call.py
 
 %check
 QT_QPA_PLATFORM=offscreen %meson_test
 
 %files
 %license LICENSE
-%license src/compositor/decoration/LICENSE-wayfire
-%license src/compositor/minimize/LICENSE-wayfire
+%license LICENSE-decoration LICENSE-minimize
 %doc README.md CHANGELOG.md
 %{_libdir}/mavernix/
 %{_datadir}/mavernix/

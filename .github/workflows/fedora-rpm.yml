@@ -87,3 +87,49 @@ jobs:
             /root/rpmbuild/SRPMS/*.src.rpm
           if-no-files-found: error
           retention-days: 7
+
+  mavernix:
+    needs: [wf-config, wayfire]
+    runs-on: ubuntu-latest
+    container: fedora:44
+    timeout-minutes: 45
+    steps:
+      - name: Install RPM tools
+        run: dnf install -y git rpm-build rpmdevtools dnf5-plugins
+      - uses: actions/checkout@v4
+      - name: Download wf-config RPMs
+        uses: actions/download-artifact@v4
+        with:
+          name: wf-config-fedora-44
+          path: dependencies/wf-config
+      - name: Download Wayfire RPMs
+        uses: actions/download-artifact@v4
+        with:
+          name: wayfire-fedora-44
+          path: dependencies/wayfire
+      - name: Install our build dependencies
+        run: |
+          mapfile -t packages < <(find dependencies -type f \( -name 'wf-config-0*.x86_64.rpm' -o -name 'wf-config-devel-*.x86_64.rpm' -o -name 'wayfire-0*.x86_64.rpm' -o -name 'wayfire-devel-*.x86_64.rpm' \))
+          test "${#packages[@]}" -eq 4
+          dnf install -y "${packages[@]}"
+          test "$(pkg-config --modversion wayfire)" = 0.11.0
+      - name: Prepare Mavernix sources
+        run: |
+          mkdir -p /root/rpmbuild/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}
+          cp packaging/fedora/mavernix.spec /root/rpmbuild/SPECS/
+          spectool -g -C /root/rpmbuild/SOURCES /root/rpmbuild/SPECS/mavernix.spec
+      - name: Install build dependencies
+        run: dnf builddep -y /root/rpmbuild/SPECS/mavernix.spec
+      - name: Build and test Mavernix RPMs
+        run: rpmbuild --define '_topdir /root/rpmbuild' -ba /root/rpmbuild/SPECS/mavernix.spec
+      - name: Inspect runtime requirements
+        run: rpm -qp --requires /root/rpmbuild/RPMS/x86_64/mavernix-0*.rpm
+      - name: Upload RPMs and source RPM
+        uses: actions/upload-artifact@v4
+        with:
+          name: mavernix-fedora-44
+          path: |
+            /root/rpmbuild/RPMS/**/*.rpm
+            /root/rpmbuild/SRPMS/*.src.rpm
+          if-no-files-found: error
+          retention-days: 7
