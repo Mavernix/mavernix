@@ -64,6 +64,12 @@ Scope {
         notification.dismiss()
     }
 
+    function dismissAll() {
+        for (const notification of kept) {
+            dismiss(notification)
+        }
+    }
+
     function dismissProgram(name) {
         for (const notification of kept.filter(other => other.appName === name)) {
             dismiss(notification)

@@ -143,6 +143,23 @@ PanelWindow {
                         font.pixelSize: list.theme.fonts.notification_list_heading.size
                         font.bold: list.theme.fonts.notification_list_heading.bold ?? true
                     }
+                    // Takes every notification away at once.
+                    ListText {
+                        anchors.right: parent.right
+                        anchors.rightMargin: list.looks.time_right ?? 10
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: list.words.clear_all_label ?? "Clear All"
+                        color: ThemeValues.color(list.looks.heading_color ?? list.looks.text_color ?? "#ffffff")
+                        opacity: clearAll.pressed ? 0.5 : (clearAll.containsMouse ? 1 : 0.8)
+                        font.underline: clearAll.containsMouse
+                        MouseArea {
+                            id: clearAll
+                            anchors.fill: parent
+                            anchors.margins: -4
+                            hoverEnabled: true
+                            onClicked: list.banners.dismissAll()
+                        }
+                    }
                 }
 
                 Repeater {
@@ -238,6 +255,8 @@ PanelWindow {
                                     font.bold: true
                                 }
                                 ListText {
+                                    // Under the pointer, the time gives way to a close button.
+                                    visible: !entryHover.hovered
                                     anchors.right: parent.right
                                     anchors.rightMargin: list.looks.time_right ?? 10
                                     y: (list.looks.title_top ?? 2) + 3
@@ -256,9 +275,27 @@ PanelWindow {
                                     lineHeightMode: Text.FixedHeight
                                     lineHeight: list.looks.line_height ?? 17
                                 }
+                                HoverHandler {
+                                    id: entryHover
+                                }
                                 MouseArea {
                                     anchors.fill: parent
                                     onClicked: list.banners.answer(entry.modelData)
+                                }
+                                ListText {
+                                    visible: entryHover.hovered
+                                    anchors.right: parent.right
+                                    anchors.rightMargin: list.looks.time_right ?? 10
+                                    y: list.looks.title_top ?? 2
+                                    text: "×"
+                                    font.bold: true
+                                    opacity: entryClose.pressed ? 0.5 : 1
+                                    MouseArea {
+                                        id: entryClose
+                                        anchors.fill: parent
+                                        anchors.margins: -6
+                                        onClicked: list.banners.dismiss(entry.modelData)
+                                    }
                                 }
                             }
                         }

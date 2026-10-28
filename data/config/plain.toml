@@ -290,6 +290,7 @@ web = [
 ]
 
 [notifications]
+clear_all_label = "Clear All"
 # Banner time, unless the sender asks for its own.
 banner_seconds = 5
 # Wording of the notification list; %1 is a number.
