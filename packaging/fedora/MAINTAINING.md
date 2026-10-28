@@ -21,15 +21,16 @@ in meson.build, commit it, then push the matching stable tag (vX.Y.Z).
 The tag must contain this workflow and the packaging files. Tag and Meson
 versions must agree; mismatches fail the build.
 
-After all builds and the installation check succeed, the release job attaches:
+After all builds and the installation check succeed, the release job attaches
+only the sources tar.gz bundle, containing all four source RPMs, build files,
+README and checksums. Runtime RPMs stay in the matching GitHub Actions artifacts.
 
-- four runtime RPMs and a runtime tar.gz bundle;
-- the matching sources tar.gz bundle with all four source RPMs and build files;
-- README.md and SHA256SUMS.
+It creates a GitHub Release if one does not exist. On reruns, the matching
+source archive is replaced. The job does not publish for ordinary branch
+pushes or manual runs. GitHub also displays its automatic source-code downloads.
+Do not rerun old release jobs expecting this new layout: old tags contain the
+workflow that existed when they were created.
 
-It creates a GitHub Release if one does not exist. On reruns, Fedora assets
-with the same names are replaced, so matching binaries and sources are uploaded
-together. The job does not publish for ordinary branch pushes or manual runs.
 No personal token is needed: only the release job gets contents:write.
 It publishes in the repository where the tag was pushed; a fork does not
 observe tags created in the upstream repository.

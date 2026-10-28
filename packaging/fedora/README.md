@@ -2,7 +2,8 @@
 
 For Fedora 44, x86_64. Update Fedora and reboot before installing.
 
-Extract the runtime download, open a terminal in that folder and run:
+Download the runtime artifact from the matching GitHub Actions run.
+Extract it, open a terminal in that folder and run:
 
 ```sh
 sha256sum -c SHA256SUMS

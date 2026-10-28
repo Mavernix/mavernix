@@ -241,11 +241,6 @@ jobs:
       GH_REPO: ${{ github.repository }}
       RELEASE_TAG: ${{ github.ref_name }}
     steps:
-      - name: Download tested runtime packages
-        uses: actions/download-artifact@v4
-        with:
-          name: mavernix-fedora-44-runtime
-          path: runtime-rpms
       - name: Download matching sources
         uses: actions/download-artifact@v4
         with:
@@ -253,14 +248,10 @@ jobs:
           path: source-rpms
       - name: Assemble release downloads
         run: |
-          (cd runtime-rpms && sha256sum -c SHA256SUMS)
           (cd source-rpms && sha256sum -c SHA256SUMS)
           mkdir release-files
-          cp runtime-rpms/*.rpm runtime-rpms/README.md release-files/
-          tar -czf "release-files/mavernix-${RELEASE_TAG}-fedora-44-x86_64.tar.gz" -C runtime-rpms .
           tar -czf "release-files/mavernix-${RELEASE_TAG}-fedora-44-sources.tar.gz" -C source-rpms .
-          (cd release-files && sha256sum *.rpm *.tar.gz README.md > SHA256SUMS)
-      - name: Publish tested Fedora packages and sources
+      - name: Publish matching Fedora sources
         run: |
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             gh release upload "$RELEASE_TAG" release-files/* --clobber
