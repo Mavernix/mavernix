@@ -355,6 +355,11 @@ remaining_label = "%1 Remaining"
 on_battery_label = "Power Source: Battery"
 on_adapter_label = "Power Source: Power Adapter"
 show_percentage_label = "Show Percentage"
+settings_label = "Open Energy Saver Preferences…"
+low_title = "Your battery is running low."
+low_text = "%1% left. Plug your computer into a power outlet soon."
+critical_title = "You are now running on reserve battery power."
+critical_text = "Your computer will sleep soon unless plugged into a power outlet."
 
 [about]
 # The About This Computer window (mavernix-about): the original's About This

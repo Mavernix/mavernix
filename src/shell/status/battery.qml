@@ -1,7 +1,9 @@
 // Status item: the battery's charge. Hidden without a battery; the config
-// can show the percentage as text (status.battery.show_percentage).
+// can show the percentage as text (status.battery.show_percentage). Warns
+// when the battery runs low, and its menu leads to the Energy settings.
 
 import QtQuick
+import Quickshell
 import Quickshell.Services.UPower
 import ".."
 
@@ -72,17 +74,54 @@ StatusItem {
         return { id: number, label: label, enabled: false, separator: false,
                  checkable: false, checked: false, shortcut: [], children: [] }
     }
-    menuItems: [
-        line(0, stateLine),
-        line(1, sourceLine),
-        { id: 2, label: "", enabled: false, separator: true,
-          checkable: false, checked: false, shortcut: [], children: [] },
-        { id: 3, label: wishes.show_percentage_label ?? "Show percentage", enabled: true,
-          separator: false, checkable: true, checked: showsPercentage, shortcut: [], children: [] }
-    ]
+    readonly property bool hasSettings: (wishes.settings_command ?? []).length > 0
+    menuItems: {
+        const items = [
+            line(0, stateLine),
+            line(1, sourceLine),
+            { id: 2, label: "", enabled: false, separator: true,
+              checkable: false, checked: false, shortcut: [], children: [] },
+            { id: 3, label: wishes.show_percentage_label ?? "Show percentage", enabled: true,
+              separator: false, checkable: true, checked: showsPercentage, shortcut: [], children: [] }
+        ]
+        if (hasSettings) {
+            items.push({ id: 4, label: wishes.settings_label ?? "Open Energy Preferences…", enabled: true,
+                         separator: false, checkable: false, checked: false, shortcut: [], children: [] })
+        }
+        return items
+    }
     onChosen: id => {
         if (id === 3) {
             panel.choices?.set("status", "battery", { show_percentage: !showsPercentage })
+        } else if (id === 4) {
+            Quickshell.execDetached(wishes.settings_command)
+        }
+    }
+
+    // A warning when the charge falls to [status.battery] low_percent and
+    // again at critical_percent, while not plugged in; each once per discharge.
+    readonly property int lowPercent: wishes.low_percent ?? 10
+    readonly property int criticalPercent: wishes.critical_percent ?? 5
+    property int warnedAt: 101
+    onPercentChanged: {
+        if (!present || !UPower.onBattery) {
+            warnedAt = 101
+            return
+        }
+        const level = percent <= criticalPercent ? criticalPercent : (percent <= lowPercent ? lowPercent : 101)
+        if (level < warnedAt) {
+            warnedAt = level
+            const critical = level === criticalPercent
+            panel.confirmDialog?.ask({
+                title: critical ? (wishes.critical_title ?? "Your battery is almost empty.")
+                                : (wishes.low_title ?? "Your battery is running low."),
+                text: (critical ? (wishes.critical_text ?? "%1% left. The computer will sleep soon; plug it in now to keep working.")
+                                : (wishes.low_text ?? "%1% left. Plug the computer in, or save your work."))
+                          .replace("%1", Math.round(percent)),
+                icon: critical ? "battery-caution" : "battery-low",
+                button: wishes.ok_label ?? "OK",
+                cancel: ""
+            })
         }
     }
 }

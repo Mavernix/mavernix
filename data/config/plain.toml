@@ -159,6 +159,16 @@ ok_label = "OK"
 [status.battery]
 show_percentage = true
 charged_label = "Charged"
+settings_label = "Open Energy Preferences…"
+settings_command = ["mavernix-settings", "energy"]
+# Warnings at these charges while on battery; %1 is the charge.
+low_percent = 10
+critical_percent = 5
+low_title = "Your battery is running low."
+low_text = "%1% left. Plug the computer in, or save your work."
+critical_title = "Your battery is almost empty."
+critical_text = "%1% left. The computer will sleep soon; plug it in now to keep working."
+ok_label = "OK"
 until_full_label = "%1 until full"
 remaining_label = "%1 remaining"
 on_battery_label = "On battery"
