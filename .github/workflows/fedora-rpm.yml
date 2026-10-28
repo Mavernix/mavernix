@@ -2,7 +2,12 @@ name: Fedora RPM
 
 on:
   workflow_dispatch:
-
+  push:
+    branches:
+      - fedora-rpm
+    paths:
+      - '.github/workflows/fedora-rpm.yml'
+      - 'packaging/fedora/**'
 permissions:
   contents: read
 
