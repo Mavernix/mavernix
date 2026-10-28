@@ -25,6 +25,7 @@ logo_menu = [
     { label = "Restart…", command = ["systemctl", "reboot"], confirm = { title = "Are you sure you want to restart your computer now?", text = "If you do nothing, the computer will restart automatically in %1 seconds.", button = "Restart", cancel = "Cancel", icon = "system-reboot", seconds = 60 } },
     { label = "Shut Down…", command = ["systemctl", "poweroff"], confirm = { title = "Are you sure you want to shut down your computer now?", text = "If you do nothing, the computer will shut down automatically in %1 seconds.", button = "Shut Down", cancel = "Cancel", icon = "system-shutdown", seconds = 60 } },
     { separator = true },
+    { label = "Lock Screen", action = "lock" },
     { label = "Log Out…", command = ["sh", "-c", "kill \"$DESKTOP_SESSION_PID\""], confirm = { title = "Are you sure you want to quit all applications and log out now?", text = "If you do nothing, you will be logged out automatically in %1 seconds.", button = "Log Out", cancel = "Cancel", icon = "system-log-out", seconds = 60 } },
 ]
 clock_format = "ddd h:mm AP"

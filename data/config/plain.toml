@@ -171,6 +171,7 @@ icon = "system-shutdown"
 menu = [
     { label = "Settings…", command = ["mavernix-settings"] },
     { separator = true },
+    { label = "Lock Screen", action = "lock" },
     { label = "Suspend", command = ["systemctl", "suspend"] },
     { separator = true },
     { label = "Restart…", command = ["systemctl", "reboot"], confirm = { title = "Restart the computer?", text = "Programs are closed without asking.", button = "Restart", cancel = "Cancel", icon = "system-reboot" } },

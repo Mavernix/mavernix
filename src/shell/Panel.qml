@@ -164,9 +164,12 @@ PanelWindow {
         }
     }
 
-    // Runs a config menu entry's command, asking first if it has a `confirm` table.
+    // Runs a config menu entry: one of the shell's actions (`action`, such as
+    // "lock"), or its command, asking first if it has a `confirm` table.
     function runEntry(entry) {
-        if (confirmDialog !== null) {
+        if (entry.action !== undefined) {
+            panel.shell?.run(entry.action)
+        } else if (confirmDialog !== null) {
             confirmDialog.run(entry)
         } else {
             Quickshell.execDetached(entry.command)

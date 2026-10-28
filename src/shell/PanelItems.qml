@@ -180,7 +180,8 @@ Row {
                 openPicture: row.panel.looks.logo_highlighted ?? ""
                 boxOverhang: row.panel.looks.logo_highlight_overhang ?? row.spacing / 2
 
-                // An entry is { label, command, confirm? } or { separator = true }; its
+                // An entry is { label, command, confirm? }, { label, action } or
+                // { separator = true }; its
                 // index is its id.
                 menuItems: parent.entries.map((entry, index) => ({
                     id: index,
