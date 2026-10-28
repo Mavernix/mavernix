@@ -63,7 +63,9 @@ wf::geometry_t decoration_layout_t::create_buttons(int width, int)
     std::string button_name;
     while (stream >> button_name)
     {
-        if ((button_name == "minimize") && (theme.button_flags & BUTTON_MINIMIZE))
+        // A window that cannot be minimized (a dialog) still shows the
+        // button, disabled, as on the original.
+        if (button_name == "minimize")
         {
             buttons.push_back(BUTTON_MINIMIZE);
         }
@@ -102,7 +104,9 @@ wf::geometry_t decoration_layout_t::create_buttons(int width, int)
         this->layout_areas.push_back(std::make_unique<decoration_area_t>(
             button_geometry, damage_callback, theme));
         this->layout_areas.back()->as_button().set_button_type(type);
-        this->layout_areas.back()->as_button().set_enabled(!(fixed_size && (type == BUTTON_TOGGLE_MAXIMIZE)));
+        const bool disabled = (fixed_size && (type == BUTTON_TOGGLE_MAXIMIZE)) ||
+            ((type == BUTTON_MINIMIZE) && !(theme.button_flags & BUTTON_MINIMIZE));
+        this->layout_areas.back()->as_button().set_enabled(!disabled);
 
         button_x += looks.button_width + looks.button_spacing;
     }
@@ -316,7 +320,7 @@ decoration_layout_t::action_response_t decoration_layout_t::handle_press_event(
                 return {DECORATION_ACTION_TOGGLE_MAXIMIZE, 0};
             }
 
-            if (wanted == "minimize")
+            if ((wanted == "minimize") && (theme.button_flags & BUTTON_MINIMIZE))
             {
                 return {DECORATION_ACTION_MINIMIZE, 0};
             }
