@@ -177,6 +177,7 @@ ShellRoot {
             dock.dragFromOutside(entry.id, iconSource, screenX, screenY)
         onDragEnded: dock.endDrag()
         onDragGivenUp: dock.giveUpDrag()
+        dock: dock
     }
 
     LockScreen {

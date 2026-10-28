@@ -1282,6 +1282,15 @@ PanelWindow {
         groups[0].push(id)
         return groups
     }
+    // For the application grid's menu: whether a program is kept in the dock,
+    // and keeping or letting it go.
+    function keeps(id) {
+        return keptGroups.some(group => group.some(kept => entryText(kept) === entryText(id)))
+    }
+    function setKept(id, kept) {
+        choices.set("dock", "groups", kept ? groupsWith(id) : groupsWithout(id))
+    }
+
     function groupsWithout(listedAs) {
         const wanted = JSON.stringify(listedAs)
         return keptGroups.map(group => group.filter(id => JSON.stringify(id) !== wanted))

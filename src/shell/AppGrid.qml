@@ -47,6 +47,9 @@ PanelWindow {
 
     property bool open: false
 
+    // The shell's dock, for "Keep in Dock" in a program's menu; may be null.
+    property var dock: null
+
     // An application's icon is being dragged (the dock listens, to take it
     // in). `dragGivenUp` means the grid was closed under the drag.
     signal dragMoved(var entry, string iconSource, real screenX, real screenY)
@@ -69,6 +72,7 @@ PanelWindow {
             draggedEntry = null
             dragGivenUp()
         }
+        programMenu.visible = false
         open = false
     }
 
@@ -356,6 +360,7 @@ PanelWindow {
                         id: press
                         // The icon and its name, not the whole cell: between
                         // icons a press means "close".
+                        acceptedButtons: Qt.LeftButton | Qt.RightButton
                         anchors.horizontalCenter: parent.horizontalCenter
                         width: cell.iconSize + 24
                         height: (grid.looks.label_baseline ?? (cell.iconSize + 18)) + 6
@@ -371,6 +376,10 @@ PanelWindow {
                             pressedX = mouse.x
                             pressedY = mouse.y
                             wasDragged = false
+                            if (mouse.button === Qt.RightButton) {
+                                const point = mapToItem(null, mouse.x, mouse.y)
+                                grid.openMenu(cell.modelData, point.x, point.y)
+                            }
                         }
                         onPositionChanged: mouse => {
                             if (!pressed) {
@@ -398,8 +407,8 @@ PanelWindow {
                                 grid.dragGivenUp()
                             }
                         }
-                        onClicked: {
-                            if (wasDragged) {
+                        onClicked: mouse => {
+                            if (wasDragged || mouse.button === Qt.RightButton) {
                                 return
                             }
                             cell.modelData.execute()
@@ -515,6 +524,52 @@ PanelWindow {
     onOpenChanged: {
         if (open) {
             searchField.forceActiveFocus()
+        }
+    }
+
+    // --- A program's menu (secondary click) ---------------------------------
+
+    readonly property var words: (settings.config.app_grid ?? ({}))
+    property var menuEntry: null
+    readonly property int openId: 1
+    readonly property int keepId: 2
+
+    function openMenu(entry, screenX, screenY) {
+        menuEntry = entry
+        programMenu.menuX = screenX
+        programMenu.menuY = screenY
+        const items = [
+            { id: openId, label: words.open_label ?? "Open", enabled: true, separator: false,
+              checkable: false, checked: false, shortcut: [], children: [] }
+        ]
+        if (dock !== null) {
+            items.push({ id: 0, label: "", enabled: false, separator: true,
+                         checkable: false, checked: false, shortcut: [], children: [] })
+            items.push({ id: keepId, label: words.keep_in_dock_label ?? "Keep in Dock", enabled: true,
+                         separator: false, checkable: true, checked: dock.keeps(entry.id), shortcut: [], children: [] })
+        }
+        programMenu.items = items
+        programMenu.visible = true
+    }
+
+    MenuOverlay {
+        id: programMenu
+        screen: grid.screen
+        settings: grid.settings
+        visible: false
+        onDismissed: visible = false
+        onChosen: id => {
+            visible = false
+            const entry = grid.menuEntry
+            if (entry === null) {
+                return
+            }
+            if (id === grid.openId) {
+                entry.execute()
+                grid.close()
+            } else if (id === grid.keepId) {
+                grid.dock.setKept(entry.id, !grid.dock.keeps(entry.id))
+            }
         }
     }
 }
