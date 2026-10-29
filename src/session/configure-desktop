@@ -315,6 +315,9 @@ switch)
     configure_everything
     tell_services
     restart_shell
+    # On a scaled screen the compositor sizes the pointer for the new theme
+    # only once the theme is in place; a second reload a moment later does.
+    ( sleep 1; write_compositor_settings > /dev/null 2>&1 ) &
     ;;
 choices)
     [[ $# -eq 2 ]] || usage
