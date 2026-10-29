@@ -390,12 +390,13 @@ void NetworkPane::readAll()
                 {
                     device.network_name = network.name;
                 }
-                // The strongest access point stands for the network.
+                // The strongest access point stands for the network, which is in use if any of them is.
+                const bool connected = network.connected || by_name.value(network.name).connected;
                 if (!by_name.contains(network.name) || by_name[network.name].strength < network.strength)
                 {
-                    network.connected = network.connected || by_name.value(network.name).connected;
                     by_name.insert(network.name, network);
                 }
+                by_name[network.name].connected = connected;
             }
             // Saved networks stay listed when out of reach, so they can be forgotten.
             for (auto known = saved.begin(); known != saved.end(); ++known)
@@ -627,6 +628,8 @@ void NetworkPane::connectChosen()
         return;
     }
     const Network network = *chosen;
+    // The list is read anew while the password is asked for, so the device is kept by its path.
+    const QString device_path = device->path;
     if (network.enterprise && network.saved.isEmpty())
     {
         tell(word("network_enterprise", "“%1” signs in with a user name or a certificate. Set it up with NetworkManager's connection editor (nm-connection-editor).").arg(network.name));
@@ -640,7 +643,7 @@ void NetworkPane::connectChosen()
     if (!network.saved.isEmpty())
     {
         call_async(manager_path, manager_interface, "ActivateConnection",
-            {QVariant::fromValue(QDBusObjectPath(network.saved)), QVariant::fromValue(QDBusObjectPath(device->path)),
+            {QVariant::fromValue(QDBusObjectPath(network.saved)), QVariant::fromValue(QDBusObjectPath(device_path)),
              QVariant::fromValue(QDBusObjectPath(network.access_point))});
         return;
     }
@@ -661,7 +664,7 @@ void NetworkPane::connectChosen()
         }
         settings.insert(QStringLiteral("802-11-wireless-security"), QVariantMap{{QStringLiteral("psk"), password}});
     }
-    addAndActivate(settings, device->path, network.access_point);
+    addAndActivate(settings, device_path, network.access_point);
 }
 
 void NetworkPane::disconnectDevice()
@@ -693,6 +696,8 @@ void NetworkPane::joinHidden()
     {
         return;
     }
+    // The list is read anew while the dialog is open, so the device is kept by its path.
+    const QString device_path = device->path;
     QDialog asking(this);
     asking.setWindowTitle(word("network_join_hidden", "Hidden Network…"));
     auto* name = new QLineEdit;
@@ -726,7 +731,8 @@ void NetworkPane::joinHidden()
     }
     joining = name->text();
     joining_seen_busy = false;
-    joining_is_new = true;
+    // If a connection by that name is already saved, a failed try must not unsave it.
+    joining_is_new = !saved.contains(joining);
     tell(word("network_joining", "Connecting to “%1”…").arg(joining));
-    addAndActivate(settings, device->path, QString());
+    addAndActivate(settings, device_path, QString());
 }
