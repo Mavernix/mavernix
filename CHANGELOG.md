@@ -1,5 +1,30 @@
 # Changelog
 
+## Unreleased
+
+- New Network pane in Settings. It lists every Wi-Fi network around you and the ones you've saved, with plain Connect, Disconnect and Forget buttons.
+- The Wi-Fi menu in the menu bar now lists the networks around you, so you can join one, type its password or disconnect without opening Settings or installing anything else.
+- New Mouse pane in Settings for tracking speed, scrolling speed, acceleration, scroll direction and which button is the main one.
+- The Touchpad pane can now set tracking speed, acceleration and how a right-click works.
+- Bluetooth keyboards, phones and other devices that ask for a PIN or a code can now be paired. Clicking a device in the Bluetooth menu connects or disconnects it.
+- Clicking the desktop now makes the open window inactive, and the menu bar shows the desktop's own menus.
+- Settings has a brightness slider for laptop screens, and volume sliders for your speakers and microphone.
+- With more than one screen, Settings, Display lets you pick which screen has the menu bar and the dock, and where the others stand next to it. Your arrangement is no longer lost when you change other settings.
+- You can choose which icons show in the menu bar, switch the clock to 24 hours, and hide the files on the desktop.
+- Lock Screen is now in the menu bar's session menu, and in Sea Lion's Apple menu.
+- You get a warning when the battery runs low, and the battery menu has a shortcut to the Energy settings.
+- Notifications can be cleared all at once with Clear All, or one at a time.
+- Right-clicking an app in the app grid lets you open it or keep it in the dock. Keep in Dock and Remove from Dock are now right in the dock's menu instead of under Options.
+- Programs without a launcher of their own now show up in the dock while they run.
+- When you drag a file over the dock, the icons make room where it will land.
+- App icons that fill their whole square are shrunk a little in the dock, so they match the theme's own icons.
+- Dialogs now show a greyed-out minimise button instead of none.
+- In the window overview you can close a window from its picture, and add or remove desktops with any theme.
+- Searching in Settings now finds panes by everyday words, like "wifi", "wallpaper" or "brightness".
+- Window buttons and the double-click on a title bar are now set in Settings, Windows, and the side setting moves the buttons of every window.
+- Sea Lion switches spaces with Ctrl+Alt+arrows, so Ctrl+arrows keep moving by words in text fields. Import the theme again to get it.
+- Settings panes no longer get cut off or leave large empty areas, and the wording is plainer throughout.
+
 ## 0.1.5 (2026-10-27)
 
 - New Startup pane in Settings (called Login Items in Sea Lion). It shows the programs that open when you log in. You can switch any of them off, add your own, or remove ones you added.
