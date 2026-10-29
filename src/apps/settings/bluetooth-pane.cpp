@@ -129,7 +129,7 @@ BluetoothPane::BluetoothPane(Choices& choices, QWidget* parent) : QWidget(parent
 
 QString BluetoothPane::word(const char* key, const char* fallback) const
 {
-    return words.value(QLatin1String(key), QLatin1String(fallback)).toString();
+    return words.value(QLatin1String(key), QString::fromUtf8(fallback)).toString();
 }
 
 void BluetoothPane::somethingChanged()

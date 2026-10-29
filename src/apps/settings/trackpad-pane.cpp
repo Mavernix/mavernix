@@ -19,7 +19,7 @@ TrackpadPane::TrackpadPane(Choices& choices, QWidget* parent) : QWidget(parent),
 {
     const QVariantMap words = choices.configTable(QStringLiteral("settings")).value(QStringLiteral("words")).toMap();
     const auto word = [&words](const char* key, const char* fallback) {
-        return words.value(QLatin1String(key), QLatin1String(fallback)).toString();
+        return words.value(QLatin1String(key), QString::fromUtf8(fallback)).toString();
     };
 
     auto* tap = new QCheckBox(word("trackpad_tap", "Tap to click"));

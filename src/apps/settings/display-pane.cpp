@@ -67,7 +67,7 @@ DisplayPane::DisplayPane(Choices& choices, QWidget* parent) : QWidget(parent), c
 {
     words = choices.configTable(QStringLiteral("settings")).value(QStringLiteral("words")).toMap();
     const auto word = [this](const char* key, const char* fallback) {
-        return words.value(QLatin1String(key), QLatin1String(fallback)).toString();
+        return words.value(QLatin1String(key), QString::fromUtf8(fallback)).toString();
     };
 
     for (const double stop : scale_stops)
@@ -151,9 +151,10 @@ DisplayPane::DisplayPane(Choices& choices, QWidget* parent) : QWidget(parent), c
     const QString note = word("display_note", "");
     if (!note.isEmpty())
     {
-        auto* note_label = new QLabel(note);
-        note_label->setWordWrap(true);
+        // Broken by hand: a label that wraps by itself asks for far more height.
+        auto* note_label = new QLabel;
         note_label->setEnabled(false);
+        note_label->setText(in_lines_of(note, note_label->fontMetrics(), 260));
         rows->addWidget(note_label);
     }
 

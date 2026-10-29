@@ -93,7 +93,7 @@ QWidget* with_note_under(QWidget* control, const QString& note, int indent_px)
         note_label->setContentsMargins(indent_px, 0, 0, 0);
         // A long note goes on in a second line rather than out of the
         // window: a note usually stands in a form's right column.
-        const int widest_note = 360;
+        const int widest_note = 300;
         note_label->setText(in_lines_of(note, note_label->fontMetrics(), widest_note));
         rows->addWidget(note_label);
     }

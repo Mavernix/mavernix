@@ -230,6 +230,8 @@ NetworkPane::NetworkPane(Choices& choices, QWidget* parent) : QWidget(parent)
     box_rows->addStretch();
 
     auto* columns = new QHBoxLayout(this);
+    // The list and the box fill the pane's width; a margin would push them out of the window.
+    columns->setContentsMargins(0, 0, 0, 0);
     columns->setSpacing(list_to_box_px);
     columns->addWidget(services);
     columns->addWidget(box);
@@ -265,7 +267,7 @@ NetworkPane::NetworkPane(Choices& choices, QWidget* parent) : QWidget(parent)
 
 QString NetworkPane::word(const char* key, const char* fallback) const
 {
-    return words.value(QLatin1String(key), QLatin1String(fallback)).toString();
+    return words.value(QLatin1String(key), QString::fromUtf8(fallback)).toString();
 }
 
 void NetworkPane::somethingChanged()

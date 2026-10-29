@@ -19,7 +19,7 @@ DockPane::DockPane(Choices& choices, QWidget* parent) : QWidget(parent), choices
 {
     const QVariantMap words = choices.configTable(QStringLiteral("settings")).value(QStringLiteral("words")).toMap();
     const auto word = [&words](const char* key, const char* fallback) {
-        return words.value(QLatin1String(key), QLatin1String(fallback)).toString();
+        return words.value(QLatin1String(key), QString::fromUtf8(fallback)).toString();
     };
 
     const QVariantMap dock_looks = choices.themeTable(QStringLiteral("dock"));

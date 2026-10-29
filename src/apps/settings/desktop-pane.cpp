@@ -2,6 +2,7 @@
 
 #include <QCheckBox>
 #include <QFormLayout>
+#include <QLabel>
 #include <QLineEdit>
 
 #include "choices.hpp"
@@ -19,8 +20,10 @@ DesktopPane::DesktopPane(Choices& choices, QWidget* parent) : QWidget(parent)
     form->setLabelAlignment(Qt::AlignRight | Qt::AlignTop);
     form->setFormAlignment(Qt::AlignHCenter | Qt::AlignTop);
     form->setVerticalSpacing(14);
-    form->addRow(words.value(QStringLiteral("desktop_picture"), QStringLiteral("Picture:")).toString(),
-        new PictureChooser(choices));
+    // The pictures take the pane's whole width, under their label: beside a
+    // label they would not fit the window.
+    form->addRow(new QLabel(words.value(QStringLiteral("desktop_picture"), QStringLiteral("Picture:")).toString()));
+    form->addRow(new PictureChooser(choices));
 
     // The files of the Desktop folder as icons; the shell follows at once.
     auto* files = new QCheckBox(

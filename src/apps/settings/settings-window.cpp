@@ -2,7 +2,9 @@
 
 #include <QIcon>
 #include <QLineEdit>
+#include <QEvent>
 #include <QStackedWidget>
+#include <QTimer>
 #include <QTabWidget>
 #include <QToolBar>
 #include <QToolButton>
@@ -166,6 +168,7 @@ SettingsWindow::SettingsWindow(Choices& choices) : choices(choices)
             page_rows->addWidget(pane, 0, Qt::AlignHCenter | Qt::AlignTop);
             page_rows->addStretch();
             pane_pages.insert(name, pages->addWidget(page));
+            page->installEventFilter(this);
             // A title may be broken in two lines for the overview.
             pane_titles.insert(name, QString(title).replace(QLatin1Char('\n'), QLatin1Char(' ')));
             const QString keywords =
@@ -289,7 +292,7 @@ QWidget* SettingsWindow::makeKeyboardPane()
 {
     const QVariantMap words = choices.configTable(QStringLiteral("settings")).value(QStringLiteral("words")).toMap();
     const auto word = [&words](const char* key, const char* fallback) {
-        return words.value(QLatin1String(key), QLatin1String(fallback)).toString();
+        return words.value(QLatin1String(key), QString::fromUtf8(fallback)).toString();
     };
 
     auto* tabs = new QTabWidget;
@@ -360,6 +363,22 @@ void SettingsWindow::showPlace()
         pages->widget(index)->setSizePolicy(
             QSizePolicy::Preferred, shown ? QSizePolicy::Preferred : QSizePolicy::Ignored);
     }
-    pages->adjustSize();
+    fitHeight();
+}
+
+void SettingsWindow::fitHeight()
+{
+    // Only the height follows the page: the width is the overview's, fixed.
+    pages->updateGeometry();
     setFixedHeight(sizeHint().height());
+}
+
+bool SettingsWindow::eventFilter(QObject* watched, QEvent* event)
+{
+    if (event->type() == QEvent::LayoutRequest && watched == pages->currentWidget())
+    {
+        // After the page has laid itself out anew.
+        QTimer::singleShot(0, this, &SettingsWindow::fitHeight);
+    }
+    return QMainWindow::eventFilter(watched, event);
 }

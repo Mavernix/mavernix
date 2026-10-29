@@ -34,7 +34,7 @@ EnergyPane::EnergyPane(Choices& choices, QWidget* parent) : QWidget(parent), cho
 {
     words = choices.configTable(QStringLiteral("settings")).value(QStringLiteral("words")).toMap();
     const auto word = [this](const char* key, const char* fallback) {
-        return words.value(QLatin1String(key), QLatin1String(fallback)).toString();
+        return words.value(QLatin1String(key), QString::fromUtf8(fallback)).toString();
     };
 
     write_later = new QTimer(this);
@@ -223,7 +223,7 @@ void EnergyPane::write()
 QString EnergyPane::written(int seconds) const
 {
     const auto word = [this](const char* key, const char* fallback) {
-        return words.value(QLatin1String(key), QLatin1String(fallback)).toString();
+        return words.value(QLatin1String(key), QString::fromUtf8(fallback)).toString();
     };
 
     if (seconds <= 0)

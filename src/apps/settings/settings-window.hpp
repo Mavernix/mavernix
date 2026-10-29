@@ -26,7 +26,13 @@ class SettingsWindow : public QMainWindow
     void showPane(const QString& name);
     void showOverview();
 
+  protected:
+    // A pane that grows or shrinks while shown (a row appearing later) refits the window.
+    bool eventFilter(QObject* watched, QEvent* event) override;
+
   private:
+    // The window takes the shown page's height.
+    void fitHeight();
     // Null for a name this program does not know.
     QWidget* makePane(const QString& name);
     QWidget* makeKeyboardPane();

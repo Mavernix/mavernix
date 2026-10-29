@@ -58,6 +58,8 @@ StartupPane::StartupPane(Choices& choices, QWidget* parent) : QWidget(parent)
 {
     words = choices.configTable(QStringLiteral("settings")).value(QStringLiteral("words")).toMap();
     auto* rows = new QVBoxLayout(this);
+    // Its parts are as wide as the pane may be; a margin would push them out of the window.
+    rows->setContentsMargins(0, 0, 0, 0);
     rows->setSpacing(pane_spacing_px);
 
     auto* intro = new QLabel(word(
@@ -103,11 +105,13 @@ StartupPane::StartupPane(Choices& choices, QWidget* parent) : QWidget(parent)
     else if (QStandardPaths::findExecutable(QStringLiteral("dex")).isEmpty())
     {
         note = word("startup_no_dex",
-            "These programs don't open yet: a small helper program, “dex”, is missing. Install the package dex, "
-            "for example with your system's software centre, and they open from the next login.");
+            "These programs don't open yet: the helper program “dex” is missing. Install the package dex, "
+            "and they open from the next login.");
     }
     if (!note.isEmpty())
     {
+        // As wide as the list above it; with its width fixed, a wrapping
+        // label asks for the height it fills.
         auto* note_label = new QLabel(note);
         note_label->setWordWrap(true);
         note_label->setFixedWidth(intro_width_px);
@@ -229,7 +233,7 @@ void StartupPane::addProgram()
 
 QString StartupPane::word(const char* key, const char* fallback) const
 {
-    return words.value(QLatin1String(key), QLatin1String(fallback)).toString();
+    return words.value(QLatin1String(key), QString::fromUtf8(fallback)).toString();
 }
 
 void StartupPane::showProblem(const QString& problem)
