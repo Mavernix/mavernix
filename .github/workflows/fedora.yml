@@ -1,11 +1,13 @@
-# On every push and pull request: builds the Fedora packages
+# On pushes to main and on pull requests: builds the Fedora packages
 # (packaging/fedora), with their tests, and installs them together. Wayfire,
 # wf-config and Quickshell are built again only when their specs change.
+# Not on every push, so a pull request's branch is built once, not twice.
 
 name: fedora
 
 on:
   push:
+    branches: [main]
   pull_request:
 
 jobs:
