@@ -6,6 +6,7 @@
 #include <QDBusMessage>
 #include <QDBusMetaType>
 #include <QDBusObjectPath>
+#include <QDBusPendingCallWatcher>
 #include <QDBusReply>
 #include <QDBusVariant>
 #include <QDialog>
@@ -276,8 +277,8 @@ QString NetworkPane::word(const char* key, const char* fallback) const
 void NetworkPane::somethingChanged()
 {
     // Reading takes a call per network and per saved connection, so a hidden
-    // pane waits until it is shown, unless it has to say how joining went.
-    if (!isVisible() && joining.isEmpty())
+    // pane waits until it is shown.
+    if (!isVisible())
     {
         read_when_shown = true;
         return;
@@ -437,32 +438,6 @@ void NetworkPane::readAll()
                 return one.strength != other.strength ? one.strength > other.strength
                                                       : one.name.localeAwareCompare(other.name) < 0;
             });
-
-            // Say how joining went: once the card was busy, it either connects
-            // to the network or gives up.
-            if (!joining.isEmpty())
-            {
-                if (device.state > disconnected_state && device.state < activated_state)
-                {
-                    joining_seen_busy = true;
-                }
-                else if (device.state == activated_state && device.network_name == joining)
-                {
-                    tell(word("network_joined", "Connected to “%1”.").arg(joining));
-                    joining.clear();
-                }
-                else if (joining_seen_busy && (device.state == failed_state || device.state == disconnected_state))
-                {
-                    if (joining_is_new && saved.contains(joining))
-                    {
-                        call_async(saved.value(joining), connection_interface, "Delete");
-                    }
-                    tell(word("network_join_failed",
-                        "Could not connect to “%1”. If it has a password, check it and try again.")
-                            .arg(joining));
-                    joining.clear();
-                }
-            }
         }
         devices << device;
     }
@@ -643,9 +618,105 @@ void NetworkPane::showButtons()
 void NetworkPane::addAndActivate(
     const QMap<QString, QVariantMap>& settings, const QString& device, const QString& point)
 {
-    call_async(manager_path, manager_interface, "AddAndActivateConnection",
+    activate("AddAndActivateConnection",
         {QVariant::fromValue(settings), QVariant::fromValue(QDBusObjectPath(device)),
             QVariant::fromValue(QDBusObjectPath(point.isEmpty() ? QStringLiteral("/") : point))});
+}
+
+void NetworkPane::startJoining(const QString& name, const QString& device_path)
+{
+    endJoining();
+    ++join_number;
+    join_failed = false;
+    joining = name;
+    joining_device = device_path;
+    // Each state change is a signal of its own, so a join that fails at once
+    // is heard too; reading the device's state could miss it.
+    QDBusConnection::systemBus().connect(service_name, joining_device, device_interface, QStringLiteral("StateChanged"),
+        this, SLOT(joiningDeviceChanged(uint, uint, uint)));
+    tell(word("network_joining", "Connecting to “%1”…").arg(name));
+}
+
+void NetworkPane::activate(const char* method, const QVariantList& arguments)
+{
+    QDBusMessage message =
+        QDBusMessage::createMethodCall(service_name, manager_path, manager_interface, QLatin1String(method));
+    message.setArguments(arguments);
+    auto* answer = new QDBusPendingCallWatcher(QDBusConnection::systemBus().asyncCall(message), this);
+    const int number = join_number;
+    connect(answer, &QDBusPendingCallWatcher::finished, this, [this, answer, number]() {
+        answer->deleteLater();
+        if (number != join_number)
+        {
+            return;
+        }
+        const QDBusMessage reply = answer->reply();
+        // Refused (a password too short, say): no state change follows.
+        if (reply.type() == QDBusMessage::ErrorMessage)
+        {
+            if (!joining.isEmpty())
+            {
+                joiningFailed();
+            }
+            return;
+        }
+        // AddAndActivateConnection answers with the connection it saved.
+        if (reply.arguments().size() == 2)
+        {
+            const QString saved_now = qdbus_cast<QDBusObjectPath>(reply.arguments().first()).path();
+            if (!joining.isEmpty())
+            {
+                joining_saved_now = saved_now;
+            }
+            else if (join_failed)
+            {
+                call_async(saved_now, connection_interface, "Delete");
+            }
+        }
+    });
+}
+
+void NetworkPane::joiningDeviceChanged(uint now, uint before, uint reason)
+{
+    Q_UNUSED(before)
+    Q_UNUSED(reason)
+    if (joining.isEmpty())
+    {
+        return;
+    }
+    if (now == activated_state)
+    {
+        tell(word("network_joined", "Connected to “%1”.").arg(joining));
+        endJoining();
+    }
+    else if (now == failed_state)
+    {
+        joiningFailed();
+    }
+}
+
+void NetworkPane::joiningFailed()
+{
+    if (!joining_saved_now.isEmpty())
+    {
+        call_async(joining_saved_now, connection_interface, "Delete");
+    }
+    tell(word("network_join_failed", "Could not connect to “%1”. If it has a password, check it and try again.")
+            .arg(joining));
+    endJoining();
+    join_failed = true;
+}
+
+void NetworkPane::endJoining()
+{
+    if (!joining_device.isEmpty())
+    {
+        QDBusConnection::systemBus().disconnect(service_name, joining_device, device_interface,
+            QStringLiteral("StateChanged"), this, SLOT(joiningDeviceChanged(uint, uint, uint)));
+    }
+    joining.clear();
+    joining_device.clear();
+    joining_saved_now.clear();
 }
 
 void NetworkPane::connectChosen()
@@ -667,13 +738,10 @@ void NetworkPane::connectChosen()
         return;
     }
 
-    joining = network.name;
-    joining_seen_busy = false;
-    joining_is_new = network.saved.isEmpty();
-    tell(word("network_joining", "Connecting to “%1”…").arg(network.name));
+    startJoining(network.name, device_path);
     if (!network.saved.isEmpty())
     {
-        call_async(manager_path, manager_interface, "ActivateConnection",
+        activate("ActivateConnection",
             {QVariant::fromValue(QDBusObjectPath(network.saved)), QVariant::fromValue(QDBusObjectPath(device_path)),
                 QVariant::fromValue(QDBusObjectPath(network.access_point))});
         return;
@@ -689,7 +757,7 @@ void NetworkPane::connectChosen()
             QLineEdit::Password, QString(), &agreed);
         if (!agreed)
         {
-            joining.clear();
+            endJoining();
             tell(QString());
             return;
         }
@@ -763,10 +831,8 @@ void NetworkPane::joinHidden()
             QVariantMap{
                 {QStringLiteral("key-mgmt"), QStringLiteral("wpa-psk")}, {QStringLiteral("psk"), password->text()}});
     }
-    joining = name->text();
-    joining_seen_busy = false;
-    // If a connection by that name is already saved, a failed try must not unsave it.
-    joining_is_new = !saved.contains(joining);
-    tell(word("network_joining", "Connecting to “%1”…").arg(joining));
+    // A failed try unsaves only the connection it saved, not one saved
+    // before under the same name.
+    startJoining(name->text(), device_path);
     addAndActivate(settings, device_path, QString());
 }

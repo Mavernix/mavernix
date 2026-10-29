@@ -37,6 +37,8 @@ class NetworkPane : public QWidget
   private slots:
     // Read again in a moment, or when the pane is next shown.
     void somethingChanged();
+    // The joining card's NM_DEVICE_STATE changed: it joined or gave up.
+    void joiningDeviceChanged(uint now, uint before, uint reason);
 
   private:
     // A Wi-Fi network in reach or saved, by name; several access points are one.
@@ -78,6 +80,13 @@ class NetworkPane : public QWidget
     void forgetChosen();
     void scan();
     void addAndActivate(const QMap<QString, QVariantMap>& settings, const QString& device, const QString& point);
+    // Joining: says so, and follows the joining card's states from now on,
+    // so that no step is missed however fast it goes.
+    void startJoining(const QString& name, const QString& device_path);
+    // Asks NetworkManager to join, and hears its answer.
+    void activate(const char* method, const QVariantList& arguments);
+    void joiningFailed();
+    void endJoining();
     // A line under the list saying what is happening.
     void tell(const QString& text);
     // The line under the status.
@@ -110,8 +119,14 @@ class NetworkPane : public QWidget
     QMap<QString, QString> saved;
     // The network being joined, to say how it went; empty if none.
     QString joining;
-    bool joining_seen_busy = false;
-    // The network was saved just now: if joining fails, it is unsaved again,
-    // so that the next try asks for the password anew.
-    bool joining_is_new = false;
+    // The card joining it.
+    QString joining_device;
+    // Counts the joins, so that a late answer is not taken for a newer join's.
+    int join_number = 0;
+    // The connection this join saved, if it was to a network not saved
+    // before: unsaved again if joining fails, so that the next try asks for
+    // the password anew.
+    QString joining_saved_now;
+    // The last join failed, perhaps before NetworkManager's answer came.
+    bool join_failed = false;
 };
