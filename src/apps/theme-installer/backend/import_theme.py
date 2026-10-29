@@ -8,6 +8,12 @@
                                                 look needs, as needed-files.txt
                                                 lists them (to add another
                                                 version of the installer)
+    python import_theme.py news                 the imported looks a new import
+                                                would bring something to, and
+                                                what, as JSON (updates.py);
+                                                none the user put off
+    python import_theme.py later LOOK           puts off offering LOOK's new
+                                                import until its next update
 
 Each look is a folder in looks/ (look.toml says what is in it). SOURCE is
 whatever its look.toml recognises: for Sea Lion, "Install OS X Mavericks.app",
@@ -35,6 +41,7 @@ import tomllib
 from pathlib import Path
 
 import installer_image
+import updates
 from installer_image import InstallerProblem
 
 BACKEND_DIR = Path(__file__).resolve().parent
@@ -165,15 +172,28 @@ def read_looks():
 
 
 def look_states():
-    """What the window lists: each look, and whether its themes are installed."""
+    """What the window lists: each look, whether its themes are installed,
+    and what a new import would bring them (updates.py)."""
     states = []
     for look_id, look in read_looks().items():
         installed = all((themes_dir() / theme / "theme.toml").is_file() for theme in look["themes"])
         states.append({"id": look_id, "name": look["name"], "description": look["description"],
                        "source": look["source"], "drop_hint": look["drop_hint"],
                        "licence_note": look.get("licence_note", ""), "desktop": look["desktops"][0],
-                       "installed": installed})
+                       "installed": installed, "import_brings": updates.import_brings(look, themes_dir()),
+                       "put_off": updates.is_put_off(look_id, updates.newest_revision(look))})
     return states
+
+
+def news():
+    """The imported looks a new import would bring something to, unless the
+    user put that off: [{id, name, import_brings}]."""
+    looks = []
+    for look_id, look in read_looks().items():
+        brings = updates.import_brings(look, themes_dir())
+        if brings and not updates.is_put_off(look_id, updates.newest_revision(look)):
+            looks.append({"id": look_id, "name": look["name"], "import_brings": brings})
+    return looks
 
 
 def holds(paths, suffix):
@@ -397,6 +417,7 @@ def install(staging, look, report):
     for number, name in enumerate(look["themes"]):
         new = staging / name
         old = target / name
+        updates.stamp_revision(new, updates.newest_revision(look))
         replaced = target / f".{name}.replaced"
         shutil.rmtree(replaced, ignore_errors=True)
         if old.exists():
@@ -588,6 +609,7 @@ def import_installer(source, report):
                             [source, listings_dir()], report):
             return False
         install(staging, look, report)
+        updates.remember_installer(source)
     finally:
         shutil.rmtree(work, ignore_errors=True)
         shutil.rmtree(staging, ignore_errors=True)
@@ -596,12 +618,21 @@ def import_installer(source, report):
 
 
 def main():
-    verbs = ("check", "identify", "identify-inside", "import", "build", "fingerprint", "fingerprint-inside")
+    verbs = ("check", "identify", "identify-inside", "import", "build", "fingerprint", "fingerprint-inside",
+             "news", "later")
     if len(sys.argv) < 2 or sys.argv[1] not in verbs:
         sys.exit(__doc__)
     command = sys.argv[1]
     if command == "check":
-        print(json.dumps(dict(missing_programs(), looks=look_states())))
+        print(json.dumps(dict(missing_programs(), looks=look_states(),
+                              last_installer=updates.last_installer())))
+        return
+    if command == "news":
+        print(json.dumps(news()))
+        return
+    if command == "later":
+        look_id = sys.argv[2]
+        updates.put_off(look_id, updates.newest_revision(read_looks()[look_id]))
         return
     if command == "identify":
         print(json.dumps(identify_outside(sys.argv[2])))

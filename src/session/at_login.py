@@ -5,8 +5,9 @@
 Run by the compositor once it is up. Opens KDE's wallet with the login,
 tells on-demand services (D-Bus, systemd) about the session's display and
 settings (after-session takes them back later), starts the config's and the
-user's autostart programs, and places [desktop_files] place_once launchers
-once per user. Does nothing when nested in another desktop.
+user's autostart programs, places [desktop_files] place_once launchers once
+per user, and lets the Theme Installer offer a new import of a look when this
+version brings it something. Does nothing when nested in another desktop.
 """
 
 import json
@@ -14,6 +15,8 @@ import os
 import shutil
 import subprocess
 import sys
+
+from paths import LIBRARY_DIR
 
 ENVIRONMENT_FOR_SERVICES = ["WAYLAND_DISPLAY", "DISPLAY", "XDG_CURRENT_DESKTOP", "XDG_SESSION_TYPE"]
 
@@ -34,6 +37,9 @@ EARLY_FILE_MANAGER_SERVICES = ["thunar.service", "dbus-*-org.xfce.Thunar@*.servi
 # Sends the login to the wallet that KDE's PAM module started. Run here, not
 # via dex, because programs started earlier would hit a still-closed wallet.
 WALLET_LOGIN_HELPER = "/usr/lib/pam_kwallet_init"
+
+# Says which imported looks a new import would bring something to.
+THEME_IMPORT_BACKEND = LIBRARY_DIR / "theme-installer" / "import_theme.py"
 
 PORTAL_SERVICE = "xdg-desktop-portal.service"
 PORTAL_HELPERS = ["xdg-desktop-portal-gtk.service", "xdg-desktop-portal-wlr.service"]
@@ -220,6 +226,25 @@ def place_launchers_once(config, settings_path):
         file.write("\n".join(sorted(placed)) + "\n")
 
 
+def offer_new_theme_imports():
+    """Opens the Theme Installer's list of what a new import would bring,
+    when an imported look is older than this version and the user has not
+    put that off. The Theme Installer itself shows it, so it can import."""
+    if not THEME_IMPORT_BACKEND.is_file():
+        return
+    result = subprocess.run([sys.executable, str(THEME_IMPORT_BACKEND), "news"], capture_output=True, text=True)
+    if result.returncode != 0:
+        say(f"could not ask the Theme Installer what is new: {result.stderr.strip()}")
+        return
+    try:
+        looks = json.loads(result.stdout)
+    except ValueError:
+        say(f"the Theme Installer's answer about what is new was not JSON: {result.stdout.strip()}")
+        return
+    if looks:
+        start(["mavernix-theme-installer", "--whats-new"])
+
+
 def main():
     if len(sys.argv) != 2:
         sys.exit(__doc__)
@@ -237,6 +262,7 @@ def main():
     start_listed_programs(config)
     if config.get("session", {}).get("users_autostart", True):
         start_users_programs()
+    offer_new_theme_imports()
 
 
 if __name__ == "__main__":

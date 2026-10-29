@@ -2,9 +2,13 @@
 // installer, with a window that shows each step.
 //
 //   mavernix-theme-installer [INSTALLER]
+//   mavernix-theme-installer --whats-new
 //
 // INSTALLER (a file dropped on the program's icon) starts the window at that
-// step. The work is done by backend/import_theme.py (ImportJob); the look
+// step. --whats-new, used at login (src/session/at_login.py), shows instead
+// a small window with what a new import would bring the looks the user
+// imported, and ends at once if there is nothing. The work is done by
+// backend/import_theme.py (ImportJob); the look
 // and words come from the theme's and config's [theme_installer] tables,
 // through the JSON file named by DESKTOP_SHELL_SETTINGS.
 
@@ -49,7 +53,10 @@ int main(int argc, char** argv)
     QGuiApplication::setDesktopFileName(QStringLiteral("mavernix-theme-installer"));
 
     const QVariantMap settings = read_settings();
-    const QString given = argc > 1 ? QFileInfo(QString::fromLocal8Bit(argv[1])).absoluteFilePath() : QString();
+    const QString first_argument = argc > 1 ? QString::fromLocal8Bit(argv[1]) : QString();
+    const bool whats_new = first_argument == QLatin1String("--whats-new");
+    const QString given =
+        first_argument.isEmpty() || whats_new ? QString() : QFileInfo(first_argument).absoluteFilePath();
 
     // The check runs beside the window; the first page says it is checking.
     ImportJob job;
@@ -59,7 +66,8 @@ int main(int argc, char** argv)
     engine.rootContext()->setContextProperty(QStringLiteral("settings"), settings);
     engine.rootContext()->setContextProperty(QStringLiteral("job"), &job);
     engine.rootContext()->setContextProperty(QStringLiteral("givenInstaller"), given);
-    engine.load(QUrl::fromLocalFile(QStringLiteral(QML_DIRECTORY "/Main.qml")));
+    engine.load(QUrl::fromLocalFile(
+        whats_new ? QStringLiteral(QML_DIRECTORY "/WhatsNew.qml") : QStringLiteral(QML_DIRECTORY "/Main.qml")));
     if (engine.rootObjects().isEmpty())
     {
         return 1;

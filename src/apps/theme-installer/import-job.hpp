@@ -47,8 +47,12 @@ class ImportJob : public QObject
     Q_PROPERTY(bool sandboxInstalled READ sandboxInstalled NOTIFY checked)
     Q_PROPERTY(QString sandboxPackage READ sandboxPackage NOTIFY checked)
     // The looks the back end can make: [{id, name, description, source,
-    // drop_hint, licence_note, desktop, installed}].
+    // drop_hint, licence_note, desktop, installed, import_brings, put_off}];
+    // import_brings lists what a new import would bring an imported look,
+    // put_off whether the user said Later to that.
     Q_PROPERTY(QVariantList looks READ looks NOTIFY checked)
+    // The installer last imported from, if it is still there; else "".
+    Q_PROPERTY(QString lastInstaller READ lastInstaller NOTIFY checked)
 
     // The installer last given to identify(), whether it is still being
     // read, and which look it makes: {look: id} or {problem: text}, or {}
@@ -81,6 +85,7 @@ class ImportJob : public QObject
     bool sandboxInstalled() const { return sandbox_installed; }
     QString sandboxPackage() const { return sandbox_package; }
     QVariantList looks() const { return look_list; }
+    QString lastInstaller() const { return last_installer; }
     QString identifiedPath() const { return identified_path; }
     bool identifying() const { return identify_process != nullptr; }
     QVariantMap identified() const { return identified_answer; }
@@ -102,6 +107,12 @@ class ImportJob : public QObject
 
     // {name, size in words for a file}, or {} if there is nothing at `path`.
     Q_INVOKABLE QVariantMap describe(const QString& path) const;
+
+    // Stops offering a new import of the look until its next update.
+    Q_INVOKABLE void putOff(const QString& look_id) const;
+    // Opens the Theme Installer's own window, with `path` chosen if it is
+    // not "".
+    Q_INVOKABLE void openInstaller(const QString& path) const;
 
   signals:
     void stagesChanged();
@@ -144,6 +155,7 @@ class ImportJob : public QObject
     bool sandbox_installed = false;
     QString sandbox_package;
     QVariantList look_list;
+    QString last_installer;
 
     QPointer<QProcess> identify_process;
     QString identified_path;

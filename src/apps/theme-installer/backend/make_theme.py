@@ -917,6 +917,11 @@ button_disabled_text_color = "#00000060"
 [theme_installer]
 width = 640
 height = 500
+# The window at login that offers a new import: as wide as System
+# Preferences' content.
+news_width = 668
+news_icon_size = 64
+news_item_gap = 4
 background = {{ color = "#ececec" }}
 sidebar_width = 180
 sidebar = {{ color = "#e3e6eb" }}

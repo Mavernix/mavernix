@@ -231,6 +231,12 @@ top_share = 0.35
 width = 640
 height = 500
 background = { color = "#efefef" }
+# The small window at login that offers a new import of a look: its width
+# (its height follows the text), the installer's picture, the gap between
+# the listed features.
+news_width = 520
+news_icon_size = 64
+news_item_gap = 4
 sidebar_width = 180
 sidebar = { color = "#e4e4e4" }
 sidebar_line_color = "#d0d0d0"

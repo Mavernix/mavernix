@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- When an update gives Sea Lion something only a new import can bring, the Theme Installer opens once at login in a small window that says what's new and offers to import again. Choose Later and it waits for the next update. Smaller improvements reach your imported themes on their own at login, without importing again.
 - Right-clicking a program in the dock lists the program's own entries, such as New Window or New Private Window. Sea Lion shows them only while the program runs, like the original.
 - The dock has a folder of all your programs, next to Downloads. It opens as a grid or a fan, and its last entry opens the app grid. Right-click it to remove it. To get it back, or if you had already rearranged your dock, drag a folder of launchers such as `/usr/share/applications` onto the dock. If you re-import Sea Lion, the folder gets its own Applications icon.
 - A folder's grid in the dock now sizes itself the way OS X 10.9's does: a near square that stays within 80% of the free screen, with icons that shrink a little before the rest scrolls. Re-import Sea Lion to get the exact 10.9 numbers.

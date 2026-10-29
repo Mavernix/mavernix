@@ -32,10 +32,15 @@ If your theme leaves the table out, it gets these numbers. All the text in the w
 
 The Theme Installer's window (`src/apps/theme-installer/`) has a column of steps on the left and the current step's page on the right. Go Back and Continue sit along the bottom and are drawn from `[dialog]`. Its fonts are `[fonts].theme_installer_heading` (each page's heading) and `theme_installer_text` (everything else).
 
+After an update that gives a look something only a new import can bring, the Theme Installer opens once at login in a small window of its own. It lists what's new, one line each, with Later and Import Again, in the same background, fonts and buttons.
+
 ```toml
 [theme_installer]
 width = 640                     # the window's size
 height = 500
+news_width = 520                # the small window that offers a new import of a look: its width (its height follows its text),
+news_icon_size = 64             # the installer's picture in it (drop_well_picture),
+news_item_gap = 4               # and the gap between the features it lists
 background = { color = "#efefef" }
 sidebar_width = 180             # the column of steps
 sidebar = { color = "#e4e4e4" }

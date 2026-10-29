@@ -55,7 +55,10 @@ This is the quickest way to start a new look: begin with `plain`, then replace o
 name = "Plain"
 description = "A flat, neutral desktop with no artwork."
 format = 0                # the version of this format
+revision = 1              # optional: which update of its look the Theme Installer made it from
 ```
+
+The Theme Installer writes `revision` into the themes it makes. When a newer version of the desktop brings settings a theme can take as it is, they're added to older themes at login. When it brings something only a new import can give, the Theme Installer offers that import once.
 
 ## Fills: picture or plain
 
