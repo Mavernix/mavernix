@@ -272,12 +272,28 @@ QString NetworkPane::word(const char* key, const char* fallback) const
 
 void NetworkPane::somethingChanged()
 {
-    reading_soon->start();
+    // Reading takes a call per network and per saved connection, so a hidden
+    // pane waits until it is shown, unless it has to say how joining went.
+    if (!isVisible() && joining.isEmpty())
+    {
+        read_when_shown = true;
+        return;
+    }
+    // Not restarted: signal strengths change all the time, and the list would never be read.
+    if (!reading_soon->isActive())
+    {
+        reading_soon->start();
+    }
 }
 
 void NetworkPane::showEvent(QShowEvent* event)
 {
     QWidget::showEvent(event);
+    if (read_when_shown)
+    {
+        read_when_shown = false;
+        readAll();
+    }
     scanning->start();
     // Look at once rather than after the first interval.
     scan();
@@ -438,7 +454,7 @@ void NetworkPane::readAll()
                     {
                         call_async(saved.value(joining), connection_interface, "Delete");
                     }
-                    tell(word("network_join_failed", "Could not connect to “%1”. If it has a password, check it and click Connect to try again.").arg(joining));
+                    tell(word("network_join_failed", "Could not connect to “%1”. If it has a password, check it and try again.").arg(joining));
                     joining.clear();
                 }
             }

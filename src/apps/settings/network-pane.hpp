@@ -35,7 +35,7 @@ class NetworkPane : public QWidget
     void hideEvent(QHideEvent* event) override;
 
   private slots:
-    // Everything is read anew shortly.
+    // Read again in a moment, or when the pane is next shown.
     void somethingChanged();
 
   private:
@@ -100,6 +100,8 @@ class NetworkPane : public QWidget
     QWidget* wifi_part = nullptr;
     QTimer* reading_soon = nullptr;
     QTimer* scanning = nullptr;
+    // Something changed while the pane was hidden.
+    bool read_when_shown = false;
 
     bool wifi_on = false;
     bool have_network_manager = false;
