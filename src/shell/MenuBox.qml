@@ -127,7 +127,11 @@ Item {
         }
     }
 
-    // The widest row decides the menu's width.
+    // The widest row decides the menu's width, but a label only gets so wide:
+    // the Dock's menu lists windows by title, and a browser's can be as long
+    // as a web address, which made the menu as wide as the screen. Longer
+    // labels end in "…"; this fits about fifty characters.
+    readonly property real longestLabel: 30 * font.size
     property real widestRow: 0
     function measureRows() {
         let widest = 0
@@ -192,7 +196,7 @@ Item {
                 readonly property bool isSlider: modelData.slider !== undefined
                 readonly property real neededWidth:
                     isSlider ? (menu.looks.slider_min_width ?? 180) :
-                    menu.looks.text_inset + label.implicitWidth
+                    menu.looks.text_inset + label.width
                     + (endWidth > 0 ? menu.looks.shortcut_gap + endWidth : 0)
                     + menu.looks.shortcut_end_inset
                 onNeededWidthChanged: menu.measureRows()
@@ -267,6 +271,8 @@ Item {
                 RowText {
                     id: label
                     x: menu.looks.text_inset
+                    width: Math.min(implicitWidth, menu.longestLabel)
+                    elide: Text.ElideRight
                     text: row.modelData.label
                 }
 
