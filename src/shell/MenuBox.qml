@@ -533,38 +533,14 @@ Item {
         }
     }
 
-    // The arrow strips where there is more, with the theme's arrows; resting
-    // the pointer on one scrolls.
-    component ArrowStrip: Item {
-        id: strip
-        property int direction: 0
-        x: 0
-        width: menu.width
-        height: menu.arrowStripHeight
-        Text {
-            anchors.centerIn: parent
-            text: strip.direction < 0 ? (menu.looks.scroll_arrow_up ?? "▲") : (menu.looks.scroll_arrow_down ?? "▼")
-            color: ThemeValues.color(menu.looks.text_color)
-            font.family: menu.font.family
-            font.pixelSize: menu.looks.scroll_arrow_size ?? Math.round(menu.font.size * 0.6)
-        }
-        MouseArea {
-            anchors.fill: parent
-            hoverEnabled: true
-            onContainsMouseChanged: menu.arrowScrolling = containsMouse ? strip.direction : 0
-            onVisibleChanged: {
-                if (!visible && menu.arrowScrolling === strip.direction) {
-                    menu.arrowScrolling = 0
-                }
-            }
-        }
-    }
-    ArrowStrip {
+    MenuScrollArrow {
+        ownerMenu: menu
         direction: -1
         visible: menu.moreAbove
         y: menu.looks.padding
     }
-    ArrowStrip {
+    MenuScrollArrow {
+        ownerMenu: menu
         direction: 1
         visible: menu.moreBelow
         y: menu.height - menu.looks.padding - height

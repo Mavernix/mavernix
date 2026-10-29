@@ -42,7 +42,7 @@ PanelWindow {
     property real shown: open ? 1 : 0
     onOpenChanged: {
         if (open) {
-            grid.scrollToTop()
+            grid.reset()
         }
     }
     Behavior on shown {

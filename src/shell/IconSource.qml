@@ -50,6 +50,18 @@ IconFiles {
         return path(nameFor(entry), fallback)
     }
 
+    // The picture for an entry of a folder in the dock ({ icon, genericIcon },
+    // and `entries` for a folder inside): a folder inside by its icon, a
+    // program or file by its own, else its kind's family, else a plain
+    // document.
+    function forFolderEntry(file) {
+        if (file.entries !== undefined) {
+            return path(file.icon || "folder", "folder")
+        }
+        const own = find(file.icon)
+        return own !== "" ? own : path(file.genericIcon, "text-x-generic")
+    }
+
     // The icon of this name, shrunk to span at most `fill` of its square
     // unless the icon theme has it itself; else as path() gives it.
     function fitted(name, fill, fallback) {
