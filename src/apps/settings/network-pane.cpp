@@ -511,8 +511,8 @@ void NetworkPane::showChosen()
     switch_button->setVisible(wifi);
     switch_button->setText(wifi_on ? word("network_turn_off", "Turn Wi-Fi Off") : word("network_turn_on", "Turn Wi-Fi On"));
     wifi_part->setVisible(wifi && wifi_on);
-    address_line->setText(connected && !device->address.isEmpty() ? device->address : QStringLiteral("—"));
-    router_line->setText(connected && !device->router.isEmpty() ? device->router : QStringLiteral("—"));
+    address_line->setText(connected ? device->address : QString());
+    router_line->setText(connected ? device->router : QString());
 
     const QString status_word = word("network_status", "Status:") + QLatin1Char(' ');
     if (!have_network_manager)
@@ -583,11 +583,8 @@ void NetworkPane::showNetworks(const Device& device)
         {
             notes << word("network_note_away", "not in range");
         }
-        if (network.secured)
-        {
-            notes << word("network_note_password", "password");
-        }
-        const QString label = notes.isEmpty() ? network.name : network.name + QStringLiteral("  —  ") + notes.join(QStringLiteral(", "));
+        const QString label = notes.isEmpty() ? network.name
+                                              : QStringLiteral("%1 (%2)").arg(network.name, notes.join(QStringLiteral(", ")));
         auto* row = new QListWidgetItem(network.access_point.isEmpty() ? QIcon() : signal_icon(network.strength), label, network_list);
         row->setData(name_role, network.name);
         if (network.connected)
