@@ -86,6 +86,12 @@ DisplayPane::DisplayPane(Choices& choices, QWidget* parent) : QWidget(parent), c
         "Click a screen to change its settings below. Drag the screens to stand as they do on your desk, "
         "and drag the bar along the top of one to move the menu bar and dock to another screen."),
         arrangement_note->fontMetrics(), intro_width_px));
+    one_screen_note = new QLabel;
+    one_screen_note->setEnabled(false);
+    one_screen_note->setAlignment(Qt::AlignHCenter);
+    one_screen_note->setText(in_lines_of(word("display_one_screen",
+        "Plug in another screen to arrange your screens and choose each one's settings here."),
+        one_screen_note->fontMetrics(), intro_width_px));
     picked_title = new QLabel;
     QFont title_font = picked_title->font();
     title_font.setBold(true);
@@ -166,6 +172,7 @@ DisplayPane::DisplayPane(Choices& choices, QWidget* parent) : QWidget(parent), c
     form->setLabelAlignment(Qt::AlignRight | Qt::AlignTop);
     form->setFormAlignment(Qt::AlignHCenter | Qt::AlignTop);
     rows->addLayout(form);
+    rows->addWidget(one_screen_note, 0, Qt::AlignHCenter);
     rows->addStretch();
 
     // The screen's resolution and refresh rate come first: what is drawn
@@ -309,6 +316,7 @@ void DisplayPane::readScreens()
     arrangement->setVisible(several);
     arrangement_note->setVisible(several);
     picked_title->setVisible(several);
+    one_screen_note->setVisible(!several);
     form->setRowVisible(main_here, several);
 
     if (tidy_pending)

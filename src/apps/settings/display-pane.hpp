@@ -59,6 +59,8 @@ class DisplayPane : public QWidget
     QVariantMap words;
     ScreenArrangement* arrangement;
     QLabel* arrangement_note;
+    // With one screen: where the arrangement shows up.
+    QLabel* one_screen_note;
     QLabel* picked_title;
     QFormLayout* form;
     DisplayModes* modes;

@@ -279,6 +279,7 @@ display_note = "Between the two ends the desktop's pictures are drawn less sharp
 display_arrangement_note = "To rearrange the displays, drag them to the desired position. To relocate the menu bar, drag it to a different display. Click a display to change its settings."
 display_main_here = "Show the menu bar on this display"
 display_built_in = "Built-in Display"
+display_one_screen = "Connect another display to arrange your displays and choose settings for each one."
 display_resolution = "Display mode:"
 display_refresh = "Refresh Rate:"
 display_recommended = "%1 (Default)"
