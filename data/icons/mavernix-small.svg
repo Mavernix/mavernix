@@ -11,12 +11,17 @@
       <stop offset="0.5" stop-color="#26607a"/>
       <stop offset="1" stop-color="#0c2b52"/>
     </linearGradient>
+    <radialGradient id="aurora" cx="0.5" cy="0.62" r="0.6">
+      <stop offset="0" stop-color="#c4d2ff"/>
+      <stop offset="0.45" stop-color="#6d7fe6"/>
+      <stop offset="1" stop-color="#2c2278"/>
+    </radialGradient>
     <linearGradient id="aqua" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#4f9de6"/>
       <stop offset="1" stop-color="#14378a"/>
     </linearGradient>
   </defs>
-  <path d="M128 28 L214 78 L128 128 L42 78 Z" fill="#d6d6d6"/>
+  <path d="M128 28 L214 78 L128 128 L42 78 Z" fill="url(#aurora)"/>
   <path d="M42 78 L128 128 L128 228 L42 178 Z" fill="url(#ocean)"/>
   <path d="M128 128 L214 78 L214 178 L128 228 Z" fill="url(#aqua)"/>
   <path d="M42 78 L128 128 L214 78 M128 128 L128 228"
