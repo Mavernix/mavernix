@@ -44,8 +44,13 @@ mkdir -p "$HOME/.config/Kvantum"
 ln -sfn /out/state/app-theme/share/themes/DesktopTheme/Kvantum "$HOME/.config/Kvantum/DesktopTheme"
 printf '[General]\ntheme=DesktopTheme\n' > "$HOME/.config/Kvantum/kvantum.kvconfig"
 
-# The virtual screen, the size of a 13-inch laptop's.
+# The virtual screen, the size of a 13-inch laptop's; with MAVERNIX_SCREENS=2,
+# a 1920x1080 one to its right as well.
 printf '[output:HEADLESS-1]\nmode = 1280x800\nscale = 1\n' > /out/screen.ini
+if [[ ${MAVERNIX_SCREENS:-1} == 2 ]]; then
+    export WLR_HEADLESS_OUTPUTS=2
+    printf '[output:HEADLESS-2]\nmode = 1920x1080\nscale = 1\n' >> /out/screen.ini
+fi
 
 export DESKTOP_STATE_DIR=/out/state
 export DESKTOP_EXTRA_INI=/out/screen.ini

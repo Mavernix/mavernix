@@ -7,6 +7,8 @@
 #                                     restart its shell (seconds, for QML changes)
 #   dev/run-in-container stop         stop it
 #
+# MAVERNIX_SCREENS=2 starts it with two virtual screens.
+#
 # Needs Podman, and TigerVNC's vncviewer for the window.
 set -euo pipefail
 
@@ -47,6 +49,7 @@ options=(
     # Starts as root to install, then runs as this user so dev/out/ is ours.
     --userns=keep-id --user root
     --env "DESKTOP_UID=$(id -u)" --env "DESKTOP_GID=$(id -g)"
+    --env "MAVERNIX_SCREENS=${MAVERNIX_SCREENS:-1}"
 )
 # The host's GPU for rendering, if any; otherwise software rendering.
 if [[ -e /dev/dri/renderD128 ]]; then
