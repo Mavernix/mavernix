@@ -113,7 +113,7 @@ longest_ms = 120000       # give up after this
 
 ## The menus on the dock's tiles
 
-A secondary press on a tile or a separator opens a menu above it. It looks like any other menu unless the theme says otherwise. Put whatever should differ from `[menu]` into `[dock.menu]`, key for key. It also has two keys of its own.
+A secondary press on a tile or a separator opens a menu above it. It looks like any other menu unless the theme says otherwise. Put whatever should differ from `[menu]` into `[dock.menu]`, key for key. It also has three keys of its own. A menu too tall for the room above the dock, such as a big folder's list, opens at its end and scrolls.
 
 ```toml
 [dock.menu]                    # any key of [menu], and:
@@ -121,6 +121,7 @@ background = "#202020f0"
 text_color = "#ffffff"
 pointer = { width = 24, height = 12 }   # optional: a triangle from the menu's bottom edge pointing at the tile, drawn in the menu's background and rim
 tile_gap = 4                   # between the menu (or its pointer's tip) and the tile's icon
+top_margin = 5                 # optional: how far below the panel a menu that scrolls ends
 ```
 
 ## Minimised windows
@@ -195,7 +196,13 @@ stage_share = 0.8         # optional: the share of the free width and height the
 fit_spacing = 0           # optional: room added to each cell when counting how many fit on that stage
 selection = { color = "#3a6ea533", radius = 6 }   # optional: the fill behind the entry the arrow keys chose, the whole cell
 scroll_fade = 8           # optional: a grid that scrolls fades out over this much at its top and bottom
-scroll_snap_ms = 150      # optional: how long a grid takes to come to rest on a whole row after scrolling (else at once)
+scroll_snap_ms = 150      # optional: how long a grid takes to come to rest on a whole row after scrolling, or to bring the chosen entry's row into view (else at once)
+scroll_snap_curve = "ease-out"   # optional: its curve, "linear", "ease-in", "ease-out" or "ease-in-out"
+scroll_bar_image = "images/folder-scroll-thumb.png"   # optional: the bar as a picture that stretches along its middle,
+scroll_bar_slice = 3      # keeping this much at its top and bottom
+scroll_bar_inset = 6      # optional: the bar runs along the box, this far from its top and bottom (else along the cells)
+label_expanded = { fill = { color = "#ffffff", radius = 8 }, text_color = "#202020", height = 18, padding = 8 }   # optional: a name cut short shows whole on this while the pointer is on it
+back_button = { image = "images/folder-back.png", pressed_image = "images/folder-back-pressed.png", left = 8, top = 4 }   # optional: in a folder opened inside the grid, goes back (else a plain arrow there)
 scroll_bar_width = 4      # optional: a folder with more than fits scrolls; with a width, a bar shows where while it moves
 scroll_bar_color = "#20202060"   # optional: else the names' colour at half strength
 scroll_bar_fade_ms = 300  # optional: how long the bar takes to go once the grid rests

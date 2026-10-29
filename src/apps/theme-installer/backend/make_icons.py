@@ -35,6 +35,7 @@ ICONS = {
     "folder": ("places", "GenericFolderIcon.icns"),
     "folder-open": ("places", "OpenFolderIcon.icns"),
     "folder-applications": ("places", "ApplicationsFolderIcon.icns"),
+    "folder-utilities": ("places", "UtilitiesFolder.icns"),
     "user-home": ("places", "HomeFolderIcon.icns"),
     "user-desktop": ("places", "DesktopFolderIcon.icns"),
     "folder-documents": ("places", "DocumentsFolderIcon.icns"),

@@ -26,6 +26,17 @@ highlight_text_color = "#ffffff"
 shortcut_end_inset = 11   # from the end of a shortcut (or submenu arrow) to the menu's edge
 shortcut_gap = 20         # the least space between an item's text and its shortcut
 
+# Optional: items with an icon (a folder's list in the dock, say) show it
+# before their name; a menu taller than the room it has scrolls.
+icon_size = 16            # the icon, at the text inset
+icon_gap = 4              # between the icon and the name
+icon_item_height = 21     # the height of an item with an icon (else item_height)
+scroll_arrow_height = 19  # the strip with an arrow at the top or bottom where there is more (else item_height)
+scroll_speed = 100        # how fast the menu scrolls while the pointer rests on a strip, in pixels a second
+scroll_arrow_up = "▲"     # the arrows, and their size (else six tenths of the menu's text)
+scroll_arrow_down = "▼"
+scroll_arrow_size = 8
+
 # Optional: the shadow a menu casts, and a thin rim just outside its edge.
 # The rim can also be a list of colours. That gives several lines, each one
 # pixel further out than the one before.

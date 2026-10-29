@@ -1343,7 +1343,7 @@ PanelWindow {
         closeMenu()
 
         if (id >= fileBaseId) {
-            openFolderEntry(place.custom, folderContents.entries[id - fileBaseId].path)
+            openFolderEntry(place.custom, listedFiles[id - fileBaseId].path)
         } else if (id === openFolderId) {
             openWholeFolder(place.custom)
         } else if (id >= actionBaseId) {
@@ -1399,8 +1399,13 @@ PanelWindow {
 
         pointerScreenX: Math.round(placeMiddle)
         menuX: Math.round(placeMiddle - menuWidth / 2)
-        menuY: screen.height - iconTopAboveBottom - (dock.menuLooks.tile_gap ?? 4)
-               - pointerLength - menuHeight
+        readonly property real bottomEdge: screen.height - iconTopAboveBottom - (dock.menuLooks.tile_gap ?? 4)
+                                           - pointerLength
+        menuY: bottomEdge - menuHeight
+        // A long menu, such as a folder's list, scrolls below the panel and
+        // opens at its end, next to the dock.
+        mostMenuHeight: bottomEdge - (dock.settings.theme.panel?.height ?? 0) - (dock.menuLooks.top_margin ?? 0)
+        startsAtEnd: true
 
         onChosen: id => dock.menuChosen(id)
         onDismissed: dock.closeMenu()
@@ -1414,12 +1419,12 @@ PanelWindow {
     // programs. There is no real folder to read: a system's programs are
     // desktop entries spread over several directories, some of them hidden.
     // Its entries' paths are desktop entry IDs, and its last entry opens the
-    // application grid instead of a file manager. It has no list view, which
-    // would be a menu taller than the screen, and menus cannot scroll yet.
+    // application grid instead of a file manager. Its `subfolders`, each
+    // { name, icon, categories }, gather the programs of those desktop entry
+    // categories into a folder inside it (as the original's Utilities).
 
     readonly property var folderOrders: ["name", "added", "modified", "created", "kind"]
     readonly property var folderViews: ["fan", "grid", "list"]
-    readonly property var programFolderViews: ["fan", "grid"]
 
     property int folderIndex: -1
     property var listedFolder: null
@@ -1429,7 +1434,7 @@ PanelWindow {
     }
 
     function viewsOf(folder) {
-        return isProgramFolder(folder) ? programFolderViews : folderViews
+        return folderViews
     }
 
     function viewOf(folder) {
@@ -1451,10 +1456,13 @@ PanelWindow {
     }
 
     // The installed programs as folder entries, in FolderContents' form, in
-    // one of folderOrders: by name; by the date of their desktop entry
-    // ("added" is when it was installed), newest first; or by "kind", their
-    // main category, then by name.
-    function programEntries(order) {
+    // the folder's order (one of folderOrders): by name; by the date of
+    // their desktop entry ("added" is when it was installed), newest first;
+    // or by "kind", their main category, then by name. The folder's
+    // subfolders that have programs are entries with `entries` of their own:
+    // among the programs by name, after them in the other orders.
+    function programEntries(folder) {
+        const order = folder.order ?? "name"
         const shown = DesktopEntries.applications.values.filter(entry => !entry.noDisplay)
         const byName = (first, second) => first.name.localeCompare(second.name)
         if (order === "kind") {
@@ -1466,14 +1474,62 @@ PanelWindow {
         } else {
             shown.sort(byName)
         }
-        return shown.map(entry => ({ name: entry.name, path: entry.id,
-                                     icon: themeIcons.nameFor(entry),
-                                     genericIcon: "application-x-executable" }))
+        const wanted = folder.subfolders ?? []
+        const subfolders = wanted.map(subfolder => ({ name: subfolder.name, path: "",
+                                                      icon: subfolder.icon ?? "folder",
+                                                      genericIcon: "folder", entries: [] }))
+        const top = []
+        for (const entry of shown) {
+            const asEntry = { name: entry.name, path: entry.id, icon: themeIcons.nameFor(entry),
+                              genericIcon: "application-x-executable" }
+            const inside = wanted.findIndex(
+                subfolder => entry.categories.some(category => (subfolder.categories ?? []).includes(category)))
+            if (inside >= 0) {
+                subfolders[inside].entries.push(asEntry)
+            } else {
+                top.push(asEntry)
+            }
+        }
+        const filled = subfolders.filter(subfolder => subfolder.entries.length > 0)
+        if (order !== "name") {
+            return top.concat(filled)
+        }
+        return top.concat(filled).sort((first, second) => first.name.localeCompare(second.name))
+    }
+
+    // The picture for a folder entry: a folder inside by its icon, a program
+    // by its own, a file by its kind, else its family, else a plain document.
+    function entryIcon(file) {
+        if (file.entries !== undefined) {
+            return themeIcons.path(file.icon || "folder", "folder")
+        }
+        const own = themeIcons.find(file.icon)
+        return own !== "" ? own : themeIcons.path(file.genericIcon, "text-x-generic")
+    }
+
+    // The entries a folder's list menu offers by id, from fileBaseId on.
+    property var listedFiles: []
+
+    // Menu items for folder entries, with their icons; a folder inside is a
+    // submenu of its own entries. Each file is added to `offered`, its id
+    // counting from fileBaseId by its place there.
+    function folderMenuItems(files, offered) {
+        return files.map(file => {
+            let item
+            if (file.entries !== undefined) {
+                item = menuEntry(-1, file.name, true, folderMenuItems(file.entries, offered))
+            } else {
+                item = menuEntry(fileBaseId + offered.length, file.name)
+                offered.push(file)
+            }
+            item.icon = entryIcon(file)
+            return item
+        })
     }
 
     // What the open folder shows.
     readonly property var listedEntries: isProgramFolder(listedFolder)
-        ? programEntries(listedFolder.order ?? "name") : folderContents.entries
+        ? programEntries(listedFolder) : folderContents.entries
 
     function openFolderEntry(folder, path) {
         if (!isProgramFolder(folder)) {
@@ -1521,8 +1577,9 @@ PanelWindow {
             return
         }
 
-        const items = folderContents.entries.map(
-            (file, number) => menuEntry(fileBaseId + number, file.name))
+        const offered = []
+        const items = folderMenuItems(listedEntries, offered)
+        listedFiles = offered
         if (items.length > 0) {
             items.push(menuSeparator())
         }

@@ -20,6 +20,10 @@ PanelWindow {
     // on the bottom edge, in screen coordinates (negative: none).
     property var looks: settings.theme.menu
     property real pointerScreenX: -1
+    // The most height the menu may take (0: no limit; a longer one scrolls),
+    // and whether a menu that scrolls opens at its end.
+    property real mostMenuHeight: 0
+    property bool startsAtEnd: false
 
     property real passX: 0
     property real passY: 0
@@ -123,6 +127,8 @@ PanelWindow {
         y: overlay.menuY
         squareTopLeft: overlay.squareTop
         squareTopRight: overlay.squareTop
+        mostHeight: overlay.mostMenuHeight
+        startsAtEnd: overlay.startsAtEnd
         onChosen: id => overlay.chosen(id)
         onSubmenuWanted: id => overlay.submenuWanted(id)
         onSlid: (id, value) => overlay.slid(id, value)
