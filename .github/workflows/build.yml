@@ -1,11 +1,13 @@
-# On every push and pull request: builds the desktop, runs the tests, tries the
-# install, and checks the code with ruff and clang-format. Arch Linux, because
-# it has current Wayfire and Qt packages.
+# On pushes to main and on pull requests: builds the desktop, runs the tests,
+# tries the install, and checks the code with ruff and clang-format. Arch
+# Linux, because it has current Wayfire and Qt packages. Not on every push, so
+# a pull request's branch is checked once, not twice.
 
 name: build
 
 on:
   push:
+    branches: [main]
   pull_request:
 
 jobs:
