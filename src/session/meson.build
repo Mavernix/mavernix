@@ -30,6 +30,7 @@ install_data(
     'make_wayfire_config.py',
     'pick_desktop.py',
     'refresh_desktops.py',
+    'refresh_themes.py',
     'themes.py',
     'toml_text.py',
     'user_choices.py',

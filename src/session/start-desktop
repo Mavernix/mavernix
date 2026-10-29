@@ -18,9 +18,11 @@ set -euo pipefail
 # shellcheck source=paths.sh.in
 source "$(dirname "$(readlink -f "$0")")/paths.sh"
 
-# Desktops a look added are brought up to date with this version; a
-# failure there must not keep the desktop from starting.
+# Desktops a look added are brought up to date with this version, and its
+# themes get this version's new settings; a failure there must not keep the
+# desktop from starting.
 python3 "$session_dir/refresh_desktops.py" || true
+python3 "$session_dir/refresh_themes.py" || true
 
 name=${1:-}
 if [[ -z "$name" ]]; then

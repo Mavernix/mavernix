@@ -1,5 +1,6 @@
 #include "import-job.hpp"
 
+#include <QCoreApplication>
 #include <QDateTime>
 #include <QDir>
 #include <QFile>
@@ -153,6 +154,7 @@ void ImportJob::check()
             sandbox_installed = answer.value(QStringLiteral("sandbox_installed")).toBool();
             sandbox_package = answer.value(QStringLiteral("sandbox_package")).toString();
             look_list = answer.value(QStringLiteral("looks")).toList();
+            last_installer = answer.value(QStringLiteral("last_installer")).toString();
             QStringList lacking;
             for (const QVariant& entry : missing)
             {
@@ -319,6 +321,20 @@ QVariantMap ImportJob::describe(const QString& path) const
         described.insert(QStringLiteral("size"), QLocale().formattedDataSize(info.size()));
     }
     return described;
+}
+
+// Both start programs of their own (detached), because the window that asks
+// closes right afterwards and would end a child process with it.
+void ImportJob::putOff(const QString& look_id) const
+{
+    log(QStringLiteral("window: offering a new import of %1 is put off until its next update").arg(look_id));
+    QProcess::startDetached(QStringLiteral("python3"), {back_end, QStringLiteral("later"), look_id});
+}
+
+void ImportJob::openInstaller(const QString& path) const
+{
+    const QStringList arguments = path.isEmpty() ? QStringList() : QStringList{path};
+    QProcess::startDetached(QCoreApplication::applicationFilePath(), arguments);
 }
 
 void ImportJob::readReport()

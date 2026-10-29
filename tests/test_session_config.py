@@ -13,6 +13,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import tomllib
 import unittest
 import unittest.mock
 from pathlib import Path
@@ -304,6 +305,41 @@ class TestRefreshDesktops(SessionTestCase):
         self.assertEqual(refresh_desktops.refresh(looks, configs), ["lion"])
         self.assertFalse((configs / "lion.toml.before-update").exists())
         self.assertEqual(refresh_desktops.refresh(looks, configs), [])
+
+
+class TestRefreshThemes(SessionTestCase):
+    def test_an_imported_theme_gets_the_settings_it_lacks(self):
+        sys.path[:0] = [self.folder.name, str(SESSION_SOURCE_DIR)]
+        try:
+            import refresh_themes
+        finally:
+            del sys.path[:2]
+        folder = Path(self.folder.name)
+        looks = folder / "looks"
+        (looks / "lion").mkdir(parents=True)
+        (looks / "lion" / "look.toml").write_text('themes = ["lion", "lion-new"]\n')
+        (looks / "lion" / "updates.toml").write_text(
+            '[[update]]\nrevision = 1\n[update.settings."dock.grid"]\nshare = 0.8\nspacing = 28\n'
+            '[[update]]\nrevision = 2\n[update.settings.fan]\nmost = 8\n')
+        themes = folder / "themes"
+        (themes / "lion").mkdir(parents=True)
+        (themes / "lion-new").mkdir()
+        # From before revisions were kept, with one of the new keys set by hand.
+        old = '# made by hand\n[theme]\nname = "Lion"\n\n[dock.grid]\nspacing = 10\nwidth = 96\n'
+        (themes / "lion" / "theme.toml").write_text(old)
+        current = '[theme]\nname = "Lion"\nrevision = 2\n'
+        (themes / "lion-new" / "theme.toml").write_text(current)
+
+        self.assertEqual(refresh_themes.refresh(looks, themes), ["lion"])
+        text = (themes / "lion" / "theme.toml").read_text()
+        theme = tomllib.loads(text)
+        self.assertEqual(theme["dock"]["grid"], {"share": 0.8, "spacing": 10, "width": 96})
+        # A table the theme lacked is added; the file's comment stays.
+        self.assertEqual(theme["fan"], {"most": 8})
+        self.assertTrue(text.startswith("# made by hand\n"))
+        # A theme made after the updates is left alone, and so is one up to date.
+        self.assertEqual((themes / "lion-new" / "theme.toml").read_text(), current)
+        self.assertEqual(refresh_themes.refresh(looks, themes), [])
 
 
 class TestPointerSettings(SessionTestCase):

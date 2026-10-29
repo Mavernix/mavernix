@@ -65,6 +65,12 @@ Item {
                 BodyText {
                     text: modelData.description + " " + (window.words.made_from ?? "Made from %1.").arg(modelData.source)
                 }
+                // An imported look that a new import would bring something to.
+                BodyText {
+                    visible: (modelData.import_brings ?? []).length > 0
+                    text: (window.words.import_brings ?? "Importing again brings: %1")
+                              .arg((modelData.import_brings ?? []).join(" "))
+                }
                 BodyText {
                     visible: modelData.licence_note !== ""
                     secondary: true
