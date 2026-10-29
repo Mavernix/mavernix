@@ -16,6 +16,7 @@ import socket
 import struct
 import sys
 import tomllib
+from itertools import takewhile
 from pathlib import Path
 
 from paths import SESSION_DIR, SHELL_DIR
@@ -284,7 +285,7 @@ DENSE_SCREEN_DPI = 170
 
 def connected_screens(directory=SCREENS_DIRECTORY):
     """The screens that are plugged in:
-    { "eDP-1": { "width": 2560, "dpi": 191.0, "sizes": {"2560x1600"} } }.
+    { "eDP-1": { "width": 2560, "height": 1600, "dpi": 191.0, "sizes": {"2560x1600"} } }.
 
     The density comes from the best mode and the EDID's physical width
     (byte 21, centimetres); None if the screen reports no size.
@@ -295,14 +296,14 @@ def connected_screens(directory=SCREENS_DIRECTORY):
             if (folder / "status").read_text().strip() != "connected":
                 continue
             sizes = (folder / "modes").read_text().split()
-            width = int(sizes[0].split("x")[0])
+            width, height = (int("".join(takewhile(str.isdigit, side))) for side in sizes[0].split("x")[:2])
             edid = (folder / "edid").read_bytes()
         except (OSError, ValueError):
             continue
         name = folder.name.split("-", 1)[1]
         width_cm = edid[21] if len(edid) > 22 else 0
         dpi = width / (width_cm / 2.54) if width_cm > 0 else None
-        screens[name] = {"width": width, "dpi": dpi, "sizes": set(sizes)}
+        screens[name] = {"width": width, "height": height, "dpi": dpi, "sizes": set(sizes)}
     return screens
 
 
@@ -349,7 +350,8 @@ def custom_mode(mode, screen):
 
 
 def screen_positions():
-    """Where the running compositor has put each screen: { "HDMI-A-1": "1920,0" }.
+    """Where the running compositor has put each screen, and how wide it is
+    there: { "HDMI-A-1": { "position": "1920,0", "width": 1280 } }.
 
     Empty outside a session, or if the compositor does not answer.
     """
@@ -368,8 +370,41 @@ def screen_positions():
         return {}
     if not isinstance(outputs, list):
         return {}
-    return {output["name"]: f'{int(output["geometry"]["x"])},{int(output["geometry"]["y"])}'
+    return {output["name"]: {"position": f'{int(output["geometry"]["x"])},{int(output["geometry"]["y"])}',
+                             "width": int(output["geometry"]["width"])}
             for output in outputs if "name" in output and "geometry" in output}
+
+
+ROTATED = ("90", "270", "flipped-90", "flipped-270")
+
+
+def drawn_width(own, scale, screen):
+    """How wide a screen is on the desktop with these settings; None if unknown."""
+    try:
+        width, height = (int(side) for side in str(own["mode"]).split("@")[0].split("x"))
+    except (KeyError, ValueError):
+        width, height = screen.get("width"), screen.get("height")
+    if str(own.get("transform", "normal")) in ROTATED:
+        width = height
+    return width / float(scale) if width else None
+
+
+def screen_scale(own, general, screen):
+    """The scale a screen is drawn at: its own, the general one, or for
+    "auto" 2 on a dense screen and 1 on any other."""
+    scale = own.get("scale", general)
+    if scale != "auto":
+        return scale
+    dpi = screen.get("dpi")
+    # A smaller mode stretched to the panel is that much less dense.
+    native_width = screen.get("width")
+    try:
+        chosen_width = int(str(own["mode"]).split("x")[0])
+    except (KeyError, ValueError):
+        chosen_width = None
+    if dpi is not None and native_width and chosen_width:
+        dpi = dpi * chosen_width / native_width
+    return 2 if dpi is not None and dpi >= DENSE_SCREEN_DPI else 1
 
 
 def display_sections(config):
@@ -379,7 +414,8 @@ def display_sections(config):
     screen. A screen plugged in later gets the compositor's default, 1.
     With several screens, one the config does not place keeps where it is
     now: rewriting the config would otherwise undo an arrangement made
-    while the session runs.
+    while the session runs. Once a screen is to be wider or narrower than
+    it is now, the arrangement no longer fits, and Wayfire places them anew.
     """
     wishes = config.get("display", {})
     general = wishes.get("scale", "auto")
@@ -387,29 +423,25 @@ def display_sections(config):
     sections = []
     names = sorted(set(connected_screens()) | set(single))
     screens = connected_screens()
+    scales = {name: screen_scale(single.get(name, {}), general, screens.get(name, {})) for name in names}
     current = screen_positions()
+    for name, now in current.items():
+        width = drawn_width(single.get(name, {}), scales.get(name, 1), screens.get(name, {}))
+        # Fractional scales round to the pixel.
+        if width is not None and abs(width - now["width"]) > 1:
+            current = {}
+            break
     if len(current) < 2:
         current = {}
     for name in names:
         own = single.get(name, {})
-        scale = own.get("scale", general)
-        if scale == "auto":
-            dpi = screens.get(name, {}).get("dpi")
-            # A smaller mode stretched to the panel is that much less dense.
-            native_width = screens.get(name, {}).get("width")
-            try:
-                chosen_width = int(str(own["mode"]).split("x")[0])
-            except (KeyError, ValueError):
-                chosen_width = None
-            if dpi is not None and native_width and chosen_width:
-                dpi = dpi * chosen_width / native_width
-            scale = 2 if dpi is not None and dpi >= DENSE_SCREEN_DPI else 1
+        scale = scales[name]
         lines = [f"[output:{name}]", f"scale = {scale}"]
         for key in ("mode", "position", "transform"):
             if key in own:
                 lines.append(f"{key} = {own[key]}")
         if "position" not in own and name in current:
-            lines.append(f"position = {current[name]}")
+            lines.append(f"position = {current[name]['position']}")
         modeline = custom_mode(own["mode"], screens.get(name, {})) if "mode" in own else None
         if modeline is not None:
             lines.append(f"custom_mode = {modeline}")

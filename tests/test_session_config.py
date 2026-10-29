@@ -229,15 +229,18 @@ class TestScreenScale(SessionTestCase):
         finally:
             del sys.path[:2]
         screens = {"DP-1": {"width": 2560, "dpi": 93.0}, "HDMI-A-1": {"width": 1920, "dpi": 96.0}}
-        current = {"DP-1": "0,0", "HDMI-A-1": "2560,300"}
+        current = {"DP-1": {"position": "0,0", "width": 2560}, "HDMI-A-1": {"position": "2560,300", "width": 1920}}
         with unittest.mock.patch.object(make_wayfire_config, "connected_screens", return_value=screens), \
                 unittest.mock.patch.object(make_wayfire_config, "screen_positions", return_value=current):
             kept = make_wayfire_config.display_sections({})
             placed = make_wayfire_config.display_sections(
                 {"display": {"screens": {"HDMI-A-1": {"position": "0,1440"}}}})
+            # DP-1 at scale 2 is half as wide, and HDMI-A-1 would stand off by itself.
+            rescaled = make_wayfire_config.display_sections({"display": {"screens": {"DP-1": {"scale": 2}}}})
         self.assertIn("position = 2560,300", kept[1])
         self.assertIn("position = 0,1440", placed[1])
         self.assertEqual(1, sum(line.startswith("position") for line in placed[1]))
+        self.assertFalse(any(line.startswith("position") for section in rescaled for line in section))
 
 
 class TestPointerSettings(SessionTestCase):
