@@ -216,6 +216,19 @@ Item {
             return
         }
         entry.execute()
+        startBouncing()
+    }
+
+    // Runs one of the program's own entries (a desktop entry action, such as
+    // "New Window"). One that starts the program bounces like a launch.
+    function runAction(action) {
+        action.execute()
+        if (!running) {
+            startBouncing()
+        }
+    }
+
+    function startBouncing() {
         launching = true
         bounceAnimation.start()
     }

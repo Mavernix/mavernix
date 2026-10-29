@@ -1191,6 +1191,8 @@ PanelWindow {
     readonly property int orderBaseId: 200
     readonly property int viewBaseId: 300
     readonly property int fileBaseId: 10000
+    // A program's own entries (its desktop entry's actions) count from this.
+    readonly property int actionBaseId: 400
 
     function menuEntry(id, label, enabled, children) {
         return { id: id, label: label, enabled: enabled ?? true, separator: false,
@@ -1237,6 +1239,18 @@ PanelWindow {
             items.push(windowEntry)
         }
         if (windows.length > 0) {
+            items.push(menuSeparator())
+        }
+
+        // The program's own entries, such as "New Window", from its desktop
+        // entry, after its windows as on the original. The original offers
+        // them only while the program runs; [dock] actions_when_closed
+        // offers them always, to start a program straight into one.
+        const actions = tile.entry?.actions ?? []
+        if (actions.length > 0 && (tile.running || (config.actions_when_closed ?? true))) {
+            for (let number = 0; number < actions.length; number++) {
+                items.push(menuEntry(actionBaseId + number, actions[number].name))
+            }
             items.push(menuSeparator())
         }
 
@@ -1309,6 +1323,8 @@ PanelWindow {
             openFile(folderContents.entries[id - fileBaseId].path)
         } else if (id === openFolderId) {
             openFile(expandedPath(place.custom.folder))
+        } else if (id >= actionBaseId) {
+            tile.runAction(tile.entry.actions[id - actionBaseId])
         } else if (id >= viewBaseId) {
             const changed = Object.assign({}, place.custom, { view: folderViews[id - viewBaseId] })
             choices.set("dock", "groups", groupsReplacing(place.listedAs, changed))

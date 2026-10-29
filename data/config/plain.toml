@@ -319,6 +319,10 @@ trash_drop_command = ["gio", "trash"]
 # Initial view of a folder dropped onto the dock: "fan", "grid" or "list".
 new_folder_view = "list"
 
+# A program's own menu entries (such as "New Window") also while it is not
+# running, to start it straight into one.
+actions_when_closed = true
+
 [dock.trash_empty]
 command = ["gio", "trash", "--empty"]
 confirm = { title = "Delete everything in the wastebasket for good?", text = "This cannot be undone.", button = "Delete", cancel = "Cancel", icon = "user-trash-full" }
