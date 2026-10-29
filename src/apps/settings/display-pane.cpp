@@ -1,11 +1,11 @@
 #include "display-pane.hpp"
 
+#include <QCheckBox>
 #include <QDBusConnection>
 #include <QDBusMessage>
 #include <QDBusPendingCall>
 #include <QDir>
 #include <QFile>
-#include <QComboBox>
 #include <QFormLayout>
 #include <QGuiApplication>
 #include <QLabel>
@@ -21,6 +21,8 @@
 #include "choices.hpp"
 #include "display-modes.hpp"
 #include "pane-parts.hpp"
+#include "screen-arrangement.hpp"
+#include "screen-layout.hpp"
 
 // The screen's backlight, as the kernel offers it: the first one under
 // /sys/class/backlight. Empty if the screen has none (most desktop screens).
@@ -64,58 +66,41 @@ static const int slider_width_px = 260;
 static const int write_delay_ms = 500;
 // While the brightness slider is dragged, how often the screen follows it.
 static const int brightness_step_ms = 50;
+// Screens plugged in or taken out, and their sizes changing, come in bursts.
+static const int screens_settle_ms = 300;
 
 DisplayPane::DisplayPane(Choices& choices, QWidget* parent) : QWidget(parent), choices(choices)
 {
     words = choices.configTable(QStringLiteral("settings")).value(QStringLiteral("words")).toMap();
-    const auto word = [this](const char* key, const char* fallback) {
-        return words.value(QLatin1String(key), QString::fromUtf8(fallback)).toString();
-    };
-
     for (const double stop : scale_stops)
     {
         stops.append(stop);
     }
 
-    // The screen this window is on, in its own pixels: its size as programs
-    // see it, times how much larger than its pixels it is drawn now.
-    const QScreen* screen = QGuiApplication::primaryScreen();
-    const double drawn_scale = screen->devicePixelRatio();
-    screen_pixels =
-        QSize(std::lround(screen->size().width() * drawn_scale), std::lround(screen->size().height() * drawn_scale));
-
-    const QVariant held = choices.value(QStringLiteral("display"), QStringLiteral("scale"));
-    const bool is_automatic = !held.isValid() || (held.toString() == QLatin1String("auto"));
+    // With several screens: the picture of them, and whose settings follow.
+    arrangement = new ScreenArrangement;
+    arrangement_note = new QLabel;
+    arrangement_note->setEnabled(false);
+    arrangement_note->setAlignment(Qt::AlignHCenter);
+    arrangement_note->setText(in_lines_of(word("display_arrangement_note",
+        "Click a screen to change its settings below. Drag the screens to stand as they do on your desk, "
+        "and drag the bar along the top of one to move the menu bar and dock to another screen."),
+        arrangement_note->fontMetrics(), intro_width_px));
+    picked_title = new QLabel;
+    QFont title_font = picked_title->font();
+    title_font.setBold(true);
+    picked_title->setFont(title_font);
 
     automatic = new QRadioButton(word("display_automatic", "Automatic, for this screen"));
     chosen = new QRadioButton(word("display_chosen", "Custom"));
-    automatic->setChecked(is_automatic);
-    chosen->setChecked(!is_automatic);
-
-    // The slider stands at the scale that holds: the chosen one, or the one
-    // the desktop decided on.
-    const double shown_scale = is_automatic ? drawn_scale : held.toDouble();
-    int nearest = 0;
-    for (int stop = 0; stop < stops.size(); stop++)
-    {
-        if (std::abs(stops[stop] - shown_scale) < std::abs(stops[nearest] - shown_scale))
-        {
-            nearest = stop;
-        }
-    }
-
     scale = new QSlider(Qt::Horizontal);
     scale->setRange(0, stops.size() - 1);
     scale->setPageStep(1);
     scale->setTickPosition(QSlider::TicksBelow);
     scale->setTickInterval(1);
     scale->setFixedWidth(slider_width_px);
-    scale->setValue(nearest);
-    scale->setEnabled(!is_automatic);
-
     looks_like = new QLabel;
     looks_like->setEnabled(false);
-    showLooksLike();
 
     connect(automatic, &QRadioButton::toggled, this, [this](bool on) {
         scale->setEnabled(!on);
@@ -142,13 +127,13 @@ DisplayPane::DisplayPane(Choices& choices, QWidget* parent) : QWidget(parent), c
     });
 
     auto* choice = new QWidget;
-    auto* rows = new QVBoxLayout(choice);
-    rows->setContentsMargins(0, 0, 0, 0);
-    rows->setSpacing(8);
-    rows->addWidget(automatic);
-    rows->addWidget(chosen);
-    rows->addWidget(with_end_words(scale, word("display_larger", "Larger"), word("display_smaller", "More room")));
-    rows->addWidget(looks_like);
+    auto* choice_rows = new QVBoxLayout(choice);
+    choice_rows->setContentsMargins(0, 0, 0, 0);
+    choice_rows->setSpacing(8);
+    choice_rows->addWidget(automatic);
+    choice_rows->addWidget(chosen);
+    choice_rows->addWidget(with_end_words(scale, word("display_larger", "Larger"), word("display_smaller", "More room")));
+    choice_rows->addWidget(looks_like);
 
     const QString note = word("display_note", "");
     if (!note.isEmpty())
@@ -157,132 +142,46 @@ DisplayPane::DisplayPane(Choices& choices, QWidget* parent) : QWidget(parent), c
         auto* note_label = new QLabel;
         note_label->setEnabled(false);
         note_label->setText(in_lines_of(note, note_label->fontMetrics(), 260));
-        rows->addWidget(note_label);
+        choice_rows->addWidget(note_label);
     }
 
-    auto* form = new QFormLayout(this);
+    main_here = new QCheckBox(word("display_main_here", "Show the menu bar and dock on this screen"));
+    connect(main_here, &QCheckBox::toggled, this, [this](bool on) {
+        if (on)
+        {
+            this->choices.set(QStringLiteral("display"), QStringLiteral("main_screen"), picked);
+            arrangement->setMain(picked);
+            // Another screen is made the main one from there, not by unticking this one.
+            main_here->setEnabled(false);
+        }
+    });
+
+    auto* rows = new QVBoxLayout(this);
+    rows->setContentsMargins(0, 0, 0, 0);
+    rows->setSpacing(pane_spacing_px);
+    rows->addWidget(arrangement, 0, Qt::AlignHCenter);
+    rows->addWidget(arrangement_note, 0, Qt::AlignHCenter);
+    rows->addWidget(picked_title, 0, Qt::AlignHCenter);
+    form = new QFormLayout;
     form->setLabelAlignment(Qt::AlignRight | Qt::AlignTop);
     form->setFormAlignment(Qt::AlignHCenter | Qt::AlignTop);
+    rows->addLayout(form);
+    rows->addStretch();
+
     // The screen's resolution and refresh rate come first: what is drawn
     // larger or smaller is made of those pixels.
-    auto* modes = new DisplayModes(choices, this);
+    modes = new DisplayModes(choices, this);
     modes->addRowsTo(form);
     connect(modes, &DisplayModes::modeChanged, this, [this](const QString& name, QSize pixels) {
-        if (this->screen() != nullptr && this->screen()->name() == name)
+        if (name == picked)
         {
             screen_pixels = pixels;
             showLooksLike();
         }
+        tidyLater();
     });
     form->addRow(word("display_size", "Size of text and pictures:"), choice);
-
-    // With several screens: which one has the menu bar and the dock, and
-    // where each other one stands next to it. Takes effect at once; the
-    // compositor reads the positions ([display.screens.NAME] position).
-    const QList<QScreen*> screens = QGuiApplication::screens();
-    if (screens.size() > 1)
-    {
-        const QString wanted_main = choices.value(QStringLiteral("display"), QStringLiteral("main_screen")).toString();
-        auto* main_choice = new QComboBox;
-        for (QScreen* one : screens)
-        {
-            main_choice->addItem(QStringLiteral("%1 (%2)").arg(one->model().isEmpty() ? one->name() : one->model(), one->name()),
-                one->name());
-        }
-        main_choice->setCurrentIndex(qMax(0, main_choice->findData(wanted_main)));
-        form->addRow(word("display_main", "Menu bar and dock on:"), main_choice);
-
-        const struct
-        {
-            const char* key;
-            const char* word_key;
-            const char* fallback;
-        } places[] = {
-            {"right", "display_place_right", "right of the main screen"},
-            {"left", "display_place_left", "left of the main screen"},
-            {"above", "display_place_above", "above the main screen"},
-            {"below", "display_place_below", "below the main screen"},
-        };
-        auto* arrangement = new QWidget;
-        auto* arrangement_rows = new QFormLayout(arrangement);
-        arrangement_rows->setContentsMargins(0, 0, 0, 0);
-        QList<QComboBox*> place_choices;
-        for (QScreen* one : screens)
-        {
-            auto* place = new QComboBox;
-            for (const auto& choice : places)
-            {
-                place->addItem(word(choice.word_key, choice.fallback), QLatin1String(choice.key));
-            }
-            place->setProperty("screen", one->name());
-            place_choices << place;
-            arrangement_rows->addRow(one->name() + QLatin1Char(':'), place);
-        }
-
-        // The main screen at 0,0 and every other one beside it, in logical pixels.
-        const auto arrange = [this, main_choice, place_choices]() {
-            const QString main_name = main_choice->currentData().toString();
-            QScreen* main_screen = nullptr;
-            for (QScreen* one : QGuiApplication::screens())
-            {
-                if (one->name() == main_name)
-                {
-                    main_screen = one;
-                }
-            }
-            if (main_screen == nullptr)
-            {
-                return;
-            }
-            QVariantMap per_screen = this->choices.value(QStringLiteral("display"), QStringLiteral("screens")).toMap();
-            const QSize main_size = main_screen->size();
-            for (QComboBox* place : place_choices)
-            {
-                const QString name = place->property("screen").toString();
-                place->setEnabled(name != main_name);
-                QPoint at(0, 0);
-                QScreen* one = nullptr;
-                for (QScreen* candidate : QGuiApplication::screens())
-                {
-                    if (candidate->name() == name)
-                    {
-                        one = candidate;
-                    }
-                }
-                if (name != main_name && one != nullptr)
-                {
-                    const QString side = place->currentData().toString();
-                    at = side == QLatin1String("left")    ? QPoint(-one->size().width(), 0)
-                         : side == QLatin1String("above") ? QPoint(0, -one->size().height())
-                         : side == QLatin1String("below") ? QPoint(0, main_size.height())
-                                                          : QPoint(main_size.width(), 0);
-                }
-                QVariantMap screen = per_screen.value(name).toMap();
-                screen.insert(QStringLiteral("position"), QStringLiteral("%1,%2").arg(at.x()).arg(at.y()));
-                per_screen.insert(name, screen);
-            }
-            this->choices.set(QStringLiteral("display"), QStringLiteral("main_screen"), main_name);
-            this->choices.set(QStringLiteral("display"), QStringLiteral("screens"), per_screen);
-        };
-        // Where each screen stands now, read back from the saved positions.
-        const QVariantMap saved = choices.value(QStringLiteral("display"), QStringLiteral("screens")).toMap();
-        for (QComboBox* place : place_choices)
-        {
-            const QStringList at = saved.value(place->property("screen").toString()).toMap()
-                                       .value(QStringLiteral("position")).toString().split(QLatin1Char(','));
-            if (at.size() == 2)
-            {
-                const int x = at[0].toInt();
-                const int y = at[1].toInt();
-                const char* side = x < 0 ? "left" : (y < 0 ? "above" : (y > 0 && x == 0 ? "below" : "right"));
-                place->setCurrentIndex(qMax(0, place->findData(QLatin1String(side))));
-            }
-            place->setEnabled(place->property("screen").toString() != main_choice->currentData().toString());
-            connect(place, &QComboBox::activated, this, arrange);
-        }
-        connect(main_choice, &QComboBox::activated, this, arrange);
-        form->addRow(word("display_arrangement", "Arrangement:"), arrangement);
-    }
+    form->addRow(QString(), main_here);
 
     // Brightness, for a screen with a backlight; the brightness keys change it too.
     backlight = backlight_name();
@@ -294,36 +193,232 @@ DisplayPane::DisplayPane(Choices& choices, QWidget* parent) : QWidget(parent), c
         brightness->setMinimumWidth(220);
         brightness->setValue(backlight_percent(backlight));
         follow_slider(brightness, brightness_step_ms, [this](int percent) { set_backlight_percent(backlight, percent); });
-        form->addRow(word("display_brightness", "Brightness:"),
-            with_end_words(brightness, word("display_brightness_low", "Dim"), word("display_brightness_high", "Bright")));
+        brightness_row = with_end_words(brightness, word("display_brightness_low", "Dim"), word("display_brightness_high", "Bright"));
+        form->addRow(word("display_brightness", "Brightness:"), brightness_row);
     }
 
-    // The lists were made last but stand first.
+    connect(arrangement, &ScreenArrangement::picked, this, &DisplayPane::pick);
+    connect(arrangement, &ScreenArrangement::arranged, this,
+        [this](const QMap<QString, QRect>& screens) { writePositions(positions(screens, mainName())); });
+    connect(arrangement, &ScreenArrangement::mainChosen, this, [this](const QString& name) {
+        this->choices.set(QStringLiteral("display"), QStringLiteral("main_screen"), name);
+        pick(picked);
+    });
+
+    // Screens plugged in, taken out, rescaled or moved.
+    read_later = new QTimer(this);
+    read_later->setSingleShot(true);
+    read_later->setInterval(screens_settle_ms);
+    connect(read_later, &QTimer::timeout, this, &DisplayPane::readScreens);
+    const auto watch = [this](QScreen* screen) {
+        connect(screen, &QScreen::geometryChanged, read_later, qOverload<>(&QTimer::start));
+    };
+    for (QScreen* screen : QGuiApplication::screens())
+    {
+        watch(screen);
+    }
+    connect(qApp, &QGuiApplication::screenAdded, this, [this, watch](QScreen* screen) {
+        watch(screen);
+        read_later->start();
+        modes->ask();
+    });
+    connect(qApp, &QGuiApplication::screenRemoved, this, [this]() { read_later->start(); });
+
+    readScreens();
+    pick(mainName());
+
     QList<QWidget*> tab_order = modes->lists();
-    tab_order << automatic << chosen << scale;
+    tab_order << automatic << chosen << scale << main_here;
     for (int index = 1; index < tab_order.size(); index++)
     {
         setTabOrder(tab_order[index - 1], tab_order[index]);
     }
 }
 
+QString DisplayPane::word(const char* key, const char* fallback) const
+{
+    return words.value(QLatin1String(key), QString::fromUtf8(fallback)).toString();
+}
+
+// What a screen is called in the pane: its model, or for a laptop's own
+// panel just that. Two screens of one model are told apart by their names.
+static QString label_of(const QScreen* screen, const QString& built_in_word)
+{
+    if (is_built_in(screen->name()))
+    {
+        return built_in_word;
+    }
+    // Qt says "Unknown" for a screen that does not tell.
+    const QString model = screen->model();
+    if (model.isEmpty() || model == QLatin1String("Unknown"))
+    {
+        return screen->name();
+    }
+    for (const QScreen* other : QGuiApplication::screens())
+    {
+        if (other != screen && other->model() == model)
+        {
+            return QStringLiteral("%1 (%2)").arg(model, screen->name());
+        }
+    }
+    return model;
+}
+
+QString DisplayPane::mainName() const
+{
+    // As the shell decides: [display] main_screen if it is plugged in, else the first.
+    const QString wanted = choices.value(QStringLiteral("display"), QStringLiteral("main_screen")).toString();
+    const QList<QScreen*> screens = QGuiApplication::screens();
+    for (const QScreen* screen : screens)
+    {
+        if (screen->name() == wanted)
+        {
+            return wanted;
+        }
+    }
+    return screens.isEmpty() ? QString() : screens.first()->name();
+}
+
+QScreen* DisplayPane::pickedScreen() const
+{
+    for (QScreen* screen : QGuiApplication::screens())
+    {
+        if (screen->name() == picked)
+        {
+            return screen;
+        }
+    }
+    return nullptr;
+}
+
+void DisplayPane::readScreens()
+{
+    const QList<QScreen*> found = QGuiApplication::screens();
+    const QString built_in_word = word("display_built_in", "Built-in screen");
+    QList<ArrangedScreen> shown;
+    QMap<QString, QRect> now;
+    for (const QScreen* screen : found)
+    {
+        shown.append({screen->name(), label_of(screen, built_in_word), screen->geometry()});
+        now.insert(screen->name(), screen->geometry());
+    }
+    arrangement->setScreens(shown);
+    arrangement->setMain(mainName());
+
+    const bool several = found.size() > 1;
+    arrangement->setVisible(several);
+    arrangement_note->setVisible(several);
+    picked_title->setVisible(several);
+    form->setRowVisible(main_here, several);
+
+    if (tidy_pending)
+    {
+        tidy_pending = false;
+        const QMap<QString, QRect> tidy = tidied(now, mainName());
+        if (tidy != now)
+        {
+            writePositions(positions(tidy, mainName()));
+        }
+    }
+    // The picked screen was taken out, or this is the first reading.
+    if (pickedScreen() == nullptr)
+    {
+        pick(mainName());
+    }
+}
+
+void DisplayPane::pick(const QString& name)
+{
+    picked = name;
+    arrangement->setPicked(name);
+    const QScreen* screen = pickedScreen();
+    if (screen == nullptr)
+    {
+        return;
+    }
+    picked_title->setText(label_of(screen, word("display_built_in", "Built-in screen")));
+
+    // In its own pixels: its size as programs see it, times how much larger
+    // than its pixels it is drawn now.
+    const double drawn_scale = screen->devicePixelRatio();
+    screen_pixels =
+        QSize(std::lround(screen->size().width() * drawn_scale), std::lround(screen->size().height() * drawn_scale));
+
+    // Its own scale, else the one for every screen.
+    const QVariant own = choices.value(QStringLiteral("display"), QStringLiteral("screens"))
+                             .toMap().value(name).toMap().value(QStringLiteral("scale"));
+    const QVariant held = own.isValid() ? own : choices.value(QStringLiteral("display"), QStringLiteral("scale"));
+    const bool is_automatic = !held.isValid() || (held.toString() == QLatin1String("auto"));
+    // The slider stands at the scale that holds: the chosen one, or the one
+    // the desktop decided on.
+    const double shown_scale = is_automatic ? drawn_scale : held.toDouble();
+    int nearest = 0;
+    for (int stop = 0; stop < stops.size(); stop++)
+    {
+        if (std::abs(stops[stop] - shown_scale) < std::abs(stops[nearest] - shown_scale))
+        {
+            nearest = stop;
+        }
+    }
+    {
+        const QSignalBlocker quiet_automatic(automatic);
+        const QSignalBlocker quiet_chosen(chosen);
+        const QSignalBlocker quiet_scale(scale);
+        automatic->setChecked(is_automatic);
+        chosen->setChecked(!is_automatic);
+        scale->setValue(nearest);
+        scale->setEnabled(!is_automatic);
+    }
+    showLooksLike();
+    modes->showScreenNamed(name);
+
+    {
+        const QSignalBlocker quiet(main_here);
+        const bool is_main = name == mainName();
+        main_here->setChecked(is_main);
+        main_here->setEnabled(!is_main);
+    }
+    // The backlight is the built-in panel's.
+    if (brightness_row != nullptr)
+    {
+        form->setRowVisible(brightness_row, QGuiApplication::screens().size() < 2 || is_built_in(name));
+    }
+}
+
 void DisplayPane::write()
 {
-    if (automatic->isChecked())
+    // The whole table is written: a screen's other keys stay as they are.
+    QVariantMap all = choices.value(QStringLiteral("display"), QStringLiteral("screens")).toMap();
+    QVariantMap own = all.value(picked).toMap();
+    own.insert(QStringLiteral("scale"),
+        automatic->isChecked() ? QVariant(QStringLiteral("auto")) : QVariant(stops[scale->value()]));
+    all.insert(picked, own);
+    choices.set(QStringLiteral("display"), QStringLiteral("screens"), all);
+    tidyLater();
+}
+
+void DisplayPane::writePositions(const QMap<QString, QPoint>& positions)
+{
+    QVariantMap all = choices.value(QStringLiteral("display"), QStringLiteral("screens")).toMap();
+    for (auto at = positions.constBegin(); at != positions.constEnd(); ++at)
     {
-        choices.set(QStringLiteral("display"), QStringLiteral("scale"), QStringLiteral("auto"));
+        QVariantMap own = all.value(at.key()).toMap();
+        own.insert(QStringLiteral("position"), QStringLiteral("%1,%2").arg(at.value().x()).arg(at.value().y()));
+        all.insert(at.key(), own);
     }
-    else
-    {
-        choices.set(QStringLiteral("display"), QStringLiteral("scale"), stops[scale->value()]);
-    }
+    choices.set(QStringLiteral("display"), QStringLiteral("screens"), all);
+}
+
+void DisplayPane::tidyLater()
+{
+    // Done once the compositor has drawn the screen at its new size.
+    tidy_pending = QGuiApplication::screens().size() > 1;
 }
 
 void DisplayPane::showLooksLike()
 {
     const double at = stops[scale->value()];
-    const QString text =
-        words.value(QStringLiteral("display_looks_like"), QStringLiteral("Room for %1 × %2")).toString();
+    const QString text = word("display_looks_like", "Room for %1 × %2");
     looks_like->setText(
         text.arg(std::lround(screen_pixels.width() / at)).arg(std::lround(screen_pixels.height() / at)));
 }

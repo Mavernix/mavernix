@@ -9,7 +9,7 @@
 - Bluetooth keyboards, phones and other devices that ask for a PIN or a code can now be paired. Clicking a device in the Bluetooth menu connects or disconnects it.
 - Clicking the desktop now makes the open window inactive, and the menu bar shows the desktop's own menus.
 - Settings has a brightness slider for laptop screens, and volume sliders for your speakers and microphone.
-- With more than one screen, Settings, Display lets you pick which screen has the menu bar and the dock, and where the others stand next to it. Your arrangement is no longer lost when you change other settings.
+- With more than one screen, Settings, Display shows a picture of them as they stand. Click one to change its resolution and size of text, drag them to arrange them, and drag the menu bar onto another screen to move the menu bar and dock there. Your arrangement is no longer lost when you change other settings.
 - You can choose which icons show in the menu bar, switch the clock to 24 hours, and hide the files on the desktop.
 - Lock Screen is now in the menu bar's session menu, and in Sea Lion's Apple menu.
 - You get a warning when the battery runs low, and the battery menu has a shortcut to the Energy settings.

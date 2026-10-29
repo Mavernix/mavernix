@@ -33,6 +33,11 @@ tests = {
         'include': test_sources / 'apps/settings',
         'dependencies': [],
     },
+    'screen-layout': {
+        'sources': [test_sources / 'apps/settings/screen-layout.cpp'],
+        'include': test_sources / 'apps/settings',
+        'dependencies': [],
+    },
 }
 
 foreach name, test_parts : tests

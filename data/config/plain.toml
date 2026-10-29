@@ -588,15 +588,11 @@ mouse_primary_left = "Left"
 mouse_primary_right = "Right"
 display_title = "Display"
 display_brightness = "Brightness:"
-display_main = "Menu bar and dock on:"
-display_arrangement = "Arrangement:"
-display_place_right = "right of the main screen"
-display_place_left = "left of the main screen"
-display_place_above = "above the main screen"
-display_place_below = "below the main screen"
+display_arrangement_note = "Click a screen to change its settings below. Drag the screens to stand as they do on your desk, and drag the bar along the top of one to move the menu bar and dock to another screen."
+display_main_here = "Show the menu bar and dock on this screen"
+display_built_in = "Built-in screen"
 display_brightness_low = "Dim"
 display_brightness_high = "Bright"
-display_screen = "Screen:"
 display_resolution = "Resolution:"
 display_refresh = "Refresh rate:"
 display_recommended = "%1 (recommended)"
@@ -651,7 +647,7 @@ volume_step = 0.0625
 
 [display]
 # Scale factor. "auto" uses 2 on dense screens and 1 elsewhere. Fractions
-# work but blur the theme's pictures.
+# work but blur the theme's pictures. A screen's own scale (below) wins.
 scale = "auto"
 # The screen for the panel and dock (default: the first listed):
 # main_screen = "eDP-1"

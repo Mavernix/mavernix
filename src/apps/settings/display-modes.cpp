@@ -2,12 +2,11 @@
 
 #include <QComboBox>
 #include <QFormLayout>
-#include <QGuiApplication>
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QMessageBox>
 #include <QPushButton>
-#include <QScreen>
+#include <QSignalBlocker>
 #include <QTimer>
 #include <QWidget>
 
@@ -41,17 +40,19 @@ DisplayModes::DisplayModes(Choices& choices, QWidget* pane) : QObject(pane), cho
 {
     words = choices.configTable(QStringLiteral("settings")).value(QStringLiteral("words")).toMap();
 
-    screen_list = new QComboBox;
     resolution_list = new QComboBox;
     refresh_list = new QComboBox;
 
-    connect(screen_list, &QComboBox::currentIndexChanged, this, &DisplayModes::showScreen);
     connect(resolution_list, &QComboBox::activated, this, [this]() {
         showRefreshRates();
         choose();
     });
     connect(refresh_list, &QComboBox::activated, this, &DisplayModes::choose);
+    ask();
+}
 
+void DisplayModes::ask()
+{
     ask_compositor(
         QStringLiteral("screen-modes/list"), this, [this](const QJsonObject& answer, const QString& problem) {
         if (!problem.isEmpty())
@@ -82,18 +83,33 @@ DisplayModes::DisplayModes(Choices& choices, QWidget* pane) : QObject(pane), cho
 void DisplayModes::addRowsTo(QFormLayout* rows)
 {
     form = rows;
-    form->addRow(word("display_screen", "Screen:"), screen_list);
     form->addRow(word("display_resolution", "Resolution:"), resolution_list);
     form->addRow(word("display_refresh", "Refresh rate:"), refresh_list);
-    for (QWidget* list : {screen_list, resolution_list, refresh_list})
-    {
-        form->setRowVisible(list, false);
-    }
+    form->setRowVisible(resolution_list, false);
+    form->setRowVisible(refresh_list, false);
 }
 
 QList<QWidget*> DisplayModes::lists() const
 {
-    return {screen_list, resolution_list, refresh_list};
+    return {resolution_list, refresh_list};
+}
+
+void DisplayModes::showScreenNamed(const QString& name)
+{
+    shown_name = name;
+    showScreen();
+}
+
+int DisplayModes::shownIndex() const
+{
+    for (int index = 0; index < screens.size(); index++)
+    {
+        if (screens[index].name == shown_name)
+        {
+            return index;
+        }
+    }
+    return -1;
 }
 
 void DisplayModes::showScreens(const QList<ModedScreen>& found)
@@ -106,37 +122,19 @@ void DisplayModes::showScreens(const QList<ModedScreen>& found)
             screens.append(screen);
         }
     }
-    if (screens.isEmpty() || form == nullptr)
-    {
-        return;
-    }
-
-    // The screen this window is on comes first to hand.
-    const QString this_screen = pane->screen() != nullptr ? pane->screen()->name() : QString();
-    int shown = 0;
-    {
-        const QSignalBlocker quiet(screen_list);
-        for (int index = 0; index < screens.size(); index++)
-        {
-            const ModedScreen& screen = screens[index];
-            screen_list->addItem(screen.description.isEmpty() ? screen.name : screen.description);
-            if (screen.name == this_screen)
-            {
-                shown = index;
-            }
-        }
-        screen_list->setCurrentIndex(shown);
-    }
-    showScreen(shown);
-
-    form->setRowVisible(screen_list, screens.size() > 1);
-    form->setRowVisible(resolution_list, true);
-    form->setRowVisible(refresh_list, true);
+    showScreen();
 }
 
-void DisplayModes::showScreen(int index)
+void DisplayModes::showScreen()
 {
-    if (index < 0 || index >= screens.size())
+    // A virtual screen, or one the compositor has not told of yet, has no rows.
+    const int index = shownIndex();
+    if (form != nullptr)
+    {
+        form->setRowVisible(resolution_list, index >= 0);
+        form->setRowVisible(refresh_list, index >= 0);
+    }
+    if (index < 0)
     {
         return;
     }
@@ -177,8 +175,8 @@ void DisplayModes::showScreen(int index)
 
 void DisplayModes::showRefreshRates()
 {
-    const int index = screen_list->currentIndex();
-    if (index < 0 || index >= screens.size())
+    const int index = shownIndex();
+    if (index < 0)
     {
         return;
     }
@@ -225,8 +223,8 @@ void DisplayModes::showRefreshRates()
 
 void DisplayModes::choose()
 {
-    const int index = screen_list->currentIndex();
-    if (index < 0 || index >= screens.size())
+    const int index = shownIndex();
+    if (index < 0)
     {
         return;
     }
@@ -253,7 +251,7 @@ void DisplayModes::choose()
     else
     {
         writeMode(name, before);
-        showScreen(index);
+        showScreen();
     }
 }
 

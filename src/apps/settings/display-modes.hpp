@@ -1,5 +1,6 @@
-// The Display pane's choice of resolution and refresh rate for each screen,
-// from the modes the compositor reports (src/compositor/screen-modes/). A
+// The Display pane's choice of resolution and refresh rate for the screen
+// picked in the pane, from the modes the compositor reports
+// (src/compositor/screen-modes/). A
 // choice is written to [display.screens.NAME] mode and kept only if the user
 // says so within a few seconds, so a mode the screen cannot show undoes
 // itself. Without the compositor's answer, or for a virtual screen with no
@@ -40,6 +41,10 @@ class DisplayModes : public QObject
     void addRowsTo(QFormLayout* form);
     // Top to bottom, for the pane's tab order.
     QList<QWidget*> lists() const;
+    // The screen whose modes the rows show.
+    void showScreenNamed(const QString& name);
+    // Asks the compositor again, as when a screen is plugged in.
+    void ask();
 
   signals:
     // The screen `name` now shows this many pixels.
@@ -47,7 +52,9 @@ class DisplayModes : public QObject
 
   private:
     void showScreens(const QList<ModedScreen>& found);
-    void showScreen(int index);
+    void showScreen();
+    // The shown screen's place in `screens`; -1 if it reported no modes.
+    int shownIndex() const;
     void showRefreshRates();
     void choose();
     // The user's [display.screens.NAME] mode; empty for the screen's own.
@@ -61,7 +68,7 @@ class DisplayModes : public QObject
     QWidget* pane;
     QVariantMap words;
     QFormLayout* form = nullptr;
-    QComboBox* screen_list;
+    QString shown_name;
     QComboBox* resolution_list;
     QComboBox* refresh_list;
     QList<ModedScreen> screens;
