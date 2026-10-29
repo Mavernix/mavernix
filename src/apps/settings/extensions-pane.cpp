@@ -28,6 +28,8 @@ static const int tick_box_width_px = 40;
 static const int detail_icon_size_px = 48;
 // A setting stands in line with the words of the switch above it.
 static const int setting_indent_px = 22;
+// Enough for a setting like 0.125.
+static const int setting_decimals = 3;
 
 ExtensionsPane::ExtensionsPane(Choices& choices, QWidget* parent) : QWidget(parent), choices(choices)
 {
@@ -259,6 +261,7 @@ void ExtensionsPane::showExtension(const QString& name)
     const QVariantMap settings_now = found.value(name).toMap().value(QStringLiteral("settings")).toMap();
     const QVariantMap chosen = choices.value(QStringLiteral("extensions"), name).toMap();
     const QVariantMap labels = manifest.value(QStringLiteral("settings_labels")).toMap();
+    const QStringList decimal_settings = found.value(name).toMap().value(QStringLiteral("decimal_settings")).toStringList();
     for (auto label = labels.constBegin(); label != labels.constEnd(); ++label)
     {
         const QString key = label.key();
@@ -267,26 +270,38 @@ void ExtensionsPane::showExtension(const QString& name)
         if (value.typeId() != QMetaType::Bool)
         {
             QWidget* field = nullptr;
-            // Settings come as JSON, where every number is a double: a whole
-            // number gets a whole-number field.
-            const bool whole = value.typeId() == QMetaType::Double && value.toDouble() == double(qRound64(value.toDouble()));
-            if (value.typeId() == QMetaType::Double && !whole)
+            // JSON readers take 1.0 for 1, so whether a number has decimals
+            // comes from its default in extension.toml.
+            const bool number_type = value.typeId() == QMetaType::Double || value.typeId() == QMetaType::Int
+                || value.typeId() == QMetaType::LongLong;
+            if (number_type && decimal_settings.contains(key))
             {
                 auto* number = new QDoubleSpinBox;
                 number->setRange(-1e6, 1e6);
-                number->setDecimals(2);
+                number->setDecimals(setting_decimals);
                 number->setValue(value.toDouble());
-                connect(number, &QDoubleSpinBox::editingFinished, this,
-                    [this, name, key, number]() { changeSetting(name, key, number->value()); });
+                // Leaving the field also ends editing; an untouched value is not written back.
+                connect(number, &QDoubleSpinBox::editingFinished, this, [this, name, key, number, was = number->value()]() mutable {
+                    if (number->value() != was)
+                    {
+                        was = number->value();
+                        changeSetting(name, key, was);
+                    }
+                });
                 field = number;
             }
-            else if (whole || value.typeId() == QMetaType::Int || value.typeId() == QMetaType::LongLong)
+            else if (number_type)
             {
                 auto* number = new QSpinBox;
                 number->setRange(-1000000, 1000000);
                 number->setValue(value.toInt());
-                connect(number, &QSpinBox::editingFinished, this,
-                    [this, name, key, number]() { changeSetting(name, key, number->value()); });
+                connect(number, &QSpinBox::editingFinished, this, [this, name, key, number, was = number->value()]() mutable {
+                    if (number->value() != was)
+                    {
+                        was = number->value();
+                        changeSetting(name, key, was);
+                    }
+                });
                 field = number;
             }
             else if (value.typeId() == QMetaType::QString)

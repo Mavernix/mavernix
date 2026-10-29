@@ -34,14 +34,14 @@ left = []                         # if the desktop config lists an item itself, 
 keep_items = 20
 show_counter = true
 
-[settings_labels]                 # optional: yes-or-no settings that get a tick box in the settings window
+[settings_labels]                 # optional: settings shown in the settings window: a tick box for yes-or-no, a field for a number or a text
 show_counter = "Show how many items are kept"
 
 [words]                           # optional: its wording, so you can change it in one place
 clear = "Clear History"
 ```
 
-You can change a setting in the settings window (only the yes-or-no ones that have a label), or in the desktop config, in a table named after the extension: `[extensions.NAME]`. Changes reach the extension while it runs. Both `extension.settings` in its running part and `panel.extensions.info("NAME").settings` in a panel item follow along.
+You can change a setting in the settings window (only the ones that have a label; a number takes decimals if its default is written with them, like `1.0`), or in the desktop config, in a table named after the extension: `[extensions.NAME]`. Changes reach the extension while it runs. Both `extension.settings` in its running part and `panel.extensions.info("NAME").settings` in a panel item follow along.
 
 ## The rules the desktop's own parts follow hold here too
 

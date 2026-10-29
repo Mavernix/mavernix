@@ -16,12 +16,15 @@ this resolves both and writes one JSON file:
       "desktops": ["plain", "sea-lion", "sea-lion-dark"],
       "default_desktop_file": "/full/path/of/the/user's/choice/of/desktop",
       "user": { "name": "me", "full_name": "My Name", "picture": "/home/me/.face" },
-      "extensions": { "NAME": { "directory": "...", "manifest": { ... }, "looks": { ... }, "settings": { ... } } }
+      "extensions": { "NAME": { "directory": "...", "manifest": { ... }, "looks": { ... }, "settings": { ... },
+                              "decimal_settings": [ ... ] } }
     }
 
 `config` includes the user's changes (user_choices.py); `shortcut_defaults`
 is without them, for "Restore Default". `extensions` lists every extension
-found, enabled or not (docs/extensions.md). Nothing else is interpreted here.
+found, enabled or not (docs/extensions.md); each one's `decimal_settings` names the
+settings whose default has a decimal point, since a JSON reader takes 1.0 for 1.
+Nothing else is interpreted here.
 """
 
 import argparse
@@ -91,6 +94,7 @@ def found_extensions(config, theme_name):
                 print(f"make_shell_config: leaving out the extension in {directory}: {error}", file=sys.stderr)
                 continue
             settings = dict(manifest.get("settings", {}))
+            decimal_settings = [key for key, default in settings.items() if isinstance(default, float)]
             wishes = config.get("extensions", {}).get(directory.name, {})
             if isinstance(wishes, dict):
                 settings.update(wishes)
@@ -99,6 +103,7 @@ def found_extensions(config, theme_name):
                 "manifest": manifest,
                 "looks": looks,
                 "settings": settings,
+                "decimal_settings": decimal_settings,
             }
     return found
 
