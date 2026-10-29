@@ -1,5 +1,6 @@
 // A clear full-screen window above everything that shows an open folder's
-// grid or fan. A press outside it closes it.
+// grid or fan. A press outside it, or Escape, closes it; a grid takes the
+// other keys (FolderGrid.handleKey).
 
 import QtQuick
 import Quickshell
@@ -61,13 +62,26 @@ PanelWindow {
     // positions on the screen.
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+    // The keys, while open, as a menu takes them.
+    WlrLayershell.keyboardFocus: open ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     color: "transparent"
 
     MouseArea {
         anchors.fill: parent
         acceptedButtons: Qt.AllButtons
         onPressed: overlay.dismissed()
+    }
+
+    Item {
+        focus: overlay.open
+        Keys.onPressed: event => {
+            if (event.key === Qt.Key_Escape) {
+                overlay.dismissed()
+            } else if (overlay.view !== "grid" || !grid.handleKey(event)) {
+                return
+            }
+            event.accepted = true
+        }
     }
 
     FolderFan {

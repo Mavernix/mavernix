@@ -320,12 +320,15 @@ class TestRefreshThemes(SessionTestCase):
         (looks / "lion" / "look.toml").write_text('themes = ["lion", "lion-new"]\n')
         (looks / "lion" / "updates.toml").write_text(
             '[[update]]\nrevision = 1\n[update.settings."dock.grid"]\nshare = 0.8\nspacing = 28\n'
+            '[[update.corrections]]\ntable = "dock.grid"\nkey = "width"\nwas = 96\nnow = 100\n'
+            '[[update.corrections]]\ntable = "dock.grid"\nkey = "height"\nwas = 96\nnow = 100\n'
             '[[update]]\nrevision = 2\n[update.settings.fan]\nmost = 8\n')
         themes = folder / "themes"
         (themes / "lion").mkdir(parents=True)
         (themes / "lion-new").mkdir()
-        # From before revisions were kept, with one of the new keys set by hand.
-        old = '# made by hand\n[theme]\nname = "Lion"\n\n[dock.grid]\nspacing = 10\nwidth = 96\n'
+        # From before revisions were kept, with one of the new keys and one
+        # corrected value set by hand.
+        old = '# made by hand\n[theme]\nname = "Lion"\n\n[dock.grid]\nspacing = 10\nwidth = 96\nheight = 90\n'
         (themes / "lion" / "theme.toml").write_text(old)
         current = '[theme]\nname = "Lion"\nrevision = 2\n'
         (themes / "lion-new" / "theme.toml").write_text(current)
@@ -333,7 +336,8 @@ class TestRefreshThemes(SessionTestCase):
         self.assertEqual(refresh_themes.refresh(looks, themes), ["lion"])
         text = (themes / "lion" / "theme.toml").read_text()
         theme = tomllib.loads(text)
-        self.assertEqual(theme["dock"]["grid"], {"share": 0.8, "spacing": 10, "width": 96})
+        # The import's 96 is corrected; the hand-set 90 stays.
+        self.assertEqual(theme["dock"]["grid"], {"share": 0.8, "spacing": 10, "width": 100, "height": 90})
         # A table the theme lacked is added; the file's comment stays.
         self.assertEqual(theme["fan"], {"most": 8})
         self.assertTrue(text.startswith("# made by hand\n"))

@@ -1,5 +1,7 @@
 #include "file-kind.hpp"
 
+#include "file-moment.hpp"
+
 #include <QFileInfo>
 #include <QMimeDatabase>
 #include <QMimeType>
@@ -21,4 +23,14 @@ QVariantMap FileKind::iconsFor(const QString& path) const
 bool FileKind::isFolder(const QString& path) const
 {
     return QFileInfo(path).isDir();
+}
+
+double FileKind::momentOf(const QString& path, const QString& order) const
+{
+    const QFileInfo file(path);
+    if (!file.exists())
+    {
+        return 0;
+    }
+    return static_cast<double>(moment_for(file, order).toMSecsSinceEpoch());
 }

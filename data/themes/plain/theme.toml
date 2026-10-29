@@ -620,8 +620,12 @@ title_baseline = 19
 title_color = "#20202070"
 screen_margin = 8
 stage_share = 0.8
+selection = { color = "#3a6ea533", radius = 6 }
+scroll_fade = 8
+scroll_snap_ms = 150
 scroll_bar_width = 4
 scroll_bar_color = "#20202060"
+scroll_bar_fade_ms = 300
 
 [dock.label]
 background = "#202020f0"

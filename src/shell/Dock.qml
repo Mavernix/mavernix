@@ -354,13 +354,16 @@ PanelWindow {
         id: fileKinds
     }
 
-    // Whether a path is one of the directories desktop entries are installed
-    // in: "applications" under XDG_DATA_HOME or one of XDG_DATA_DIRS.
-    function isProgramDirectory(path) {
+    // The directories desktop entries are installed in, the user's first:
+    // "applications" under XDG_DATA_HOME and each of XDG_DATA_DIRS.
+    function programDirectories() {
         const dataHome = Quickshell.env("XDG_DATA_HOME") || Quickshell.env("HOME") + "/.local/share"
         const dataDirs = (Quickshell.env("XDG_DATA_DIRS") || "/usr/local/share:/usr/share").split(":")
-        return [dataHome].concat(dataDirs).some(
-            directory => directory.replace(/\/$/, "") + "/applications" === path)
+        return [dataHome].concat(dataDirs).map(directory => directory.replace(/\/$/, "") + "/applications")
+    }
+
+    function isProgramDirectory(path) {
+        return programDirectories().includes(path)
     }
 
     function droppedEntry(path) {
@@ -1408,11 +1411,11 @@ PanelWindow {
     // (fan, grid or a list menu); its own menu changes view and order.
     //
     // A custom place with `programs = true` is a folder of the installed
-    // programs, sorted by name. There is no real folder to read: a system's
-    // programs are desktop entries spread over several directories, some of
-    // them hidden. Its entries' paths are desktop entry IDs, and its last
-    // entry opens the application grid instead of a file manager. It has no
-    // list view, which would be a menu taller than the screen.
+    // programs. There is no real folder to read: a system's programs are
+    // desktop entries spread over several directories, some of them hidden.
+    // Its entries' paths are desktop entry IDs, and its last entry opens the
+    // application grid instead of a file manager. It has no list view, which
+    // would be a menu taller than the screen, and menus cannot scroll yet.
 
     readonly property var folderOrders: ["name", "added", "modified", "created", "kind"]
     readonly property var folderViews: ["fan", "grid", "list"]
@@ -1435,18 +1438,42 @@ PanelWindow {
         return viewsOf(folder).includes(view) ? view : fallback
     }
 
-    // The installed programs as folder entries, in FolderContents' form.
-    function programEntries() {
+    // The file of a desktop entry, found the way the desktop's own lookup
+    // finds it: the first directory that has it wins. "" if none has it.
+    function programFile(id) {
+        const name = id + ".desktop"
+        for (const directory of programDirectories()) {
+            if (fileKinds.momentOf(directory + "/" + name, "modified") > 0) {
+                return directory + "/" + name
+            }
+        }
+        return ""
+    }
+
+    // The installed programs as folder entries, in FolderContents' form, in
+    // one of folderOrders: by name; by the date of their desktop entry
+    // ("added" is when it was installed), newest first; or by "kind", their
+    // main category, then by name.
+    function programEntries(order) {
         const shown = DesktopEntries.applications.values.filter(entry => !entry.noDisplay)
-        shown.sort((first, second) => first.name.localeCompare(second.name))
+        const byName = (first, second) => first.name.localeCompare(second.name)
+        if (order === "kind") {
+            const kind = entry => entry.categories.length > 0 ? entry.categories[0] : ""
+            shown.sort((first, second) => kind(first).localeCompare(kind(second)) || byName(first, second))
+        } else if (order === "added" || order === "modified" || order === "created") {
+            const moments = new Map(shown.map(entry => [entry, fileKinds.momentOf(programFile(entry.id), order)]))
+            shown.sort((first, second) => moments.get(second) - moments.get(first) || byName(first, second))
+        } else {
+            shown.sort(byName)
+        }
         return shown.map(entry => ({ name: entry.name, path: entry.id,
                                      icon: themeIcons.nameFor(entry),
                                      genericIcon: "application-x-executable" }))
     }
 
     // What the open folder shows.
-    readonly property var listedEntries:
-        isProgramFolder(listedFolder) ? programEntries() : folderContents.entries
+    readonly property var listedEntries: isProgramFolder(listedFolder)
+        ? programEntries(listedFolder.order ?? "name") : folderContents.entries
 
     function openFolderEntry(folder, path) {
         if (!isProgramFolder(folder)) {
@@ -1522,14 +1549,10 @@ PanelWindow {
         const viewWords = { fan: words.view_fan ?? "Fan", grid: words.view_grid ?? "Grid",
                             list: words.view_list ?? "List" }
 
-        const items = []
-        // The programs have one order, by name.
-        if (!isProgramFolder(folder)) {
-            items.push(heading(words.sort_by ?? "Sort by"))
-            folderOrders.forEach((order, number) => items.push(
-                ticked(orderBaseId + number, orderWords[number], (folder.order ?? "name") === order)))
-            items.push(menuSeparator())
-        }
+        const items = [heading(words.sort_by ?? "Sort by")]
+        folderOrders.forEach((order, number) => items.push(
+            ticked(orderBaseId + number, orderWords[number], (folder.order ?? "name") === order)))
+        items.push(menuSeparator())
         items.push(heading(words.view_as ?? "Show contents as"))
         viewsOf(folder).forEach((view, number) => items.push(
             ticked(viewBaseId + number, viewWords[view], viewOf(folder) === view)))
