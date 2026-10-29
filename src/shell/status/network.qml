@@ -120,6 +120,16 @@ StatusItem {
     readonly property int disconnectId: 4
     readonly property int networkBaseId: 1000
 
+    // A network keeps its id while the list re-sorts by signal strength, so
+    // a click joins the network that was clicked. Network name -> id.
+    readonly property var networkIds: ({})
+    function networkId(name) {
+        if (!(name in networkIds)) {
+            networkIds[name] = networkBaseId + Object.keys(networkIds).length
+        }
+        return networkIds[name]
+    }
+
     function entry(id, label, enabled) {
         return { id: id, label: label, enabled: enabled, separator: false,
                  checkable: false, checked: false, shortcut: [], children: [] }
@@ -152,7 +162,7 @@ StatusItem {
                 }
                 for (let index = 0; index < networks.length; index++) {
                     const network = networks[index]
-                    const row = entry(networkBaseId + index, network.name, !network.stateChanging)
+                    const row = entry(networkId(network.name), network.name, !network.stateChanging)
                     row.checkable = true
                     row.checked = network.connected
                     const lock = isOpen(network) ? [] : [picture(words.lock_icon ?? "network-wireless-encrypted")]
@@ -187,7 +197,7 @@ StatusItem {
             // Straight to the settings' dialog for a hidden network.
             Quickshell.execDetached(words.settings_command.concat(["join-hidden"]))
         } else if (id >= networkBaseId) {
-            join(networks[id - networkBaseId])
+            join(networks.find(network => networkIds[network.name] === id))
         }
     }
 
