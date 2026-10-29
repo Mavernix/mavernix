@@ -11,9 +11,13 @@ desktop=${1:-}
 # Build and install as root, then re-run as the host user's ID: Wayfire
 # refuses to run as root, and /out must stay writable.
 if [[ $(id -u) == 0 ]]; then
-    meson setup /build /src --prefix=/usr > /out/build.log 2>&1
-    meson compile -C /build >> /out/build.log 2>&1
-    meson install -C /build >> /out/build.log 2>&1
+    if [[ -n $MAVERNIX_FEDORA ]]; then
+        /src/packaging/fedora/build-rpms "/out/fedora-$MAVERNIX_FEDORA" > /out/build.log 2>&1
+    else
+        meson setup /build /src --prefix=/usr > /out/build.log 2>&1
+        meson compile -C /build >> /out/build.log 2>&1
+        meson install -C /build >> /out/build.log 2>&1
+    fi
 
     mkdir -p /home/desktop
     chown "$DESKTOP_UID:$DESKTOP_GID" /home/desktop
@@ -58,7 +62,12 @@ fi
 
 export DESKTOP_STATE_DIR=/out/state
 export DESKTOP_EXTRA_INI=/out/screen.ini
-/usr/lib/mavernix/session/start-desktop ${desktop:+"$desktop"} &
+# Fedora's packages keep it in /usr/lib64.
+session_dir=/usr/lib/mavernix/session
+if [[ -n $MAVERNIX_FEDORA ]]; then
+    session_dir=/usr/lib64/mavernix/session
+fi
+"$session_dir/start-desktop" ${desktop:+"$desktop"} &
 session=$!
 
 # wayvnc is a Wayland client, so wait for the compositor's socket.
