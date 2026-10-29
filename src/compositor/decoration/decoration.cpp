@@ -7,6 +7,13 @@
 #include <wayfire/signal-definitions.hpp>
 #include <wayfire/txn/transaction-manager.hpp>
 
+// Not through wlroots-full.hpp, which leaves it out unless the generated
+// xdg-shell protocol header is present; wlroots 0.20 no longer needs it.
+extern "C"
+{
+#include <wlr/types/wlr_xdg_decoration_v1.h>
+}
+
 #include "deco-subsurface.hpp"
 #include "wayfire/core.hpp"
 #include "wayfire/plugin.hpp"
@@ -20,6 +27,8 @@ class wayfire_decoration : public wf::plugin_interface_t
     wf::view_matcher_t forced_views{"themed-decoration/forced_views"};
     wf::view_matcher_t joined_views{"themed-decoration/joined_views"};
     wf::option_wrapper_t<std::string> theme_directory{"themed-decoration/theme"};
+    wf::option_wrapper_t<std::string> preferred_mode{"core/preferred_decoration_mode"};
+    wf::option_wrapper_t<bool> force_preferred_mode{"workarounds/force_preferred_decoration_mode"};
     std::string theme_in_use;
 
     // Frames are remade after the whole reload, not on the theme option
@@ -141,7 +150,47 @@ class wayfire_decoration : public wf::plugin_interface_t
     bool should_decorate_view(wayfire_toplevel_view view)
     {
         return !ignore_decoration_of_view(view) &&
-               (force_decoration_of_view(view) || view->should_be_decorated());
+               (force_decoration_of_view(view) || wants_server_side(view));
+    }
+
+    /**
+     * Wayfire counts a window as server-side until it has agreed a decoration
+     * mode, and learns the agreed mode only after the commit that agreed it,
+     * which is also the commit that shows the window. A window told to draw
+     * its own frame would get ours until then, and its first configures would
+     * be our frame's size short; Discord shown again from the tray never
+     * answers that, so it never appears. So the window's xdg-decoration state
+     * decides: the agreed mode, or else the mode Wayfire is about to send,
+     * chosen as Wayfire's xdg-decoration handler chooses it.
+     */
+    bool wants_server_side(wayfire_toplevel_view view)
+    {
+        wlr_xdg_toplevel_decoration_v1 *decoration;
+        wl_list_for_each(decoration, &wf::get_core().protocols.xdg_decorator->decorations, link)
+        {
+            if (decoration->toplevel->base->data != static_cast<wf::view_interface_t*>(view.get()))
+            {
+                continue;
+            }
+
+            auto mode = decoration->current.mode;
+            if (mode != WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_NONE)
+            {
+                return mode == WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE;
+            }
+
+            mode = decoration->requested_mode;
+            if ((mode == WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_NONE) || force_preferred_mode)
+            {
+                mode = (std::string(preferred_mode) == "server") ?
+                    WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE :
+                    WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_CLIENT_SIDE;
+            }
+
+            return mode == WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE;
+        }
+
+        return view->should_be_decorated();
     }
 
     void adjust_new_decorations(wayfire_toplevel_view view)

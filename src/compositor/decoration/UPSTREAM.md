@@ -22,3 +22,4 @@ Kept current, so that the code can be compared with a newer Wayfire release.
 8. **Rim:** an optional hairline just outside the frame (`window.frame.rim`).
 9. **Shadow:** drawn here from the theme's `[window.shadow]`, with separate values for active and inactive windows.
 10. **Corners and edges:** optional rounded bottom corners, and a resize strip outside the window's edge for frames without a border.
+11. **Decoration mode:** a window with an xdg-decoration object gets a frame by that object's state, the agreed mode or else the mode Wayfire is about to send (`wants_server_side`), not by the view's flag. Wayfire counts a window as server-side until the mode is agreed, and sets the flag only after the commit that agrees it, which also shows the window, so the original frames a window that asked to draw its own and its first configures are a title bar short; Discord shown again from the tray never answers them.
