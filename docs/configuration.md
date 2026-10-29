@@ -86,6 +86,29 @@ The icons at the right end of the panel show what your computer's own services r
 
 Which items show up, and in what order, is set by `right` under `[panel]`. [Panel items](panel-items.md) explains how to add your own.
 
+## The dock
+
+`[dock] groups` lists what the dock holds, group by group, with a separator between groups. A place is a program's desktop entry ID, such as `"foot"`, or a table:
+
+```toml
+[dock]
+groups = [
+    ["foot", { name = "App Grid", icon = "view-app-grid", shell = "app_grid" }],
+    [
+        { name = "Downloads", icon = "folder-download", folder = "~/Downloads", view = "fan", order = "added" },
+        { name = "Programs", icon = "folder", programs = true, view = "grid" },
+    ],
+]
+```
+
+- `shell` runs one of the shell's actions (see [the desktop's menus](#the-desktops-menus)), `command` runs a command.
+- `folder` shows what's in a folder, as a `"fan"`, a `"grid"` or a `"list"`, sorted by `"name"`, `"added"`, `"modified"`, `"created"` or `"kind"`.
+- `programs = true` is a folder of every installed program, sorted by name, as a `"fan"` or a `"grid"`. A grid with more programs than fit on the screen scrolls. Its last entry opens the app grid. Both desktops have one. If you removed it, drag a folder of launchers, such as `/usr/share/applications`, onto the dock to get it back.
+
+Once you've changed the dock by hand, your own groups in `NAME.json` replace the config's, so a new place in the config only shows up after you delete that file.
+
+Right-clicking a program in the dock also lists the program's own entries from its launcher, such as New Window or New Private Window. `[dock] actions_when_closed = false` shows them only while the program runs.
+
 ## The desktop's menus
 
 When no window is active, the panel shows the desktop's own name and menus, just like a program would. That's where things like New Folder, Go to Home or Downloads, and Empty Wastebasket live. They're set up under `[desktop_menus]`:

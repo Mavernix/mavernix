@@ -32,7 +32,7 @@ Item {
     // Something for the shell to do on a press, e.g. "app_grid".
     property string shellAction: ""
     signal shellActionWanted(string action)
-    property string folder: ""
+    property bool opensFolder: false
     signal folderWanted()
     required property int margin
     required property var bounce
@@ -186,7 +186,7 @@ Item {
     readonly property real shownShare: lifted ? 0 : appeared
 
     function activate() {
-        if (folder !== "") {
+        if (opensFolder) {
             folderWanted()
             return
         }
@@ -239,7 +239,7 @@ Item {
         acceptedButtons: Qt.LeftButton | Qt.RightButton
         enabled: tile.entry !== null || tile.appId !== "" || tile.minimizedWindow !== null
                  || tile.command.length > 0
-                 || tile.shellAction !== "" || tile.folder !== ""
+                 || tile.shellAction !== "" || tile.opensFolder
 
         // In pixels.
         readonly property real dragStartDistance: 8

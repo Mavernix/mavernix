@@ -337,13 +337,14 @@ PanelWindow {
         return windowPictures.isComing(window.appId, window.title, sameNamedBefore(window))
     }
 
-    // The theme's own picture for an icon name (dock.icons), else the icon theme's.
-    function iconPicture(name) {
+    // The theme's own picture for an icon name (dock.icons), else the icon
+    // theme's, else the icon named `fallback` if one is given.
+    function iconPicture(name, fallback) {
         const own = (looks.icons ?? ({}))[name]
         if (own !== undefined) {
             return "file://" + themeDirectory + "/" + own
         }
-        return themeIcons.path(name)
+        return themeIcons.path(name, fallback)
     }
 
     // --- Things dropped onto the dock ----------------------------------------------
@@ -353,6 +354,15 @@ PanelWindow {
         id: fileKinds
     }
 
+    // Whether a path is one of the directories desktop entries are installed
+    // in: "applications" under XDG_DATA_HOME or one of XDG_DATA_DIRS.
+    function isProgramDirectory(path) {
+        const dataHome = Quickshell.env("XDG_DATA_HOME") || Quickshell.env("HOME") + "/.local/share"
+        const dataDirs = (Quickshell.env("XDG_DATA_DIRS") || "/usr/local/share:/usr/share").split(":")
+        return [dataHome].concat(dataDirs).some(
+            directory => directory.replace(/\/$/, "") + "/applications" === path)
+    }
+
     function droppedEntry(path) {
         const trimmed = path.endsWith("/") ? path.slice(0, -1) : path
         const name = trimmed.substring(trimmed.lastIndexOf("/") + 1)
@@ -360,6 +370,12 @@ PanelWindow {
         const home = Quickshell.env("HOME")
         const written = trimmed.startsWith(home + "/") ? "~" + trimmed.substring(home.length) : trimmed
 
+        // A directory of desktop entries becomes the folder of all programs,
+        // as the original's Applications folder does when dragged in.
+        if (isProgramDirectory(trimmed)) {
+            return { name: words.programs_folder ?? "Programs", icon: "folder-applications",
+                     programs: true, view: "grid" }
+        }
         if (fileKinds.isFolder(trimmed)) {
             return { name: name, icon: "folder", folder: written,
                      view: config.new_folder_view ?? "grid", order: "name" }
@@ -1124,9 +1140,13 @@ PanelWindow {
                 if (showsOpenFolder) {
                     return "file://" + dock.themeDirectory + "/" + dock.looks.folder.open_image
                 }
-                return custom !== null ? dock.iconPicture(custom.icon ?? "") : ""
+                if (custom === null) {
+                    return ""
+                }
+                // Not every icon theme has "folder-applications".
+                return dock.iconPicture(custom.icon ?? "", dock.isProgramFolder(custom) ? "folder" : undefined)
             }
-            folder: custom?.folder ?? ""
+            opensFolder: custom?.folder !== undefined || dock.isProgramFolder(custom)
             onFolderWanted: dock.showFolder(index)
             onMinimizedWindowWanted: window => dock.bringBack(window)
             drawnIconSize: dock.magnifies ? dock.largestIconSize : 0
@@ -1226,7 +1246,7 @@ PanelWindow {
         if (place.window !== null) {
             return [menuEntry(openId, (words.open_named ?? "Open “%1”").arg(place.window.title))]
         }
-        if (place.custom?.folder !== undefined) {
+        if (place.custom?.folder !== undefined || isProgramFolder(place.custom)) {
             return folderMenu(place.custom)
         }
 
@@ -1320,13 +1340,14 @@ PanelWindow {
         closeMenu()
 
         if (id >= fileBaseId) {
-            openFile(folderContents.entries[id - fileBaseId].path)
+            openFolderEntry(place.custom, folderContents.entries[id - fileBaseId].path)
         } else if (id === openFolderId) {
-            openFile(expandedPath(place.custom.folder))
+            openWholeFolder(place.custom)
         } else if (id >= actionBaseId) {
             tile.runAction(tile.entry.actions[id - actionBaseId])
         } else if (id >= viewBaseId) {
-            const changed = Object.assign({}, place.custom, { view: folderViews[id - viewBaseId] })
+            const changed = Object.assign({}, place.custom,
+                                          { view: viewsOf(place.custom)[id - viewBaseId] })
             choices.set("dock", "groups", groupsReplacing(place.listedAs, changed))
         } else if (id >= orderBaseId) {
             const changed = Object.assign({}, place.custom, { order: folderOrders[id - orderBaseId] })
@@ -1385,12 +1406,69 @@ PanelWindow {
     // --- Folders in the dock ------------------------------------------------------
     // A custom place with `folder` shows its contents on a press, by its `view`
     // (fan, grid or a list menu); its own menu changes view and order.
+    //
+    // A custom place with `programs = true` is a folder of the installed
+    // programs, sorted by name. There is no real folder to read: a system's
+    // programs are desktop entries spread over several directories, some of
+    // them hidden. Its entries' paths are desktop entry IDs, and its last
+    // entry opens the application grid instead of a file manager. It has no
+    // list view, which would be a menu taller than the screen.
 
     readonly property var folderOrders: ["name", "added", "modified", "created", "kind"]
     readonly property var folderViews: ["fan", "grid", "list"]
+    readonly property var programFolderViews: ["fan", "grid"]
 
     property int folderIndex: -1
     property var listedFolder: null
+
+    function isProgramFolder(folder) {
+        return folder?.programs === true
+    }
+
+    function viewsOf(folder) {
+        return isProgramFolder(folder) ? programFolderViews : folderViews
+    }
+
+    function viewOf(folder) {
+        const fallback = isProgramFolder(folder) ? "grid" : "list"
+        const view = folder?.view ?? fallback
+        return viewsOf(folder).includes(view) ? view : fallback
+    }
+
+    // The installed programs as folder entries, in FolderContents' form.
+    function programEntries() {
+        const shown = DesktopEntries.applications.values.filter(entry => !entry.noDisplay)
+        shown.sort((first, second) => first.name.localeCompare(second.name))
+        return shown.map(entry => ({ name: entry.name, path: entry.id,
+                                     icon: themeIcons.nameFor(entry),
+                                     genericIcon: "application-x-executable" }))
+    }
+
+    // What the open folder shows.
+    readonly property var listedEntries:
+        isProgramFolder(listedFolder) ? programEntries() : folderContents.entries
+
+    function openFolderEntry(folder, path) {
+        if (!isProgramFolder(folder)) {
+            openFile(path)
+            return
+        }
+        const entry = DesktopEntries.applications.values.find(candidate => candidate.id === path)
+        entry?.execute()
+    }
+
+    function openWholeFolder(folder) {
+        if (isProgramFolder(folder)) {
+            shell?.run("app_grid")
+        } else {
+            openFile(expandedPath(folder.folder))
+        }
+    }
+
+    function wholeFolderLabel(folder) {
+        return isProgramFolder(folder) ? (words.open_app_grid ?? "Open app grid")
+                                       : (words.open_in_file_manager ?? "Open in file manager")
+    }
 
     function expandedPath(path) {
         return path.startsWith("~") ? Quickshell.env("HOME") + path.substring(1) : path
@@ -1398,7 +1476,7 @@ PanelWindow {
 
     FolderContents {
         id: folderContents
-        path: dock.listedFolder !== null ? dock.expandedPath(dock.listedFolder.folder) : ""
+        path: (dock.listedFolder?.folder ?? "") !== "" ? dock.expandedPath(dock.listedFolder.folder) : ""
         order: dock.listedFolder?.order ?? "name"
     }
 
@@ -1409,7 +1487,7 @@ PanelWindow {
     function showFolder(index) {
         const folder = places[index].custom
         listedFolder = folder
-        const view = folder.view ?? "list"
+        const view = viewOf(folder)
         if (view === "grid" || view === "fan") {
             heldPointer = pointerInside ? pointerX : -1
             folderIndex = index
@@ -1421,7 +1499,7 @@ PanelWindow {
         if (items.length > 0) {
             items.push(menuSeparator())
         }
-        items.push(menuEntry(openFolderId, words.open_in_file_manager ?? "Open in file manager"))
+        items.push(menuEntry(openFolderId, wholeFolderLabel(folder)))
         showMenu(index, items)
     }
 
@@ -1441,15 +1519,20 @@ PanelWindow {
         const orderWords = [words.sort_name ?? "Name", words.sort_added ?? "Date added",
                             words.sort_modified ?? "Date modified",
                             words.sort_created ?? "Date created", words.sort_kind ?? "Kind"]
-        const viewWords = [words.view_fan ?? "Fan", words.view_grid ?? "Grid", words.view_list ?? "List"]
+        const viewWords = { fan: words.view_fan ?? "Fan", grid: words.view_grid ?? "Grid",
+                            list: words.view_list ?? "List" }
 
-        const items = [heading(words.sort_by ?? "Sort by")]
-        folderOrders.forEach((order, number) => items.push(
-            ticked(orderBaseId + number, orderWords[number], (folder.order ?? "name") === order)))
-        items.push(menuSeparator())
+        const items = []
+        // The programs have one order, by name.
+        if (!isProgramFolder(folder)) {
+            items.push(heading(words.sort_by ?? "Sort by"))
+            folderOrders.forEach((order, number) => items.push(
+                ticked(orderBaseId + number, orderWords[number], (folder.order ?? "name") === order)))
+            items.push(menuSeparator())
+        }
         items.push(heading(words.view_as ?? "Show contents as"))
-        folderViews.forEach((view, number) => items.push(
-            ticked(viewBaseId + number, viewWords[number], (folder.view ?? "list") === view)))
+        viewsOf(folder).forEach((view, number) => items.push(
+            ticked(viewBaseId + number, viewWords[view], viewOf(folder) === view)))
         items.push(menuSeparator())
         items.push(menuEntry(removeId, words.remove ?? "Remove from dock"))
         items.push(menuSeparator())
@@ -1462,10 +1545,10 @@ PanelWindow {
         settings: dock.settings
         plainBoxLooks: dock.menuLooks
         open: dock.folderIndex >= 0
-        view: dock.listedFolder?.view ?? "grid"
+        view: dock.viewOf(dock.listedFolder)
         title: dock.listedFolder?.name ?? ""
-        entries: folderContents.entries
-        openLabel: dock.words.open_in_file_manager ?? "Open in file manager"
+        entries: dock.listedEntries
+        openLabel: dock.wholeFolderLabel(dock.listedFolder)
         moreLabel: dock.words.more_in_file_manager ?? "%1 more"
 
         readonly property var tile: dock.folderIndex >= 0 ? tiles.itemAt(dock.folderIndex) : null
@@ -1483,11 +1566,11 @@ PanelWindow {
 
         onFileChosen: path => {
             dock.closeFolder()
-            dock.openFile(path)
+            dock.openFolderEntry(dock.listedFolder, path)
         }
         onFolderChosen: {
             dock.closeFolder()
-            dock.openFile(dock.expandedPath(dock.listedFolder.folder))
+            dock.openWholeFolder(dock.listedFolder)
         }
         onDismissed: dock.closeFolder()
     }

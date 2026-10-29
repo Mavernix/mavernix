@@ -306,7 +306,7 @@ time_minutes = "%1 min ago"
 time_hours = "%1 h ago"
 
 [dock]
-groups = [[{ name = "Applications", icon = "view-app-grid", shell = "app_grid" }, { name = "Home", icon = "user-home", folder = "~", view = "list", order = "name" }, "foot", "mavernix-settings"], [{ name = "Downloads", icon = "folder-download", folder = "~/Downloads", view = "list", order = "added" }]]
+groups = [[{ name = "Applications", icon = "view-app-grid", shell = "app_grid" }, { name = "Home", icon = "user-home", folder = "~", view = "list", order = "name" }, "foot", "mavernix-settings"], [{ name = "Programs", icon = "folder-applications", programs = true, view = "grid" }, { name = "Downloads", icon = "folder-download", folder = "~/Downloads", view = "list", order = "added" }]]
 magnification = false
 autohide = false
 settings_command = ["mavernix-settings", "dock"]
@@ -351,6 +351,9 @@ view_grid = "Grid"
 view_list = "List"
 open_in_file_manager = "Open folder"
 more_in_file_manager = "%1 more"
+# The folder of all programs: its name when dragged in, and its last entry.
+programs_folder = "Programs"
+open_app_grid = "Open app grid"
 
 [desktop_files]
 # Files of a folder shown as icons on the desktop.

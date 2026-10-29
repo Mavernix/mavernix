@@ -37,6 +37,11 @@ PanelWindow {
     readonly property int closeDuration: motion.kind === "none" ? 0
                                          : (motion.close_duration_ms ?? openDuration)
     property real shown: open ? 1 : 0
+    onOpenChanged: {
+        if (open) {
+            grid.scrollToTop()
+        }
+    }
     Behavior on shown {
         NumberAnimation { duration: overlay.open ? overlay.openDuration : overlay.closeDuration }
     }
@@ -94,6 +99,9 @@ PanelWindow {
         x: Math.round(Math.max(sideRoom, Math.min(overlay.width - sideRoom - width,
                                                   overlay.anchorX - width / 2)))
         y: Math.round(tipY - pointerLength - height)
+        // Clear of the screen's sides and of the panel's height at the top.
+        mostWidth: overlay.width - 2 * sideRoom
+        mostHeight: tipY - pointerLength - sideRoom - (overlay.settings.theme.panel?.height ?? 0)
         pointerX: overlay.anchorX - x
 
         opacity: overlay.shown

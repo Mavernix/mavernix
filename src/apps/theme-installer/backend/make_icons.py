@@ -34,6 +34,7 @@ SYSTEM_ICONS = "System/Library/CoreServices/CoreTypes.bundle/Contents/Resources"
 ICONS = {
     "folder": ("places", "GenericFolderIcon.icns"),
     "folder-open": ("places", "OpenFolderIcon.icns"),
+    "folder-applications": ("places", "ApplicationsFolderIcon.icns"),
     "user-home": ("places", "HomeFolderIcon.icns"),
     "user-desktop": ("places", "DesktopFolderIcon.icns"),
     "folder-documents": ("places", "DocumentsFolderIcon.icns"),

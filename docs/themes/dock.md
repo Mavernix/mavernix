@@ -188,7 +188,9 @@ label_color = "#202020"
 label_shadow_color = "#000000a0"   # optional
 title_baseline = 19       # the folder's name, centred at the top
 title_color = "#20202070"
-screen_margin = 8         # the box keeps this far from the screen's sides
+screen_margin = 8         # the box keeps this far from the screen's sides, and from the panel at the top
+scroll_bar_width = 4      # optional: a folder with more than fits scrolls, and this bar shows where
+scroll_bar_color = "#20202060"   # optional: else the names' colour at half strength
 open_image = "images/open-folder.png"   # optional: the picture of the last entry, which opens the folder itself (else the icon theme's "folder-open")
 open_image_size = 56                   # optional: its size, if not that of an icon
 ```
