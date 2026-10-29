@@ -193,8 +193,12 @@ title_color = "#20202070"
 screen_margin = 8         # the box keeps this far from the screen's sides
 stage_share = 0.8         # optional: the share of the free width and height the grid is sized for (else all of it)
 fit_spacing = 0           # optional: room added to each cell when counting how many fit on that stage
-scroll_bar_width = 4      # optional: a folder with more than fits scrolls; with a width, a bar shows where
+selection = { color = "#3a6ea533", radius = 6 }   # optional: the fill behind the entry the arrow keys chose, the whole cell
+scroll_fade = 8           # optional: a grid that scrolls fades out over this much at its top and bottom
+scroll_snap_ms = 150      # optional: how long a grid takes to come to rest on a whole row after scrolling (else at once)
+scroll_bar_width = 4      # optional: a folder with more than fits scrolls; with a width, a bar shows where while it moves
 scroll_bar_color = "#20202060"   # optional: else the names' colour at half strength
+scroll_bar_fade_ms = 300  # optional: how long the bar takes to go once the grid rests
 open_image = "images/open-folder.png"   # optional: the picture of the last entry, which opens the folder itself (else the icon theme's "folder-open")
 open_image_size = 56                   # optional: its size, if not that of an icon
 ```

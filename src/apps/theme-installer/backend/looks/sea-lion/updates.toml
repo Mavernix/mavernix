@@ -13,6 +13,9 @@
 #                 feature that only looks better with those files works
 #                 without them, with a stand-in; one that cannot work at all
 #                 stays off until the new import.
+# corrections     Values an older import wrote that this version changes:
+#                 each replaces `was` with `now`, but only where the theme
+#                 still holds `was`, so a value changed by hand stays.
 
 [[update]]
 revision = 1
@@ -21,6 +24,15 @@ import_brings = ["The Applications folder in the dock gets its own icon."]
 [update.settings."dock.folder.grid"]
 stage_share = 0.8
 fit_spacing = 28
+selection = { gradient = ["#ffffffc4", "#ffffff33"], radius = 5 }
+scroll_fade = 10
+scroll_snap_ms = 150
+
+[[update.corrections]]
+table = "dock.folder.grid"
+key = "icon_size"
+was = 96
+now = 100
 
 # The window that offers the new import, which older themes need first.
 [update.settings.theme_installer]

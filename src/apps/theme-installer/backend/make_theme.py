@@ -1295,7 +1295,9 @@ cell_width = 128
 cell_height = 128
 first_row_top = 40
 bottom_padding = 10
-icon_size = 96
+# The picture is the cell less 28, flush with the cell's top; the name sits
+# in the 28 below it.
+icon_size = 100
 label_baseline = 111
 label_width = 116
 label_color = "#ffffff"
@@ -1308,6 +1310,14 @@ screen_margin = 32
 # with folders of 1 to 99 files at 1024x768, 1280x800 and 1920x1080).
 stage_share = 0.8
 fit_spacing = 28
+# The entry the arrow keys chose: the whole cell, light at the top and
+# fading downwards (measured over the box: grey 212 at the top to 104 at the
+# bottom where the box shows 66), corners of 5.
+selection = { gradient = ["#ffffffc4", "#ffffff33"], radius = 5 }
+# A grid that scrolls fades out over 10 at its top and bottom, and comes to
+# rest on a whole row (the time is not measured).
+scroll_fade = 10
+scroll_snap_ms = 150
 open_image = "images/dock-folder-open.png"
 
 [dock.folder.fan]

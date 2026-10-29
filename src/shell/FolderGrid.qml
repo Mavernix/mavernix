@@ -1,10 +1,13 @@
 // A folder's contents as a grid of icons in a box pointing at its dock
 // tile, with a last entry that opens the folder. A folder with more than
-// fits scrolls, by wheel or drag. Looks: the theme's
+// fits scrolls, by wheel or drag, and comes to rest on a whole row. The
+// arrow keys choose an entry, Return opens it, and typing jumps to a name
+// (handleKey, called by FolderOverlay). Looks: the theme's
 // [dock.folder.grid] (docs/themes/, "Folders in the dock"); without box
 // pictures the box is drawn like a menu's.
 
 import QtQuick
+import QtQuick.Effects
 import Quickshell
 import "ThemeValues.js" as ThemeValues
 
@@ -93,6 +96,109 @@ Item {
 
     function scrollToTop() {
         cells.contentY = 0
+        selectedIndex = -1
+        typed = ""
+    }
+
+    // --- The entry the keys chose ------------------------------------------
+
+    // -1 while there is none.
+    property int selectedIndex: -1
+    // What was typed to find an entry by its name.
+    property string typed: ""
+    // Letters typed after this long a pause start a new name.
+    readonly property int typingPauseMs: 1000
+
+    Timer {
+        id: typingPause
+        interval: grid.typingPauseMs
+        onTriggered: grid.typed = ""
+    }
+
+    function select(index) {
+        selectedIndex = Math.max(0, Math.min(entryCount - 1, index))
+        showRowOf(selectedIndex)
+    }
+
+    // The first press chooses the first entry; later ones move from the chosen one.
+    function moveSelection(columnsBy, rowsBy) {
+        if (selectedIndex < 0) {
+            select(0)
+            return
+        }
+        select(selectedIndex + columnsBy + rowsBy * columns)
+    }
+
+    function typeToSelect(letter) {
+        typed += letter.toLowerCase()
+        typingPause.restart()
+        const found = entries.findIndex(file => file.name.toLowerCase().startsWith(typed))
+        if (found >= 0) {
+            select(found)
+        }
+    }
+
+    function open(index) {
+        if (index < entries.length) {
+            fileChosen(entries[index].path)
+        } else {
+            folderChosen()
+        }
+    }
+
+    // Scrolls the least that brings the entry's row into view.
+    function showRowOf(index) {
+        snap.stop()
+        const top = Math.floor(index / columns) * shownCellHeight
+        if (top < cells.contentY) {
+            cells.contentY = top
+        } else if (top + shownCellHeight > cells.contentY + cells.height) {
+            cells.contentY = top + shownCellHeight - cells.height
+        }
+    }
+
+    // Whether the key was one the grid uses.
+    function handleKey(event) {
+        if (event.key === Qt.Key_Left) {
+            moveSelection(-1, 0)
+        } else if (event.key === Qt.Key_Right) {
+            moveSelection(1, 0)
+        } else if (event.key === Qt.Key_Up) {
+            moveSelection(0, -1)
+        } else if (event.key === Qt.Key_Down) {
+            moveSelection(0, 1)
+        } else if ((event.key === Qt.Key_Return || event.key === Qt.Key_Enter) && selectedIndex >= 0) {
+            open(selectedIndex)
+        } else if (event.text.length === 1 && event.text.trim() !== "") {
+            typeToSelect(event.text)
+        } else {
+            return false
+        }
+        return true
+    }
+
+    // --- Scrolling -------------------------------------------------------------
+
+    // How far a grid that scrolls fades out at its top and bottom.
+    readonly property real fadeLength: cells.interactive ? (looks.scroll_fade ?? 0) : 0
+
+    // Comes to rest on the nearest whole row.
+    function snapToRow() {
+        const lowest = Math.max(0, cells.contentHeight - cells.height)
+        const goal = Math.max(0, Math.min(lowest, Math.round(cells.contentY / shownCellHeight) * shownCellHeight))
+        if (Math.abs(goal - cells.contentY) < 0.5) {
+            return
+        }
+        snap.to = goal
+        snap.start()
+    }
+
+    NumberAnimation {
+        id: snap
+        target: cells
+        property: "contentY"
+        duration: grid.looks.scroll_snap_ms ?? 0
+        easing.type: Easing.OutQuad
     }
 
     // Presses on the box that hit no entry stay with it.
@@ -144,6 +250,17 @@ Item {
         interactive: grid.rows > grid.shownRows
         boundsBehavior: Flickable.StopAtBounds
         clip: true
+        onMovementEnded: grid.snapToRow()
+
+        // The fade at the top and bottom: the cells drawn through fadeMask.
+        layer.enabled: grid.fadeLength > 0
+        layer.effect: MultiEffect {
+            maskEnabled: true
+            maskSource: fadeMask
+            // A soft mask: its alpha, not just above or below a threshold.
+            maskThresholdMin: 0.5
+            maskSpreadAtMin: 1.0
+        }
 
         Repeater {
             model: grid.entryCount
@@ -157,6 +274,13 @@ Item {
                 y: Math.floor(index / grid.columns) * grid.shownCellHeight
                 width: grid.shownCellWidth
                 height: grid.shownCellHeight
+
+                Fill {
+                    anchors.fill: parent
+                    visible: cell.index === grid.selectedIndex && grid.looks.selection !== undefined
+                    fill: grid.looks.selection ?? ({})
+                    themeDirectory: grid.themeDirectory
+                }
 
                 readonly property bool hasOwnPicture: file === null && grid.looks.open_image !== undefined
                 readonly property real pictureSize: hasOwnPicture
@@ -197,20 +321,47 @@ Item {
                 MouseArea {
                     id: press
                     anchors.fill: parent
-                    onClicked: {
-                        if (cell.file !== null) {
-                            grid.fileChosen(cell.file.path)
-                        } else {
-                            grid.folderChosen()
-                        }
-                    }
+                    onClicked: grid.open(cell.index)
                 }
             }
         }
     }
 
-    // Shows where the view stands while there is more than fits, for a theme
-    // that gives it a width.
+    // White where the cells show, clear where they fade out (see cells' layer).
+    Item {
+        id: fadeMask
+        visible: false
+        layer.enabled: true
+        width: cells.width
+        height: cells.height
+
+        Rectangle {
+            width: parent.width
+            height: grid.fadeLength
+            gradient: Gradient {
+                GradientStop { position: 0; color: "transparent" }
+                GradientStop { position: 1; color: "white" }
+            }
+        }
+        Rectangle {
+            y: grid.fadeLength
+            width: parent.width
+            height: parent.height - 2 * grid.fadeLength
+            color: "white"
+        }
+        Rectangle {
+            y: parent.height - grid.fadeLength
+            width: parent.width
+            height: grid.fadeLength
+            gradient: Gradient {
+                GradientStop { position: 0; color: "white" }
+                GradientStop { position: 1; color: "transparent" }
+            }
+        }
+    }
+
+    // Shows where the view stands while it moves, for a theme that gives it
+    // a width.
     Rectangle {
         visible: cells.interactive && thickness > 0
         readonly property real thickness: grid.looks.scroll_bar_width ?? 0
@@ -218,7 +369,11 @@ Item {
         radius: thickness / 2
         // Without a colour of its own: the names' colour, at half strength.
         color: ThemeValues.color(grid.looks.scroll_bar_color ?? grid.looks.label_color ?? "#ffffff")
-        opacity: grid.looks.scroll_bar_color !== undefined ? 1 : 0.5
+        readonly property real shownOpacity: grid.looks.scroll_bar_color !== undefined ? 1 : 0.5
+        opacity: cells.moving || snap.running ? shownOpacity : 0
+        Behavior on opacity {
+            NumberAnimation { duration: grid.looks.scroll_bar_fade_ms ?? 0 }
+        }
         // In the middle of the room beside the last column.
         x: grid.width - grid.sidePadding / 2 - thickness / 2
         y: cells.y + cells.visibleArea.yPosition * cells.height

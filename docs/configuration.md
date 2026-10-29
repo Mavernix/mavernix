@@ -103,7 +103,7 @@ groups = [
 
 - `shell` runs one of the shell's actions (see [the desktop's menus](#the-desktops-menus)), `command` runs a command.
 - `folder` shows what's in a folder, as a `"fan"`, a `"grid"` or a `"list"`, sorted by `"name"`, `"added"`, `"modified"`, `"created"` or `"kind"`.
-- `programs = true` is a folder of every installed program, sorted by name, as a `"fan"` or a `"grid"`. A grid with more programs than fit on the screen scrolls. Its last entry opens the app grid. Both desktops have one. If you removed it, drag a folder of launchers, such as `/usr/share/applications`, onto the dock to get it back.
+- `programs = true` is a folder of every installed program, as a `"fan"` or a `"grid"`. Its `order` is the same as a folder's: by `"added"` the newest programs come first, and by `"kind"` they're grouped by their main category. A grid with more programs than fit on the screen scrolls. Its last entry opens the app grid. Both desktops have one. If you removed it, drag a folder of launchers, such as `/usr/share/applications`, onto the dock to get it back.
 
 Once you've changed the dock by hand, your own groups in `NAME.json` replace the config's, so a new place in the config only shows up after you delete that file.
 
