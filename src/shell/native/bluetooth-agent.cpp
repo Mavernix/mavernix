@@ -148,10 +148,10 @@ void BluetoothAgent::RequestAuthorization(const QDBusObjectPath& device)
 
 void BluetoothAgent::AuthorizeService(const QDBusObjectPath& device, const QString& uuid)
 {
-    Q_UNUSED(device)
     Q_UNUSED(uuid)
-    // A paired, trusted device may use its services; BlueZ only asks for
-    // untrusted ones, which were paired by this person a moment ago.
+    // BlueZ lets a trusted device in without asking. This one is not trusted
+    // (paired elsewhere, say with bluetoothctl), so the person decides.
+    wait(QStringLiteral("authorize"), device, QString());
 }
 
 void BluetoothAgent::Cancel()
