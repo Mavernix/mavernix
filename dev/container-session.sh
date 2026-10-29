@@ -50,6 +50,10 @@ printf '[output:HEADLESS-1]\nmode = 1280x800\nscale = 1\n' > /out/screen.ini
 if [[ ${MAVERNIX_SCREENS:-1} == 2 ]]; then
     export WLR_HEADLESS_OUTPUTS=2
     printf '[output:HEADLESS-2]\nmode = 1920x1080\nscale = 1\n' >> /out/screen.ini
+    # The VNC window shows one screen, HEADLESS-1, so the menu bar and dock
+    # start there (the user's choices, shared by the bundled desktops).
+    mkdir -p "$HOME/.config/mavernix"
+    printf '{"display": {"main_screen": "HEADLESS-1"}}\n' > "$HOME/.config/mavernix/plain.json"
 fi
 
 export DESKTOP_STATE_DIR=/out/state

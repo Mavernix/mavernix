@@ -6,8 +6,10 @@
 #   dev/run-in-container shell        copy src/shell/ into the running desktop and
 #                                     restart its shell (seconds, for QML changes)
 #   dev/run-in-container stop         stop it
+#   dev/run-in-container next-screen  show the other screen in the VNC window
 #
-# MAVERNIX_SCREENS=2 starts it with two virtual screens.
+# MAVERNIX_SCREENS=2 starts it with two virtual screens. The VNC window
+# shows one at a time, the one with the menu bar first.
 #
 # Needs Podman, and TigerVNC's vncviewer for the window.
 set -euo pipefail
@@ -19,6 +21,10 @@ container=${MAVERNIX_CONTAINER:-mavernix-dev}
 
 if [[ "${1:-}" == stop ]]; then
     podman stop "$container"
+    exit 0
+fi
+if [[ "${1:-}" == next-screen ]]; then
+    podman exec --user "$(id -u)" "$container" env XDG_RUNTIME_DIR=/tmp/runtime wayvncctl output-cycle > /dev/null
     exit 0
 fi
 # The shell's QML is installed as it is (src/shell/meson.build), so a QML
