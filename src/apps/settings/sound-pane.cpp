@@ -15,6 +15,9 @@
 #include "pane-parts.hpp"
 #include "sound-devices.hpp"
 
+// While a volume slider is dragged, how often the volume follows it.
+static const int volume_step_ms = 100;
+
 QStringList SoundPane::packs()
 {
     QStringList names;
@@ -161,7 +164,7 @@ SoundPane::SoundPane(Choices& choices, QWidget* parent) : QWidget(parent)
         {
             slider->setValue(qRound(said[1].trimmed().toDouble() * 100));
         }
-        connect(slider, &QSlider::valueChanged, this, [target](int percent) {
+        follow_slider(slider, volume_step_ms, [target](int percent) {
             QProcess::startDetached(QStringLiteral("wpctl"),
                 {QStringLiteral("set-volume"), target, QString::number(percent / 100.0, 'f', 2)});
         });

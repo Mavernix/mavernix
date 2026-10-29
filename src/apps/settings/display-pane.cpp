@@ -62,6 +62,8 @@ static const int slider_width_px = 260;
 // slider's track) the scale is written. Long enough for a second press of
 // the key to take the first one's place, short enough to feel direct.
 static const int write_delay_ms = 500;
+// While the brightness slider is dragged, how often the screen follows it.
+static const int brightness_step_ms = 50;
 
 DisplayPane::DisplayPane(Choices& choices, QWidget* parent) : QWidget(parent), choices(choices)
 {
@@ -291,7 +293,7 @@ DisplayPane::DisplayPane(Choices& choices, QWidget* parent) : QWidget(parent), c
         brightness->setRange(5, 100);
         brightness->setMinimumWidth(220);
         brightness->setValue(backlight_percent(backlight));
-        connect(brightness, &QSlider::valueChanged, this, [this](int percent) { set_backlight_percent(backlight, percent); });
+        follow_slider(brightness, brightness_step_ms, [this](int percent) { set_backlight_percent(backlight, percent); });
         form->addRow(word("display_brightness", "Brightness:"),
             with_end_words(brightness, word("display_brightness_low", "Dim"), word("display_brightness_high", "Bright")));
     }

@@ -6,6 +6,7 @@
 #include <QLabel>
 #include <QStringList>
 #include <QSlider>
+#include <QTimer>
 #include <QVBoxLayout>
 
 QFont scaled_font(const QFont& font, double scale)
@@ -43,6 +44,21 @@ QWidget* with_end_words(QSlider* slider, const QString& low, const QString& high
     words->addWidget(high_word);
     rows->addLayout(words);
     return box;
+}
+
+void follow_slider(QSlider* slider, int every_ms, const std::function<void(int)>& apply)
+{
+    auto* wait = new QTimer(slider);
+    wait->setSingleShot(true);
+    wait->setInterval(every_ms);
+    // The value is read when the wait is over, so the last step is never lost.
+    QObject::connect(wait, &QTimer::timeout, slider, [slider, apply]() { apply(slider->value()); });
+    QObject::connect(slider, &QSlider::valueChanged, slider, [wait]() {
+        if (!wait->isActive())
+        {
+            wait->start();
+        }
+    });
 }
 
 // (A wrapping label asks its layout for far more height than it fills, and

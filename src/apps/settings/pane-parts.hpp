@@ -7,12 +7,19 @@
 #include <QSize>
 #include <QString>
 
+#include <functional>
+
 class QCheckBox;
 class QSlider;
 class QWidget;
 
 // A slider with a small word under each end ("Small" ... "Large").
 QWidget* with_end_words(QSlider* slider, const QString& low, const QString& high);
+
+// Calls `apply` with the slider's value as it moves, at most once every
+// `every_ms` and always with where it stops: for a setting that is felt at
+// once (volume, brightness), each step would be a command of its own.
+void follow_slider(QSlider* slider, int every_ms, const std::function<void(int)>& apply);
 
 // A checkbox with a line of smaller text under it that says what it means.
 QWidget* with_note(QCheckBox* box, const QString& note);
