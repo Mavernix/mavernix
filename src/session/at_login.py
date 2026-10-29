@@ -33,7 +33,11 @@ EARLY_FILE_MANAGER_SERVICES = ["thunar.service", "dbus-*-org.xfce.Thunar@*.servi
 
 # Sends the login to the wallet that KDE's PAM module started. Run here, not
 # via dex, because programs started earlier would hit a still-closed wallet.
-WALLET_LOGIN_HELPER = "/usr/lib/pam_kwallet_init"
+# Arch keeps it in /usr/lib, Fedora in /usr/libexec.
+WALLET_LOGIN_HELPERS = ["/usr/lib/pam_kwallet_init", "/usr/libexec/pam_kwallet_init"]
+
+# The autostart helper: dex on Arch, dex-autostart on Fedora.
+DEX_NAMES = ["dex", "dex-autostart"]
 
 PORTAL_SERVICE = "xdg-desktop-portal.service"
 PORTAL_HELPERS = ["xdg-desktop-portal-gtk.service", "xdg-desktop-portal-wlr.service"]
@@ -45,11 +49,12 @@ def say(message):
 def hand_login_to_wallet():
     if not os.environ.get("PAM_KWALLET5_LOGIN"):
         return
-    if not os.access(WALLET_LOGIN_HELPER, os.X_OK):
-        say(f"the login screen opened KDE's wallet socket, but {WALLET_LOGIN_HELPER} is missing; "
+    helper = next((path for path in WALLET_LOGIN_HELPERS if os.access(path, os.X_OK)), None)
+    if helper is None:
+        say("the login screen opened KDE's wallet socket, but pam_kwallet_init is missing; "
             "the wallet will ask for the password")
         return
-    result = subprocess.run([WALLET_LOGIN_HELPER], capture_output=True, text=True)
+    result = subprocess.run([helper], capture_output=True, text=True)
     if result.returncode != 0:
         say(f"could not hand the login to KDE's wallet: {result.stderr.strip()}")
 
@@ -164,13 +169,14 @@ def start_listed_programs(config):
 
 
 def start_users_programs():
-    if shutil.which("dex") is None:
+    dex = next((name for name in DEX_NAMES if shutil.which(name)), None)
+    if dex is None:
         say("dex is not installed, so the programs in ~/.config/autostart are not started "
             "(install dex; on Arch: sudo pacman -S --needed dex)")
         return
     # Honours OnlyShowIn/NotShowIn.
     desktop = os.environ.get("XDG_CURRENT_DESKTOP", "")
-    start(["dex", "--autostart", "--environment", desktop])
+    start([dex, "--autostart", "--environment", desktop])
 
 
 def placed_launchers_path():
