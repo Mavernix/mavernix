@@ -12,8 +12,9 @@
                                                 would bring something to, and
                                                 what, as JSON (updates.py);
                                                 none the user put off
-    python import_theme.py later LOOK           puts off offering LOOK's new
-                                                import until its next update
+    python import_theme.py later LOOK...        puts off offering these looks'
+                                                new import until an update
+                                                brings something more
 
 Each look is a folder in looks/ (look.toml says what is in it). SOURCE is
 whatever its look.toml recognises: for Sea Lion, "Install OS X Mavericks.app",
@@ -181,7 +182,7 @@ def look_states():
                        "source": look["source"], "drop_hint": look["drop_hint"],
                        "licence_note": look.get("licence_note", ""), "desktop": look["desktops"][0],
                        "installed": installed, "import_brings": updates.import_brings(look, themes_dir()),
-                       "put_off": updates.is_put_off(look_id, updates.newest_revision(look))})
+                       "offer_import": updates.offers_import(look_id, look, themes_dir())})
     return states
 
 
@@ -190,10 +191,21 @@ def news():
     user put that off: [{id, name, import_brings}]."""
     looks = []
     for look_id, look in read_looks().items():
-        brings = updates.import_brings(look, themes_dir())
-        if brings and not updates.is_put_off(look_id, updates.newest_revision(look)):
-            looks.append({"id": look_id, "name": look["name"], "import_brings": brings})
+        if updates.offers_import(look_id, look, themes_dir()):
+            looks.append({"id": look_id, "name": look["name"],
+                          "import_brings": updates.import_brings(look, themes_dir())})
     return looks
+
+
+def put_off(look_ids):
+    """Remembers "Later" for these looks, up to their newest update with
+    something to import."""
+    looks = read_looks()
+    unknown = [look_id for look_id in look_ids if look_id not in looks]
+    if unknown:
+        sys.exit(f"import_theme: no look called {', '.join(unknown)}; the looks are {', '.join(looks)}")
+    updates.put_off({look_id: updates.newest_import_revision(updates.read_updates(looks[look_id]["folder"]))
+                     for look_id in look_ids})
 
 
 def holds(paths, suffix):
@@ -417,7 +429,7 @@ def install(staging, look, report):
     for number, name in enumerate(look["themes"]):
         new = staging / name
         old = target / name
-        updates.stamp_revision(new, updates.newest_revision(look))
+        updates.stamp_revision(new, updates.newest_revision(updates.read_updates(look["folder"])))
         replaced = target / f".{name}.replaced"
         shutil.rmtree(replaced, ignore_errors=True)
         if old.exists():
@@ -624,15 +636,19 @@ def main():
         sys.exit(__doc__)
     command = sys.argv[1]
     if command == "check":
-        print(json.dumps(dict(missing_programs(), looks=look_states(),
-                              last_installer=updates.last_installer())))
+        try:
+            looks = look_states()
+        except updates.UpdatesProblem as problem:
+            sys.exit(f"import_theme: {problem}")
+        print(json.dumps(dict(missing_programs(), looks=looks, last_installer=updates.last_installer())))
         return
     if command == "news":
         print(json.dumps(news()))
         return
     if command == "later":
-        look_id = sys.argv[2]
-        updates.put_off(look_id, updates.newest_revision(read_looks()[look_id]))
+        if len(sys.argv) < 3:
+            sys.exit("import_theme: later needs the looks to put off, e.g. `later sea-lion`")
+        put_off(sys.argv[2:])
         return
     if command == "identify":
         print(json.dumps(identify_outside(sys.argv[2])))
@@ -672,7 +688,7 @@ def main():
             report.plan()
             if not import_installer(Path(sys.argv[2]).resolve(), report):
                 sys.exit(1)
-    except InstallerProblem as problem:
+    except (InstallerProblem, updates.UpdatesProblem) as problem:
         report.send(event="error", message=str(problem))
         sys.exit(1)
 

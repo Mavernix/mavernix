@@ -7,6 +7,8 @@ Run by `meson test`, which says where the sources are (tests/meson.build).
 """
 
 import configparser
+import contextlib
+import io
 import json
 import os
 import shutil
@@ -307,43 +309,77 @@ class TestRefreshDesktops(SessionTestCase):
         self.assertEqual(refresh_desktops.refresh(looks, configs), [])
 
 
-class TestRefreshThemes(SessionTestCase):
-    def test_an_imported_theme_gets_the_settings_it_lacks(self):
-        sys.path[:0] = [self.folder.name, str(SESSION_SOURCE_DIR)]
-        try:
-            import refresh_themes
-        finally:
-            del sys.path[:2]
-        folder = Path(self.folder.name)
-        looks = folder / "looks"
-        (looks / "lion").mkdir(parents=True)
-        (looks / "lion" / "look.toml").write_text('themes = ["lion", "lion-new"]\n')
-        (looks / "lion" / "updates.toml").write_text(
-            '[[update]]\nrevision = 1\n[update.settings."dock.grid"]\nshare = 0.8\nspacing = 28\n'
-            '[[update.corrections]]\ntable = "dock.grid"\nkey = "width"\nwas = 96\nnow = 100\n'
-            '[[update.corrections]]\ntable = "dock.grid"\nkey = "height"\nwas = 96\nnow = 100\n'
-            '[[update]]\nrevision = 2\n[update.settings.fan]\nmost = 8\n')
-        themes = folder / "themes"
-        (themes / "lion").mkdir(parents=True)
-        (themes / "lion-new").mkdir()
-        # From before revisions were kept, with one of the new keys and one
-        # corrected value set by hand.
-        old = '# made by hand\n[theme]\nname = "Lion"\n\n[dock.grid]\nspacing = 10\nwidth = 96\nheight = 90\n'
-        (themes / "lion" / "theme.toml").write_text(old)
-        current = '[theme]\nname = "Lion"\nrevision = 2\n'
-        (themes / "lion-new" / "theme.toml").write_text(current)
+class TestThemeUpdates(unittest.TestCase):
+    """The Theme Installer's updates.py: what imported themes get at login,
+    and when a new import is offered."""
 
-        self.assertEqual(refresh_themes.refresh(looks, themes), ["lion"])
-        text = (themes / "lion" / "theme.toml").read_text()
-        theme = tomllib.loads(text)
-        # The import's 96 is corrected; the hand-set 90 stays.
-        self.assertEqual(theme["dock"]["grid"], {"share": 0.8, "spacing": 10, "width": 100, "height": 90})
-        # A table the theme lacked is added; the file's comment stays.
+    def setUp(self):
+        self.folder = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.folder)
+        sys.path.insert(0, str(LOOKS_DIR.parent))
+        self.addCleanup(sys.path.remove, str(LOOKS_DIR.parent))
+        import updates
+        self.updates = updates
+        self.look = self.folder / "looks" / "lion"
+        self.look.mkdir(parents=True)
+        (self.look / "look.toml").write_text('themes = ["lion"]\n')
+        self.themes = self.folder / "themes"
+        (self.themes / "lion").mkdir(parents=True)
+
+    def write_updates(self, text):
+        (self.look / "updates.toml").write_text(text)
+
+    def theme_text(self):
+        return (self.themes / "lion" / "theme.toml").read_text()
+
+    def test_settings_and_corrections_are_applied_once(self):
+        self.write_updates('[[update]]\nrevision = 1\n'
+                           '[update.settings."dock.grid"]\nshare = 0.8\n'
+                           '[update.settings.fan]\nmost = 8\n'
+                           '[[update.corrections]]\ntable = "dock.grid"\nkey = "width"\nwas = 96\nnow = 100\n')
+        # From before revisions were kept; a comment after a header, too.
+        (self.themes / "lion" / "theme.toml").write_text(
+            '# made by hand\n[theme]\nname = "Lion"\n\n[dock.grid]  # the grid\nwidth = 96\n')
+
+        self.assertEqual(self.updates.refresh(self.folder / "looks", self.themes), ["lion"])
+        theme = tomllib.loads(self.theme_text())
+        self.assertEqual(theme["dock"]["grid"], {"share": 0.8, "width": 100})
         self.assertEqual(theme["fan"], {"most": 8})
-        self.assertTrue(text.startswith("# made by hand\n"))
-        # A theme made after the updates is left alone, and so is one up to date.
-        self.assertEqual((themes / "lion-new" / "theme.toml").read_text(), current)
-        self.assertEqual(refresh_themes.refresh(looks, themes), [])
+        self.assertEqual(theme["theme"]["updated_to"], 1)
+        self.assertTrue(self.theme_text().startswith("# made by hand\n"))
+
+        # What the user changes afterwards stays, even back to the old value.
+        edited = self.theme_text().replace("width = 100", "width = 96").replace("share = 0.8\n", "")
+        (self.themes / "lion" / "theme.toml").write_text(edited)
+        self.assertEqual(self.updates.refresh(self.folder / "looks", self.themes), [])
+        self.assertEqual(self.theme_text(), edited)
+
+    def test_a_table_written_inline_is_left_alone(self):
+        self.write_updates('[[update]]\nrevision = 1\n[update.settings."dock.grid"]\nshare = 0.8\n')
+        old = '[theme]\nname = "Lion"\n[dock]\ngrid = { width = 96 }\n'
+        (self.themes / "lion" / "theme.toml").write_text(old)
+        with contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(self.updates.refresh(self.folder / "looks", self.themes), [])
+        self.assertEqual(self.theme_text(), old)
+
+    def test_later_holds_until_an_update_brings_more(self):
+        os.environ["XDG_CONFIG_HOME"] = str(self.folder / "config")
+        self.addCleanup(os.environ.pop, "XDG_CONFIG_HOME")
+        look = {"themes": ["lion"], "folder": self.look}
+        (self.themes / "lion" / "theme.toml").write_text('[theme]\nname = "Lion"\n')
+        self.write_updates('[[update]]\nrevision = 1\nimport_brings = ["An icon."]\n')
+        self.assertTrue(self.updates.offers_import("lion", look, self.themes))
+
+        self.updates.put_off({"lion": 1})
+        self.assertFalse(self.updates.offers_import("lion", look, self.themes))
+        # An update with settings only does not bring the offer back.
+        self.write_updates('[[update]]\nrevision = 1\nimport_brings = ["An icon."]\n'
+                           '[[update]]\nrevision = 2\n[update.settings.fan]\nmost = 8\n')
+        self.assertFalse(self.updates.offers_import("lion", look, self.themes))
+        # One that brings something new does.
+        self.write_updates('[[update]]\nrevision = 1\nimport_brings = ["An icon."]\n'
+                           '[[update]]\nrevision = 2\nimport_brings = ["A button."]\n')
+        self.assertTrue(self.updates.offers_import("lion", look, self.themes))
 
 
 class TestPointerSettings(SessionTestCase):

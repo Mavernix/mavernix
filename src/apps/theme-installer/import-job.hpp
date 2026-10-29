@@ -47,9 +47,9 @@ class ImportJob : public QObject
     Q_PROPERTY(bool sandboxInstalled READ sandboxInstalled NOTIFY checked)
     Q_PROPERTY(QString sandboxPackage READ sandboxPackage NOTIFY checked)
     // The looks the back end can make: [{id, name, description, source,
-    // drop_hint, licence_note, desktop, installed, import_brings, put_off}];
-    // import_brings lists what a new import would bring an imported look,
-    // put_off whether the user said Later to that.
+    // drop_hint, licence_note, desktop, installed, import_brings,
+    // offer_import}]; import_brings lists what a new import would bring an
+    // imported look, offer_import whether to offer it (backend/updates.py).
     Q_PROPERTY(QVariantList looks READ looks NOTIFY checked)
     // The installer last imported from, if it is still there; else "".
     Q_PROPERTY(QString lastInstaller READ lastInstaller NOTIFY checked)
@@ -108,8 +108,9 @@ class ImportJob : public QObject
     // {name, size in words for a file}, or {} if there is nothing at `path`.
     Q_INVOKABLE QVariantMap describe(const QString& path) const;
 
-    // Stops offering a new import of the look until its next update.
-    Q_INVOKABLE void putOff(const QString& look_id) const;
+    // Stops offering a new import of these looks until an update brings
+    // something more.
+    Q_INVOKABLE void putOff(const QStringList& look_ids) const;
     // Opens the Theme Installer's own window, with `path` chosen if it is
     // not "".
     Q_INVOKABLE void openInstaller(const QString& path) const;

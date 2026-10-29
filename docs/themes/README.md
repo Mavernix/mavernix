@@ -56,9 +56,10 @@ name = "Plain"
 description = "A flat, neutral desktop with no artwork."
 format = 0                # the version of this format
 revision = 1              # optional: which update of its look the Theme Installer made it from
+updated_to = 2            # optional: the update whose settings it was last given at login
 ```
 
-The Theme Installer writes `revision` into the themes it makes. When a newer version of the desktop brings settings a theme can take as it is, they're added to older themes at login. When it brings something only a new import can give, the Theme Installer offers that import once.
+The Theme Installer writes `revision` into the themes it makes. When a newer version of the desktop brings settings a theme can take as it is, they're added to older themes once, at login, and `updated_to` notes it. A value you change afterwards stays. When an update brings something only a new import can give, the Theme Installer offers that import once.
 
 ## Fills: picture or plain
 

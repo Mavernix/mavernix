@@ -23,10 +23,8 @@ Window {
     readonly property string themeDirectory: settings.theme_directory
     readonly property var words: (settings.config.theme_installer ?? ({})).words ?? ({})
 
-    // The imported looks a new import would bring something to, unless the
-    // user said Later to it.
-    readonly property var newsLooks:
-        job.looks.filter(look => (look.import_brings ?? []).length > 0 && !look.put_off)
+    // The imported looks to offer a new import of (the back end decides).
+    readonly property var newsLooks: job.looks.filter(look => look.offer_import)
     readonly property string lookNames: newsLooks.map(look => look.name).join(", ")
 
     // Shown once the check has said there is something new; without
@@ -63,9 +61,7 @@ Window {
     }
 
     function putOff() {
-        for (const look of newsLooks) {
-            job.putOff(look.id)
-        }
+        job.putOff(newsLooks.map(look => look.id))
     }
 
     function later() {
