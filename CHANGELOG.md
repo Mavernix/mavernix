@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 (2026-10-29)
 
 - New Network pane in Settings. It lists every Wi-Fi network around you and the ones you've saved, with plain Connect, Disconnect and Forget buttons.
 - The Wi-Fi menu in the menu bar now lists the networks around you, so you can join one, type its password or disconnect without opening Settings or installing anything else.
