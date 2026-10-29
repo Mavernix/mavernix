@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1 (2026-10-29)
+
+- Discord closed to the tray while maximized comes back when you open it again from the tray or the Dock. Before, its window could fail to appear until Discord was quit.
+- Programs that draw their own title bar no longer get Mavernix's title bar for a moment as they open.
+- The logo's top face is now the Leopard Aurora sky.
+
 ## 0.2.0 (2026-10-29)
 
 - New Network pane in Settings. It lists every Wi-Fi network around you and the ones you've saved, with plain Connect, Disconnect and Forget buttons.
