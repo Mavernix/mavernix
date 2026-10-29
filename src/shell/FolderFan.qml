@@ -90,9 +90,7 @@ Item {
                     if (entry.file === null) {
                         return themeIcons.path("folder-open")
                     }
-                    const own = themeIcons.find(entry.file.icon)
-                    return own !== "" ? own
-                                      : themeIcons.path(entry.file.genericIcon, "text-x-generic")
+                    return themeIcons.forFolderEntry(entry.file)
                 }
                 opacity: press.pressed ? 0.6 : 1
             }
