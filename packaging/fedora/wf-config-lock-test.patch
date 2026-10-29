@@ -1,0 +1,13 @@
+The forked child in the lock test falls through and runs the remaining tests
+a second time, alongside the parent. End it once it has released the lock.
+
+--- a/test/file_test.cpp
++++ b/test/file_test.cpp
+@@ -272,6 +272,7 @@
+         /* By now, parent should have failed. */
+         flock(fd, LOCK_UN);
+         close(fd);
++        _exit(0);
+     }
+ 
+     /* Wait for other process to lock the file */

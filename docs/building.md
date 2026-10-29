@@ -19,6 +19,10 @@ cd packaging/arch
 makepkg -si
 ```
 
+## On Fedora
+
+Fedora 44 and 45 have an older Wayfire and Quickshell than Mavernix needs, so `packaging/fedora` builds those too, as packages, along with Mavernix; [its README](../packaging/fedora/README.md) says how. There's no repository to install them from yet.
+
 ## What you need
 
 | What | Tested with | Arch package | What it's for |

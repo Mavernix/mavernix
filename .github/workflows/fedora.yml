@@ -1,0 +1,38 @@
+# On every push and pull request: builds the Fedora packages
+# (packaging/fedora), with their tests, and installs them together. Wayfire,
+# wf-config and Quickshell are built again only when their specs change.
+
+name: fedora
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  rpms:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        fedora: [44, 45]
+    container: registry.fedoraproject.org/fedora:${{ matrix.fedora }}
+    steps:
+      - name: Install what the cache needs
+        run: dnf install -y tar zstd
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/cache@v4
+        with:
+          path: rpms
+          key: fedora-${{ matrix.fedora }}-${{ hashFiles('packaging/fedora/wf-config*', 'packaging/fedora/wayfire.spec', 'packaging/fedora/quickshell.spec') }}
+
+      - name: Build
+        run: packaging/fedora/build-rpms rpms
+
+      - name: Upload the packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: fedora-${{ matrix.fedora }}-rpms
+          path: rpms/*.rpm
+          retention-days: 14
