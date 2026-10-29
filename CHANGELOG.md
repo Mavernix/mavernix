@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.0 (2026-10-29)
 
 - The dock has an Applications folder with all your programs. It works like any folder in the dock, and its Utilities folder opens right inside it, as on OS X.
 - Right-click a program in the dock for its own options, such as New Window.
