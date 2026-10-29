@@ -1563,6 +1563,7 @@ PanelWindow {
         }
         anchorX: lastAnchorX
         anchorY: lastAnchorY
+        dockThickness: dock.restingHeight
 
         onFileChosen: path => {
             dock.closeFolder()

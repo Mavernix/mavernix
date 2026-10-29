@@ -1,6 +1,6 @@
 // A folder's contents as a grid of icons in a box pointing at its dock
 // tile, with a last entry that opens the folder. A folder with more than
-// fits on the screen scrolls, by wheel or drag. Looks: the theme's
+// fits scrolls, by wheel or drag. Looks: the theme's
 // [dock.folder.grid] (docs/themes/, "Folders in the dock"); without box
 // pictures the box is drawn like a menu's.
 
@@ -25,9 +25,10 @@ Item {
     property string openLabel: ""
     // The pointer tip's distance from the box's left edge.
     property real pointerX: -1
-    // The most room the box may take; rows beyond it scroll.
-    property real mostWidth: Infinity
-    property real mostHeight: Infinity
+    // The free part of the screen: its width, and its height between the
+    // panel and the dock.
+    required property real freeWidth
+    required property real freeHeight
 
     signal fileChosen(string path)
     signal folderChosen()
@@ -43,19 +44,52 @@ Item {
     readonly property real iconSize: looks.icon_size ?? 64
     readonly property real bottomPadding: looks.bottom_padding ?? 8
 
-    readonly property int entryCount: entries.length + 1
-    // As many columns as make the grid about twice as wide as it is high,
-    // but no more than fit beside each other.
-    readonly property real columnsThatFit: Math.max(1, Math.floor((mostWidth - 2 * sidePadding) / cellWidth))
-    readonly property int columns:
-        Math.max(1, Math.min(entryCount, columnsThatFit, Math.ceil(Math.sqrt(2 * entryCount))))
-    readonly property int rows: Math.ceil(entryCount / columns)
-    readonly property real rowsThatFit:
-        Math.max(1, Math.floor((mostHeight - firstRowTop - bottomPadding) / cellHeight))
-    readonly property int shownRows: Math.min(rows, rowsThatFit)
+    // --- How big the grid is -----------------------------------------------
+    // The grid is sized for a stage: the share `stage_share` of the free
+    // width and height. As many cells as the stage holds are shown at once,
+    // each counted with `fit_spacing` more room than it takes; the rest
+    // scroll. The shown cells make a near square, and shrink if the stage is
+    // too small for them at full size (docs/themes/dock.md, "Folders in the
+    // dock").
+    readonly property real stageShare: looks.stage_share ?? 1
+    readonly property real fitSpacing: looks.fit_spacing ?? 0
+    readonly property real stageWidth: Math.floor(Math.min(freeWidth * stageShare, freeWidth - 2 * sidePadding))
+    readonly property real stageHeight:
+        Math.floor(Math.min(freeHeight * stageShare, freeHeight - firstRowTop - bottomPadding))
 
-    width: 2 * sidePadding + columns * cellWidth
-    height: firstRowTop + shownRows * cellHeight + bottomPadding
+    readonly property int entryCount: entries.length + 1
+    readonly property int cellsThatFit: Math.max(1, Math.floor(
+        stageWidth / (cellWidth + fitSpacing) * (stageHeight / (cellHeight + fitSpacing))))
+    readonly property int shownCells: Math.min(entryCount, cellsThatFit)
+
+    // Columns and rows for `count` cells: as many columns as its square root,
+    // and one more when the last row would otherwise hold no more cells than
+    // one fewer than there are rows (so 3 cells make 3 x 1, 7 make 4 x 2).
+    function nearSquare(count) {
+        let columns = Math.ceil(Math.sqrt(count))
+        let rows = Math.ceil(count / columns)
+        const inLastRow = count % columns
+        if (inLastRow !== 0 && inLastRow <= rows - 1) {
+            columns += 1
+            rows = Math.ceil(count / columns)
+        }
+        return { columns: columns, rows: rows }
+    }
+
+    readonly property var shownShape: nearSquare(shownCells)
+    readonly property int columns: shownShape.columns
+    readonly property int shownRows: shownShape.rows
+    readonly property int rows: Math.ceil(entryCount / columns)
+
+    // Cells shrink to fit the stage, in whole pixels, but never grow.
+    readonly property real cellScale: Math.min(1, Math.floor(stageWidth / columns) / cellWidth,
+                                               Math.floor(stageHeight / shownRows) / cellHeight)
+    readonly property real shownCellWidth: cellWidth * cellScale
+    readonly property real shownCellHeight: cellHeight * cellScale
+    readonly property real shownIconSize: iconSize * cellScale
+
+    width: 2 * sidePadding + columns * shownCellWidth
+    height: firstRowTop + shownRows * shownCellHeight + bottomPadding
 
     function scrollToTop() {
         cells.contentY = 0
@@ -105,8 +139,8 @@ Item {
         id: cells
         y: grid.firstRowTop
         width: grid.width
-        height: grid.shownRows * grid.cellHeight
-        contentHeight: grid.rows * grid.cellHeight
+        height: grid.shownRows * grid.shownCellHeight
+        contentHeight: grid.rows * grid.shownCellHeight
         interactive: grid.rows > grid.shownRows
         boundsBehavior: Flickable.StopAtBounds
         clip: true
@@ -119,17 +153,18 @@ Item {
                 required property int index
                 readonly property var file: index < grid.entries.length ? grid.entries[index] : null
 
-                x: grid.sidePadding + (index % grid.columns) * grid.cellWidth
-                y: Math.floor(index / grid.columns) * grid.cellHeight
-                width: grid.cellWidth
-                height: grid.cellHeight
+                x: grid.sidePadding + (index % grid.columns) * grid.shownCellWidth
+                y: Math.floor(index / grid.columns) * grid.shownCellHeight
+                width: grid.shownCellWidth
+                height: grid.shownCellHeight
 
                 readonly property bool hasOwnPicture: file === null && grid.looks.open_image !== undefined
-                readonly property real pictureSize:
-                    hasOwnPicture ? (grid.looks.open_image_size ?? grid.iconSize) : grid.iconSize
+                readonly property real pictureSize: hasOwnPicture
+                    ? (grid.looks.open_image_size ?? grid.iconSize) * grid.cellScale
+                    : grid.shownIconSize
                 Image {
                     anchors.horizontalCenter: parent.horizontalCenter
-                    y: (grid.iconSize - cell.pictureSize) / 2
+                    y: (grid.shownIconSize - cell.pictureSize) / 2
                     width: cell.pictureSize
                     height: cell.pictureSize
                     sourceSize: Qt.size(width, height)
@@ -150,9 +185,10 @@ Item {
 
                 GridText {
                     anchors.horizontalCenter: parent.horizontalCenter
-                    width: Math.min(implicitWidth, grid.looks.label_width ?? (grid.cellWidth - 8))
+                    width: Math.min(implicitWidth,
+                                    (grid.looks.label_width ?? (grid.cellWidth - 8)) * grid.cellScale)
                     elide: Text.ElideMiddle
-                    y: (grid.looks.label_baseline ?? (grid.iconSize + 16)) - baselineOffset
+                    y: (grid.looks.label_baseline ?? (grid.iconSize + 16)) * grid.cellScale - baselineOffset
                     text: cell.file !== null ? cell.file.name : grid.openLabel
                     style: grid.looks.label_shadow_color !== undefined ? Text.Raised : Text.Normal
                     styleColor: ThemeValues.color(grid.looks.label_shadow_color ?? "#00000000")
@@ -173,10 +209,11 @@ Item {
         }
     }
 
-    // Shows where the view stands while there is more than fits.
+    // Shows where the view stands while there is more than fits, for a theme
+    // that gives it a width.
     Rectangle {
-        visible: cells.interactive
-        readonly property real thickness: grid.looks.scroll_bar_width ?? 4
+        visible: cells.interactive && thickness > 0
+        readonly property real thickness: grid.looks.scroll_bar_width ?? 0
         width: thickness
         radius: thickness / 2
         // Without a colour of its own: the names' colour, at half strength.
