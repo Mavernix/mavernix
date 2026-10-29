@@ -123,7 +123,10 @@ groups = [
         "foot",
         "mavernix-settings",
     ],
-    [{ name = "Downloads", icon = "folder-download", folder = "~/Downloads", view = "fan", order = "added" }],
+    [
+        { name = "Applications", icon = "folder-applications", programs = true, view = "grid" },
+        { name = "Downloads", icon = "folder-download", folder = "~/Downloads", view = "fan", order = "added" },
+    ],
 ]
 last_group_at_end = true
 trash_label = "Trash"
@@ -149,6 +152,8 @@ sort_modified = "Date Modified"
 sort_created = "Date Created"
 view_as = "View content as"
 view_fan = "Fan"
+programs_folder = "Applications"
+open_app_grid = "Open App Grid"
 
 [desktop_files.words]
 new_folder_name = "untitled folder"

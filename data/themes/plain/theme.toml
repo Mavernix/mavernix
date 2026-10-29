@@ -613,6 +613,8 @@ label_color = "#202020"
 title_baseline = 19
 title_color = "#20202070"
 screen_margin = 8
+scroll_bar_width = 4
+scroll_bar_color = "#20202060"
 
 [dock.label]
 background = "#202020f0"
