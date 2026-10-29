@@ -32,7 +32,7 @@ optdepends=(
   'wl-clipboard: pictures of the screen into the clipboard'
   'brightnessctl: brightness keys'
   'playerctl: media keys'
-  'network-manager-applet: choosing a wireless network'
+  'network-manager-applet: asking for a network password NetworkManager needs again, and networks that sign in with a user name or a certificate'
   'dex: starting the programs in ~/.config/autostart'
   "hwdata: the graphics card's name in About This Computer"
   'xdg-desktop-portal-gtk: file choosers for sandboxed programs'

@@ -58,7 +58,7 @@ These are optional. If one isn't installed, the desktop just does without it:
 |---|---|
 | `grim`, `slurp`, `wl-clipboard` | screenshots |
 | `brightnessctl`, `playerctl` | a laptop's brightness and media keys |
-| `network-manager-applet` | picking a wireless network |
+| `network-manager-applet` | asking for a network password NetworkManager needs again, and networks that sign in with a user name or a certificate |
 | `dex` | starting the programs in `~/.config/autostart` |
 | `hwdata` | the graphics card's name in About This Computer |
 | `xdg-desktop-portal`, `xdg-desktop-portal-gtk`, `xdg-desktop-portal-wlr` | file pickers and screen sharing for browsers and sandboxed programs |
