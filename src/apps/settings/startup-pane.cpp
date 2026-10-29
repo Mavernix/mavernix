@@ -102,7 +102,9 @@ StartupPane::StartupPane(Choices& choices, QWidget* parent) : QWidget(parent)
     {
         note = word("startup_switched_off", "Starting these programs at login is turned off.");
     }
-    else if (QStandardPaths::findExecutable(QStringLiteral("dex")).isEmpty())
+    else if (QStandardPaths::findExecutable(QStringLiteral("dex")).isEmpty()
+             // Fedora's name for it.
+             && QStandardPaths::findExecutable(QStringLiteral("dex-autostart")).isEmpty())
     {
         note = word("startup_no_dex",
             "These programs don't open yet: the helper program “dex” is missing. Install the package dex, "
