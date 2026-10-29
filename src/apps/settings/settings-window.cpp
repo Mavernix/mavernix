@@ -45,20 +45,25 @@ struct KnownPane
     const char* keywords;
 };
 static const KnownPane known_panes[] = {
-    {"dock", "preferences-dock", "Dock & Menu Bar", "taskbar launcher magnification hide autohide size menu bar clock time 24 hour status icons"},
+    {"dock", "preferences-dock", "Dock & Menu Bar",
+        "taskbar launcher magnification hide autohide size menu bar clock time 24 hour status icons"},
     {"icons", "applications-other", "App Icons", "application program icon picture change"},
     {"theme", "preferences-desktop-theme", "Theme", "look appearance dark light colours colors style"},
     {"desktop", "preferences-desktop-wallpaper", "Desktop", "wallpaper background picture image name icons files"},
-    {"sound", "preferences-desktop-sound", "Sound", "volume audio speaker headphones microphone input output alert beep"},
+    {"sound", "preferences-desktop-sound", "Sound",
+        "volume audio speaker headphones microphone input output alert beep"},
     {"trackpad", "input-touchpad", "Touchpad", "touchpad tap click scroll natural gestures"},
     {"mouse", "input-mouse", "Mouse", "pointer cursor speed acceleration scroll wheel left handed button"},
-    {"energy", "preferences-system-power-management", "Energy", "power battery sleep suspend screen off lock lid saver"},
-    {"display", "preferences-desktop-display", "Display", "screen monitor resolution refresh rate scale size brightness arrange"},
+    {"energy", "preferences-system-power-management", "Energy",
+        "power battery sleep suspend screen off lock lid saver"},
+    {"display", "preferences-desktop-display", "Display",
+        "screen monitor resolution refresh rate scale size brightness arrange"},
     {"desktops", "preferences-desktop-virtual", "Desktops", "workspaces spaces virtual mission control"},
     {"windows", "preferences-system-windows", "Windows", "snap tile title bar buttons double click drag move resize"},
     {"extensions", "preferences-plugin", "Extensions", "plugins add-ons addons"},
     {"toolkits", "preferences-system", "App Style", "gtk qt programs apps look theme"},
-    {"network", "preferences-system-network", "Network", "wifi wi-fi wlan wireless internet ethernet cable lan ip router password"},
+    {"network", "preferences-system-network", "Network",
+        "wifi wi-fi wlan wireless internet ethernet cable lan ip router password"},
     {"bluetooth", "preferences-system-bluetooth", "Bluetooth", "pair headphones keyboard mouse speaker devices"},
     {"keyboard", "input-keyboard", "Keyboard", "shortcuts keys hotkeys layout language input sources typing repeat"},
     {"defaults", "applications-other", "Default Apps", "default programs browser mail open with"},
@@ -145,7 +150,8 @@ SettingsWindow::SettingsWindow(Choices& choices) : choices(choices)
             {
                 std::fprintf(stderr,
                     "mavernix-settings: the config asks for a pane \"%s\", "
-                    "which this program does not have; known: theme, desktop, dock, icons, sound, trackpad, mouse, energy, "
+                    "which this program does not have; known: theme, desktop, dock, icons, sound, trackpad, mouse, "
+                    "energy, "
                     "display, desktops, windows, toolkits, extensions, network, bluetooth, keyboard, defaults\n",
                     qPrintable(name));
                 continue;

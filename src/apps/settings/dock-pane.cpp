@@ -82,7 +82,8 @@ DockPane::DockPane(Choices& choices, QWidget* parent) : QWidget(parent), choices
     {
         // Items without a friendly name (a custom one) keep their own.
         auto* shown = new QCheckBox(item_names.value(name, name).toString());
-        shown->setChecked(!choices.value(QStringLiteral("panel"), QStringLiteral("hidden")).toStringList().contains(name));
+        shown->setChecked(
+            !choices.value(QStringLiteral("panel"), QStringLiteral("hidden")).toStringList().contains(name));
         connect(shown, &QCheckBox::toggled, this, [this, name](bool on) {
             QStringList hidden = this->choices.value(QStringLiteral("panel"), QStringLiteral("hidden")).toStringList();
             hidden.removeAll(name);

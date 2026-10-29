@@ -22,7 +22,8 @@ BluetoothAgent::BluetoothAgent(QObject* parent) : QObject(parent)
     QDBusConnection bus = QDBusConnection::systemBus();
     if (!bus.registerObject(AGENT_PATH, this, QDBusConnection::ExportScriptableSlots))
     {
-        qWarning().noquote() << "Shell.Native: could not offer the Bluetooth pairing agent -" << bus.lastError().message();
+        qWarning().noquote() << "Shell.Native: could not offer the Bluetooth pairing agent -"
+                             << bus.lastError().message();
         return;
     }
     auto* watcher = new QDBusServiceWatcher(SERVICE, bus, QDBusServiceWatcher::WatchForRegistration, this);
@@ -32,8 +33,8 @@ BluetoothAgent::BluetoothAgent(QObject* parent) : QObject(parent)
 
 BluetoothAgent::~BluetoothAgent()
 {
-    QDBusMessage leaving = QDBusMessage::createMethodCall(
-        SERVICE, QStringLiteral("/org/bluez"), QStringLiteral("org.bluez.AgentManager1"), QStringLiteral("UnregisterAgent"));
+    QDBusMessage leaving = QDBusMessage::createMethodCall(SERVICE, QStringLiteral("/org/bluez"),
+        QStringLiteral("org.bluez.AgentManager1"), QStringLiteral("UnregisterAgent"));
     leaving << QVariant::fromValue(QDBusObjectPath(AGENT_PATH));
     QDBusConnection::systemBus().call(leaving, QDBus::NoBlock);
     QDBusConnection::systemBus().unregisterObject(AGENT_PATH);
@@ -61,8 +62,8 @@ void BluetoothAgent::registerWithBlueZ()
 
 QString BluetoothAgent::deviceName(const QDBusObjectPath& device) const
 {
-    QDBusMessage asking =
-        QDBusMessage::createMethodCall(SERVICE, device.path(), QStringLiteral("org.freedesktop.DBus.Properties"), QStringLiteral("Get"));
+    QDBusMessage asking = QDBusMessage::createMethodCall(
+        SERVICE, device.path(), QStringLiteral("org.freedesktop.DBus.Properties"), QStringLiteral("Get"));
     asking << QStringLiteral("org.bluez.Device1") << QStringLiteral("Alias");
     const QDBusReply<QDBusVariant> answer = QDBusConnection::systemBus().call(asking, QDBus::Block, 1000);
     return answer.isValid() ? answer.value().variant().toString() : device.path().section(QLatin1Char('/'), -1);
@@ -132,7 +133,8 @@ void BluetoothAgent::DisplayPasskey(const QDBusObjectPath& device, uint passkey,
     // Shown once; the later calls only count the digits typed on the device.
     if (entered == 0)
     {
-        emit asked(QStringLiteral("show"), deviceName(device), QStringLiteral("%1").arg(passkey, 6, 10, QLatin1Char('0')));
+        emit asked(
+            QStringLiteral("show"), deviceName(device), QStringLiteral("%1").arg(passkey, 6, 10, QLatin1Char('0')));
     }
 }
 

@@ -68,8 +68,8 @@ void ScreenArrangement::fit()
     const double room_height = height() - 2 * margin_px;
     ratio = std::min(room_width / std::max(1, all.width()), room_height / std::max(1, all.height()));
     // Centred in the widget.
-    offset = QPointF((width() - all.width() * ratio) / 2 - all.x() * ratio,
-        (height() - all.height() * ratio) / 2 - all.y() * ratio);
+    offset = QPointF(
+        (width() - all.width() * ratio) / 2 - all.x() * ratio, (height() - all.height() * ratio) / 2 - all.y() * ratio);
 }
 
 QRectF ScreenArrangement::drawn(const QRect& at) const
@@ -79,7 +79,8 @@ QRectF ScreenArrangement::drawn(const QRect& at) const
 
 QRectF ScreenArrangement::menuBarOf(const QRectF& screen) const
 {
-    return QRectF(screen.x(), screen.y(), screen.width(), std::max(menu_bar_least_px, screen.height() * menu_bar_share));
+    return QRectF(
+        screen.x(), screen.y(), screen.width(), std::max(menu_bar_least_px, screen.height() * menu_bar_share));
 }
 
 int ScreenArrangement::screenAt(const QPointF& point) const
@@ -110,7 +111,8 @@ void ScreenArrangement::paintEvent(QPaintEvent*)
         const QRectF box = drawn(screen.at).adjusted(1, 1, -1, -1);
         const bool is_picked = screen.name == picked_name;
         // Outlined in the text's colour, which stands out in any theme; a highlight may hardly.
-        painter.setPen(QPen(is_picked ? colours.color(QPalette::WindowText) : colours.color(QPalette::Dark), is_picked ? 2 : 1));
+        painter.setPen(
+            QPen(is_picked ? colours.color(QPalette::WindowText) : colours.color(QPalette::Dark), is_picked ? 2 : 1));
         painter.setBrush(is_picked ? colours.color(QPalette::Highlight) : colours.color(QPalette::Button));
         painter.drawRect(box);
 

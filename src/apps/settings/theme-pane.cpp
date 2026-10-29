@@ -69,8 +69,9 @@ ThemePane::ThemePane(Choices& choices, QWidget* parent) : QWidget(parent)
     // height than it fills, and the window grows with it.
     const int note_width = 340;
     auto* note = new QLabel;
-    note->setText(in_lines_of(word("desktop_note",
-        "The desktop changes at once; windows that are open keep their look until they are opened again."),
+    note->setText(in_lines_of(
+        word("desktop_note",
+            "The desktop changes at once; windows that are open keep their look until they are opened again."),
         note->fontMetrics(), note_width));
     auto* problem = new QLabel;
 
@@ -102,9 +103,10 @@ ThemePane::ThemePane(Choices& choices, QWidget* parent) : QWidget(parent)
     more->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     connect(more, &QPushButton::clicked, this, []() { QProcess::startDetached(installer_command, {}); });
     auto* more_note = new QLabel;
-    more_note->setText(in_lines_of(word("theme_more_note",
-        "The Theme Installer can make more themes, such as Sea Lion, the look of OS X 10.9, from Apple's installer files."),
-        more_note->fontMetrics(), note_width));
+    more_note->setText(
+        in_lines_of(word("theme_more_note", "The Theme Installer can make more themes, such as Sea Lion, the look of "
+                                            "OS X 10.9, from Apple's installer files."),
+            more_note->fontMetrics(), note_width));
 
     auto* form = new QFormLayout(this);
     form->setLabelAlignment(Qt::AlignRight | Qt::AlignTop);

@@ -205,7 +205,8 @@ void BluetoothPane::readAll()
         {
             QDBusMessage trusting = QDBusMessage::createMethodCall(
                 service_name, pairing_path, QLatin1String(properties_interface), QStringLiteral("Set"));
-            trusting << QLatin1String(device_interface) << QStringLiteral("Trusted") << QVariant::fromValue(QDBusVariant(true));
+            trusting << QLatin1String(device_interface) << QStringLiteral("Trusted")
+                     << QVariant::fromValue(QDBusVariant(true));
             QDBusConnection::systemBus().asyncCall(trusting);
             call(pairing_path, device_interface, "Connect");
             pairing_path.clear();

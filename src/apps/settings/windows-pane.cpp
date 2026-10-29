@@ -108,7 +108,8 @@ WindowsPane::WindowsPane(Choices& choices, QWidget* parent) : QWidget(parent), c
     auto* button_side = new QComboBox;
     button_side->addItem(word("windows_buttons_left", "At the left"), left_side);
     button_side->addItem(word("windows_buttons_right", "At the right"), QStringLiteral("right"));
-    button_side->setCurrentIndex(qMax(0, button_side->findData(choices.value(table, QStringLiteral("button_side")).toString())));
+    button_side->setCurrentIndex(
+        qMax(0, button_side->findData(choices.value(table, QStringLiteral("button_side")).toString())));
     connect(button_side, &QComboBox::activated, this, [this, table, button_side](int index) {
         const QString side = button_side->itemData(index).toString();
         const QVariantList order = order_for_side(this->choices.value(table, QStringLiteral("button_order")), side);

@@ -141,7 +141,6 @@ EnergyPane::EnergyPane(Choices& choices, QWidget* parent) : QWidget(parent), cho
             form->setRowVisible(lid, !reply.isError() && reply.value().variant().toBool());
         });
     }
-
 }
 
 QHBoxLayout* EnergyPane::timeSlider(const QString& key, QSlider*& slider)
@@ -262,9 +261,12 @@ void EnergyPane::showLockNote()
     const int never = stops.size() - 1;
     const bool never_idle = screen_off->value() == never && sleep->value() == never;
     lock_note->setVisible(locks->isChecked() && never_idle);
-    const QString warning = words.value(QStringLiteral("energy_lock_never"),
-        QStringLiteral("The screen never switches off and the computer never sleeps, so it won't lock by itself. "
-                       "Lock it any time from the menu bar."))
-                                .toString();
+    const QString warning =
+        words
+            .value(QStringLiteral("energy_lock_never"),
+                QStringLiteral(
+                    "The screen never switches off and the computer never sleeps, so it won't lock by itself. "
+                    "Lock it any time from the menu bar."))
+            .toString();
     lock_note->setText(in_lines_of(warning, lock_note->fontMetrics(), lock_note_width_px));
 }

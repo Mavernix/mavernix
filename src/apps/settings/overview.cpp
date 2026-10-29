@@ -167,8 +167,8 @@ Overview::Overview(const QList<QList<Entry>>& groups, const QVariantMap& looks, 
             button->setGeometry(first_cell_middle - cell_pitch / 2 + (place % columns) * cell_pitch,
                 top + (place / columns) * line_pitch, cell_pitch, line_pitch + group_bottom);
             connect(button, &QAbstractButton::clicked, this, [this, name = entry.name]() { emit chosen(name); });
-            buttons.append(
-                {button, entry.name, QString(entry.title).replace(QLatin1Char('\n'), QLatin1Char(' ')), entry.keywords});
+            buttons.append({button, entry.name, QString(entry.title).replace(QLatin1Char('\n'), QLatin1Char(' ')),
+                entry.keywords});
         }
         top += height + lines_between;
     }

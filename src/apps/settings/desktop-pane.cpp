@@ -27,7 +27,8 @@ DesktopPane::DesktopPane(Choices& choices, QWidget* parent) : QWidget(parent)
 
     // The files of the Desktop folder as icons; the shell follows at once.
     auto* files = new QCheckBox(
-        words.value(QStringLiteral("desktop_show_files"), QStringLiteral("Show the files of the Desktop folder")).toString());
+        words.value(QStringLiteral("desktop_show_files"), QStringLiteral("Show the files of the Desktop folder"))
+            .toString());
     files->setChecked(choices.value(QStringLiteral("desktop_files"), QStringLiteral("show")).toBool());
     connect(files, &QCheckBox::toggled, this,
         [&choices](bool on) { choices.set(QStringLiteral("desktop_files"), QStringLiteral("show"), on); });
@@ -45,7 +46,9 @@ DesktopPane::DesktopPane(Choices& choices, QWidget* parent) : QWidget(parent)
     name_field->setFixedWidth(name_field_width_px);
     form->addRow(words.value(QStringLiteral("desktop_name"), QStringLiteral("Name in the menu bar:")).toString(),
         with_note_under(name_field,
-            words.value(QStringLiteral("desktop_name_note"), QStringLiteral("Shown at the top left while no window is active."))
+            words
+                .value(QStringLiteral("desktop_name_note"),
+                    QStringLiteral("Shown at the top left while no window is active."))
                 .toString(),
             0));
     connect(name_field, &QLineEdit::editingFinished, this, [&choices, name_field]() {

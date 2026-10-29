@@ -78,7 +78,8 @@ static const int name_role = Qt::UserRole;
 
 static QVariantMap all_properties(const QString& path, const QString& interface)
 {
-    QDBusMessage asking = QDBusMessage::createMethodCall(service_name, path, properties_interface, QStringLiteral("GetAll"));
+    QDBusMessage asking =
+        QDBusMessage::createMethodCall(service_name, path, properties_interface, QStringLiteral("GetAll"));
     asking << interface;
     const QDBusReply<QVariantMap> answer = QDBusConnection::systemBus().call(asking, QDBus::Block, call_timeout_ms);
     return answer.isValid() ? answer.value() : QVariantMap();
@@ -100,7 +101,8 @@ static QString path_of(const QVariant& value)
     return path == QLatin1String("/") ? QString() : path;
 }
 
-static void call_async(const QString& path, const QString& interface, const char* method, const QVariantList& arguments = {})
+static void call_async(
+    const QString& path, const QString& interface, const char* method, const QVariantList& arguments = {})
 {
     QDBusMessage message = QDBusMessage::createMethodCall(service_name, path, interface, QLatin1String(method));
     message.setArguments(arguments);
@@ -259,7 +261,8 @@ NetworkPane::NetworkPane(Choices& choices, QWidget* parent) : QWidget(parent)
     }
     for (const char* name : {"NewConnection", "ConnectionRemoved"})
     {
-        bus.connect(service_name, settings_path, settings_interface, QLatin1String(name), this, SLOT(somethingChanged()));
+        bus.connect(
+            service_name, settings_path, settings_interface, QLatin1String(name), this, SLOT(somethingChanged()));
     }
 
     readAll();
@@ -454,7 +457,9 @@ void NetworkPane::readAll()
                     {
                         call_async(saved.value(joining), connection_interface, "Delete");
                     }
-                    tell(word("network_join_failed", "Could not connect to “%1”. If it has a password, check it and try again.").arg(joining));
+                    tell(word("network_join_failed",
+                        "Could not connect to “%1”. If it has a password, check it and try again.")
+                            .arg(joining));
                     joining.clear();
                 }
             }
@@ -462,7 +467,8 @@ void NetworkPane::readAll()
         devices << device;
     }
     // Wi-Fi first, as on the original.
-    std::stable_sort(devices.begin(), devices.end(), [](const Device& one, const Device& other) { return one.wifi && !other.wifi; });
+    std::stable_sort(
+        devices.begin(), devices.end(), [](const Device& one, const Device& other) { return one.wifi && !other.wifi; });
 
     const int chosen_before = qMax(0, services->currentRow());
     {
@@ -526,7 +532,8 @@ void NetworkPane::showChosen()
     const bool connected = device != nullptr && device->state == activated_state;
 
     switch_button->setVisible(wifi);
-    switch_button->setText(wifi_on ? word("network_turn_off", "Turn Wi-Fi Off") : word("network_turn_on", "Turn Wi-Fi On"));
+    switch_button->setText(
+        wifi_on ? word("network_turn_off", "Turn Wi-Fi Off") : word("network_turn_on", "Turn Wi-Fi On"));
     wifi_part->setVisible(wifi && wifi_on);
     address_line->setText(connected ? device->address : QString());
     router_line->setText(connected ? device->router : QString());
@@ -535,7 +542,8 @@ void NetworkPane::showChosen()
     if (!have_network_manager)
     {
         status->setText(QString());
-        explain(word("network_no_manager", "NetworkManager is not running, so connections cannot be shown or changed."));
+        explain(
+            word("network_no_manager", "NetworkManager is not running, so connections cannot be shown or changed."));
         return;
     }
     if (device == nullptr)
@@ -553,9 +561,10 @@ void NetworkPane::showChosen()
     else if (connected)
     {
         status->setText(status_word + word("network_connected", "Connected"));
-        explain(wifi ? word("network_wifi_connected", "Connected to “%1”. Choose another network below and click Connect to switch.")
-                                        .arg(device->network_name)
-                                  : word("network_cable_connected", "Connected by cable."));
+        explain(wifi ? word("network_wifi_connected",
+                           "Connected to “%1”. Choose another network below and click Connect to switch.")
+                           .arg(device->network_name)
+                     : word("network_cable_connected", "Connected by cable."));
     }
     else if (device->state <= unavailable_state && !wifi)
     {
@@ -600,9 +609,11 @@ void NetworkPane::showNetworks(const Device& device)
         {
             notes << word("network_note_away", "not in range");
         }
-        const QString label = notes.isEmpty() ? network.name
-                                              : QStringLiteral("%1 (%2)").arg(network.name, notes.join(QStringLiteral(", ")));
-        auto* row = new QListWidgetItem(network.access_point.isEmpty() ? QIcon() : signal_icon(network.strength), label, network_list);
+        const QString label = notes.isEmpty()
+                                  ? network.name
+                                  : QStringLiteral("%1 (%2)").arg(network.name, notes.join(QStringLiteral(", ")));
+        auto* row = new QListWidgetItem(
+            network.access_point.isEmpty() ? QIcon() : signal_icon(network.strength), label, network_list);
         row->setData(name_role, network.name);
         if (network.connected)
         {
@@ -622,17 +633,19 @@ void NetworkPane::showButtons()
 {
     const Network* network = chosenNetwork();
     const Device* device = chosenDevice();
-    const bool in_use = network != nullptr && network->connected && device != nullptr && device->state == activated_state;
+    const bool in_use =
+        network != nullptr && network->connected && device != nullptr && device->state == activated_state;
     connect_button->setText(in_use ? word("network_disconnect", "Disconnect") : word("network_connect", "Connect"));
     connect_button->setEnabled(in_use || (network != nullptr && !network->access_point.isEmpty()));
     forget_button->setEnabled(network != nullptr && !network->saved.isEmpty());
 }
 
-void NetworkPane::addAndActivate(const QMap<QString, QVariantMap>& settings, const QString& device, const QString& point)
+void NetworkPane::addAndActivate(
+    const QMap<QString, QVariantMap>& settings, const QString& device, const QString& point)
 {
     call_async(manager_path, manager_interface, "AddAndActivateConnection",
         {QVariant::fromValue(settings), QVariant::fromValue(QDBusObjectPath(device)),
-         QVariant::fromValue(QDBusObjectPath(point.isEmpty() ? QStringLiteral("/") : point))});
+            QVariant::fromValue(QDBusObjectPath(point.isEmpty() ? QStringLiteral("/") : point))});
 }
 
 void NetworkPane::connectChosen()
@@ -648,7 +661,9 @@ void NetworkPane::connectChosen()
     const QString device_path = device->path;
     if (network.enterprise && network.saved.isEmpty())
     {
-        tell(word("network_enterprise", "“%1” signs in with a user name or a certificate. Set it up with NetworkManager's connection editor (nm-connection-editor).").arg(network.name));
+        tell(word("network_enterprise", "“%1” signs in with a user name or a certificate. Set it up with "
+                                        "NetworkManager's connection editor (nm-connection-editor).")
+                .arg(network.name));
         return;
     }
 
@@ -660,7 +675,7 @@ void NetworkPane::connectChosen()
     {
         call_async(manager_path, manager_interface, "ActivateConnection",
             {QVariant::fromValue(QDBusObjectPath(network.saved)), QVariant::fromValue(QDBusObjectPath(device_path)),
-             QVariant::fromValue(QDBusObjectPath(network.access_point))});
+                QVariant::fromValue(QDBusObjectPath(network.access_point))});
         return;
     }
 
@@ -670,8 +685,8 @@ void NetworkPane::connectChosen()
     {
         bool agreed = false;
         const QString password = QInputDialog::getText(this, word("network_title", "Network"),
-            word("network_password_for", "The Wi-Fi network “%1” requires a password.").arg(network.name), QLineEdit::Password,
-            QString(), &agreed);
+            word("network_password_for", "The Wi-Fi network “%1” requires a password.").arg(network.name),
+            QLineEdit::Password, QString(), &agreed);
         if (!agreed)
         {
             joining.clear();
@@ -701,8 +716,9 @@ void NetworkPane::forgetChosen()
         return;
     }
     call_async(network->saved, connection_interface, "Delete");
-    tell(word("network_forgotten", "“%1” is forgotten: its password is no longer kept, and the computer won't join it by itself.")
-             .arg(network->name));
+    tell(word("network_forgotten",
+        "“%1” is forgotten: its password is no longer kept, and the computer won't join it by itself.")
+            .arg(network->name));
 }
 
 void NetworkPane::joinHidden()
@@ -725,7 +741,8 @@ void NetworkPane::joinHidden()
     connect(buttons, &QDialogButtonBox::accepted, &asking, &QDialog::accept);
     connect(buttons, &QDialogButtonBox::rejected, &asking, &QDialog::reject);
     auto* form = new QFormLayout(&asking);
-    form->addRow(new QLabel(word("network_join_hidden_intro", "A hidden network doesn't show up in the list. Enter its name, and its password if it has one.")));
+    form->addRow(new QLabel(word("network_join_hidden_intro",
+        "A hidden network doesn't show up in the list. Enter its name, and its password if it has one.")));
     form->addRow(word("network_name", "Network Name:"), name);
     form->addRow(word("network_password", "Password:"), password);
     form->addRow(buttons);
@@ -736,14 +753,15 @@ void NetworkPane::joinHidden()
 
     // A hidden network does not announce itself, so everything is given.
     ConnectionSettings settings;
-    settings.insert(QStringLiteral("connection"), QVariantMap{{QStringLiteral("type"), QStringLiteral("802-11-wireless")},
-                                                              {QStringLiteral("id"), name->text()}});
-    settings.insert(QStringLiteral("802-11-wireless"), QVariantMap{{QStringLiteral("ssid"), name->text().toUtf8()},
-                                                                   {QStringLiteral("hidden"), true}});
+    settings.insert(QStringLiteral("connection"),
+        QVariantMap{{QStringLiteral("type"), QStringLiteral("802-11-wireless")}, {QStringLiteral("id"), name->text()}});
+    settings.insert(QStringLiteral("802-11-wireless"),
+        QVariantMap{{QStringLiteral("ssid"), name->text().toUtf8()}, {QStringLiteral("hidden"), true}});
     if (!password->text().isEmpty())
     {
-        settings.insert(QStringLiteral("802-11-wireless-security"), QVariantMap{{QStringLiteral("key-mgmt"), QStringLiteral("wpa-psk")},
-                                                                                {QStringLiteral("psk"), password->text()}});
+        settings.insert(QStringLiteral("802-11-wireless-security"),
+            QVariantMap{
+                {QStringLiteral("key-mgmt"), QStringLiteral("wpa-psk")}, {QStringLiteral("psk"), password->text()}});
     }
     joining = name->text();
     joining_seen_busy = false;

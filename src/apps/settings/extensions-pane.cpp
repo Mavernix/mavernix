@@ -261,7 +261,8 @@ void ExtensionsPane::showExtension(const QString& name)
     const QVariantMap settings_now = found.value(name).toMap().value(QStringLiteral("settings")).toMap();
     const QVariantMap chosen = choices.value(QStringLiteral("extensions"), name).toMap();
     const QVariantMap labels = manifest.value(QStringLiteral("settings_labels")).toMap();
-    const QStringList decimal_settings = found.value(name).toMap().value(QStringLiteral("decimal_settings")).toStringList();
+    const QStringList decimal_settings =
+        found.value(name).toMap().value(QStringLiteral("decimal_settings")).toStringList();
     for (auto label = labels.constBegin(); label != labels.constEnd(); ++label)
     {
         const QString key = label.key();
@@ -272,8 +273,8 @@ void ExtensionsPane::showExtension(const QString& name)
             QWidget* field = nullptr;
             // JSON readers take 1.0 for 1, so whether a number has decimals
             // comes from its default in extension.toml.
-            const bool number_type = value.typeId() == QMetaType::Double || value.typeId() == QMetaType::Int
-                || value.typeId() == QMetaType::LongLong;
+            const bool number_type = value.typeId() == QMetaType::Double || value.typeId() == QMetaType::Int ||
+                                     value.typeId() == QMetaType::LongLong;
             if (number_type && decimal_settings.contains(key))
             {
                 auto* number = new QDoubleSpinBox;
@@ -281,7 +282,8 @@ void ExtensionsPane::showExtension(const QString& name)
                 number->setDecimals(setting_decimals);
                 number->setValue(value.toDouble());
                 // Leaving the field also ends editing; an untouched value is not written back.
-                connect(number, &QDoubleSpinBox::editingFinished, this, [this, name, key, number, was = number->value()]() mutable {
+                connect(number, &QDoubleSpinBox::editingFinished, this,
+                    [this, name, key, number, was = number->value()]() mutable {
                     if (number->value() != was)
                     {
                         was = number->value();
@@ -295,7 +297,8 @@ void ExtensionsPane::showExtension(const QString& name)
                 auto* number = new QSpinBox;
                 number->setRange(-1000000, 1000000);
                 number->setValue(value.toInt());
-                connect(number, &QSpinBox::editingFinished, this, [this, name, key, number, was = number->value()]() mutable {
+                connect(number, &QSpinBox::editingFinished, this,
+                    [this, name, key, number, was = number->value()]() mutable {
                     if (number->value() != was)
                     {
                         was = number->value();

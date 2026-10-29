@@ -61,22 +61,22 @@ MousePane::MousePane(Choices& choices, QWidget* parent) : QWidget(parent), choic
 
     auto* natural = new QCheckBox(word("mouse_natural_scroll", "Natural scrolling"));
     natural->setChecked(choices.value(table, QStringLiteral("mouse_natural_scroll")).toBool());
-    connect(natural, &QCheckBox::toggled, this,
-        [this](bool on) { change(QStringLiteral("mouse_natural_scroll"), on); });
+    connect(
+        natural, &QCheckBox::toggled, this, [this](bool on) { change(QStringLiteral("mouse_natural_scroll"), on); });
 
     const QVariant chosen_scroll = choices.value(table, QStringLiteral("mouse_scroll_speed"));
     auto* speed_row = speedSlider(speed, 2 * speed_steps + 1,
         speed_steps + qRound(choices.value(table, QStringLiteral("mouse_speed")).toDouble() * speed_steps));
-    auto* scrolling_row = speedSlider(scrolling, scroll_stop_count,
-        nearest_scroll_stop(chosen_scroll.isValid() ? chosen_scroll.toDouble() : 1.0));
+    auto* scrolling_row = speedSlider(
+        scrolling, scroll_stop_count, nearest_scroll_stop(chosen_scroll.isValid() ? chosen_scroll.toDouble() : 1.0));
 
     // Left out, the device's own profile applies, which for a mouse is
     // acceleration.
     const QVariant accelerated = choices.value(table, QStringLiteral("mouse_acceleration"));
     auto* acceleration = new QCheckBox(word("mouse_acceleration", "Acceleration"));
     acceleration->setChecked(!accelerated.isValid() || accelerated.toBool());
-    connect(acceleration, &QCheckBox::toggled, this,
-        [this](bool on) { change(QStringLiteral("mouse_acceleration"), on); });
+    connect(
+        acceleration, &QCheckBox::toggled, this, [this](bool on) { change(QStringLiteral("mouse_acceleration"), on); });
 
     auto* left = new QRadioButton(word("mouse_primary_left", "Left"));
     auto* right = new QRadioButton(word("mouse_primary_right", "Right"));
@@ -133,7 +133,8 @@ QWidget* MousePane::speedSlider(QSlider*& slider, int stops, int at)
 void MousePane::writeSliders()
 {
     write_later->stop();
-    choices.set(QStringLiteral("input"), QStringLiteral("mouse_speed"), double(speed->value() - speed_steps) / speed_steps);
+    choices.set(
+        QStringLiteral("input"), QStringLiteral("mouse_speed"), double(speed->value() - speed_steps) / speed_steps);
     change(QStringLiteral("mouse_scroll_speed"), scroll_stops[scrolling->value()]);
 }
 

@@ -66,7 +66,8 @@ TrackpadPane::TrackpadPane(Choices& choices, QWidget* parent) : QWidget(parent),
     auto* secondary = new QComboBox;
     secondary->addItem(word("trackpad_secondary_two_fingers", "Click with two fingers"), QStringLiteral("two_fingers"));
     secondary->addItem(word("trackpad_secondary_corner", "Click in the lower right corner"), QStringLiteral("corner"));
-    secondary->setCurrentIndex(qMax(0, secondary->findData(choices.value(QStringLiteral("input"), QStringLiteral("secondary_click")).toString())));
+    secondary->setCurrentIndex(qMax(
+        0, secondary->findData(choices.value(QStringLiteral("input"), QStringLiteral("secondary_click")).toString())));
     connect(secondary, &QComboBox::activated, this, [this, secondary](int index) {
         this->choices.set(QStringLiteral("input"), QStringLiteral("secondary_click"), secondary->itemData(index));
         QProcess::startDetached(reconfigure_command, {});

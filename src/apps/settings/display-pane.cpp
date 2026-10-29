@@ -90,8 +90,8 @@ DisplayPane::DisplayPane(Choices& choices, QWidget* parent) : QWidget(parent), c
     arrangement_note = note_of(word("display_arrangement_note",
         "Click a screen to change its settings below. Drag the screens to stand as they do on your desk, "
         "and drag the bar along the top of one to move the menu bar and dock to another screen."));
-    one_screen_note = note_of(word("display_one_screen",
-        "Plug in another screen to arrange your screens and choose each one's settings here."));
+    one_screen_note = note_of(word(
+        "display_one_screen", "Plug in another screen to arrange your screens and choose each one's settings here."));
     picked_title = new QLabel;
     QFont title_font = picked_title->font();
     title_font.setBold(true);
@@ -138,7 +138,8 @@ DisplayPane::DisplayPane(Choices& choices, QWidget* parent) : QWidget(parent), c
     choice_rows->setSpacing(8);
     choice_rows->addWidget(automatic);
     choice_rows->addWidget(chosen);
-    choice_rows->addWidget(with_end_words(scale, word("display_larger", "Larger"), word("display_smaller", "More room")));
+    choice_rows->addWidget(
+        with_end_words(scale, word("display_larger", "Larger"), word("display_smaller", "More room")));
     choice_rows->addWidget(looks_like);
 
     const QString note = word("display_note", "");
@@ -198,8 +199,10 @@ DisplayPane::DisplayPane(Choices& choices, QWidget* parent) : QWidget(parent), c
         brightness->setRange(5, 100);
         brightness->setMinimumWidth(220);
         brightness->setValue(backlight_percent(backlight));
-        follow_slider(brightness, brightness_step_ms, [this](int percent) { set_backlight_percent(backlight, percent); });
-        brightness_row = with_end_words(brightness, word("display_brightness_low", "Dim"), word("display_brightness_high", "Bright"));
+        follow_slider(
+            brightness, brightness_step_ms, [this](int percent) { set_backlight_percent(backlight, percent); });
+        brightness_row = with_end_words(
+            brightness, word("display_brightness_low", "Dim"), word("display_brightness_high", "Bright"));
         form->addRow(word("display_brightness", "Brightness:"), brightness_row);
     }
 
@@ -345,7 +348,10 @@ void DisplayPane::pick(const QString& name)
 
     // Its own scale, else the one for every screen.
     const QVariant own = choices.value(QStringLiteral("display"), QStringLiteral("screens"))
-                             .toMap().value(name).toMap().value(QStringLiteral("scale"));
+                             .toMap()
+                             .value(name)
+                             .toMap()
+                             .value(QStringLiteral("scale"));
     const QVariant held = own.isValid() ? own : choices.value(QStringLiteral("display"), QStringLiteral("scale"));
     const bool is_automatic = !held.isValid() || (held.toString() == QLatin1String("auto"));
     // The slider stands at the scale that holds: the chosen one, or the one
