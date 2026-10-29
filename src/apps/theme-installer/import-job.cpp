@@ -325,10 +325,14 @@ QVariantMap ImportJob::describe(const QString& path) const
 
 // Both start programs of their own (detached), because the window that asks
 // closes right afterwards and would end a child process with it.
-void ImportJob::putOff(const QString& look_id) const
+void ImportJob::putOff(const QStringList& look_ids) const
 {
-    log(QStringLiteral("window: offering a new import of %1 is put off until its next update").arg(look_id));
-    QProcess::startDetached(QStringLiteral("python3"), {back_end, QStringLiteral("later"), look_id});
+    if (look_ids.isEmpty())
+    {
+        return;
+    }
+    log(QStringLiteral("window: offering a new import of %1 is put off").arg(look_ids.join(QStringLiteral(", "))));
+    QProcess::startDetached(QStringLiteral("python3"), QStringList{back_end, QStringLiteral("later")} + look_ids);
 }
 
 void ImportJob::openInstaller(const QString& path) const

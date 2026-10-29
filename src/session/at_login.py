@@ -247,8 +247,12 @@ def offer_new_theme_imports():
     except ValueError:
         say(f"the Theme Installer's answer about what is new was not JSON: {result.stdout.strip()}")
         return
-    if looks:
-        start(["mavernix-theme-installer", "--whats-new"])
+    if not looks:
+        return
+    if shutil.which("mavernix-theme-installer") is None:
+        say("a new import of a look would bring something, but mavernix-theme-installer is not on the PATH")
+        return
+    start(["mavernix-theme-installer", "--whats-new"])
 
 
 def main():

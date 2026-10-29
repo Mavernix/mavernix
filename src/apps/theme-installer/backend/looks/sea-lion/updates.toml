@@ -1,12 +1,12 @@
 # What has changed in the Sea Lion themes since the first release, oldest
 # first. Each update counts `revision` up by one. The themes an import makes
-# record the newest revision as [theme] revision (import_theme.py); themes
-# imported before this list existed have none, which counts as 0.
+# record the newest revision as [theme] revision; themes imported before this
+# list existed have none, which counts as 0. How the list is used is in
+# backend/updates.py.
 #
 # settings        Theme keys that need nothing new from the installer. At
-#                 login, older themes get the ones they lack
-#                 (src/session/refresh_themes.py), so nobody has to import
-#                 again for them.
+#                 login, older themes get the ones they lack, once, so
+#                 nobody has to import again for them.
 # import_brings   What only a new import gives, because it takes new files
 #                 from the installer: one sentence each, as the Theme
 #                 Installer lists them when it offers the new import. A
