@@ -24,9 +24,11 @@ ScreenArrangement::ScreenArrangement(QWidget* parent) : QWidget(parent)
 
 void ScreenArrangement::setScreens(const QList<ArrangedScreen>& found)
 {
-    // Not while one is held: the compositor's news would move it under the pointer.
+    // Not while one is held, which would move under the pointer: kept for when it is let go.
     if (held >= 0)
     {
+        waiting = found;
+        has_waiting = true;
         return;
     }
     screens = found;
@@ -195,9 +197,32 @@ void ScreenArrangement::mouseReleaseEvent(QMouseEvent* event)
     {
         return;
     }
-    const int index = held;
+    int index = held;
     held = -1;
     setCursor(Qt::OpenHandCursor);
+    // Screens plugged in or taken out meanwhile: the held one, if still there, keeps where it was dragged.
+    if (has_waiting)
+    {
+        has_waiting = false;
+        const ArrangedScreen moved = screens[index];
+        screens = waiting;
+        index = -1;
+        for (int one = 0; one < screens.size(); one++)
+        {
+            if (screens[one].name == moved.name)
+            {
+                index = one;
+                screens[one].at.moveTopLeft(moved.at.topLeft());
+            }
+        }
+        if (index < 0)
+        {
+            holding_menu_bar = false;
+            fit();
+            update();
+            return;
+        }
+    }
     if (holding_menu_bar)
     {
         holding_menu_bar = false;

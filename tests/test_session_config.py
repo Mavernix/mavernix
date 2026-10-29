@@ -35,6 +35,11 @@ class SessionTestCase(unittest.TestCase):
     def setUp(self):
         self.folder = tempfile.TemporaryDirectory()
         folder = Path(self.folder.name)
+        # Run from inside a desktop session, the scripts would ask its compositor about its screens.
+        without_compositor = unittest.mock.patch.dict(os.environ)
+        without_compositor.start()
+        self.addCleanup(without_compositor.stop)
+        os.environ.pop("WAYFIRE_SOCKET", None)
 
         # The installed data folder, made of the sources' configs and themes.
         data = folder / "share" / "mavernix"
@@ -228,7 +233,8 @@ class TestScreenScale(SessionTestCase):
             import make_wayfire_config
         finally:
             del sys.path[:2]
-        screens = {"DP-1": {"width": 2560, "dpi": 93.0}, "HDMI-A-1": {"width": 1920, "dpi": 96.0}}
+        screens = {"DP-1": {"width": 2560, "height": 1440, "dpi": 93.0},
+                   "HDMI-A-1": {"width": 1920, "height": 1080, "dpi": 96.0}}
         current = {"DP-1": {"position": "0,0", "width": 2560}, "HDMI-A-1": {"position": "2560,300", "width": 1920}}
         with unittest.mock.patch.object(make_wayfire_config, "connected_screens", return_value=screens), \
                 unittest.mock.patch.object(make_wayfire_config, "screen_positions", return_value=current):
@@ -241,6 +247,26 @@ class TestScreenScale(SessionTestCase):
         self.assertIn("position = 0,1440", placed[1])
         self.assertEqual(1, sum(line.startswith("position") for line in placed[1]))
         self.assertFalse(any(line.startswith("position") for section in rescaled for line in section))
+
+    def test_placed_screens_touch_again_after_a_change_of_size(self):
+        # DP-1 at scale 2 is half as wide: HDMI-A-1, placed beside it at its
+        # old width, is moved back to its edge instead of standing apart.
+        sys.path[:0] = [self.folder.name, str(SESSION_SOURCE_DIR)]
+        try:
+            import make_wayfire_config
+        finally:
+            del sys.path[:2]
+        screens = {"DP-1": {"width": 2560, "height": 1440, "dpi": 93.0},
+                   "HDMI-A-1": {"width": 1920, "height": 1080, "dpi": 96.0}}
+        placed = {"DP-1": {"position": "0,0"}, "HDMI-A-1": {"position": "2560,0"}}
+        with unittest.mock.patch.object(make_wayfire_config, "connected_screens", return_value=screens), \
+                unittest.mock.patch.object(make_wayfire_config, "screen_positions", return_value={}):
+            same = make_wayfire_config.display_sections({"display": {"screens": placed}})
+            placed["DP-1"]["scale"] = 2
+            rescaled = make_wayfire_config.display_sections({"display": {"screens": placed}})
+        self.assertIn("position = 2560,0", same[1])
+        self.assertIn("position = 0,0", rescaled[0])
+        self.assertIn("position = 1280,0", rescaled[1])
 
 
 class TestPointerSettings(SessionTestCase):

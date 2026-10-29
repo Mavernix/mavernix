@@ -349,25 +349,46 @@ def custom_mode(mode, screen):
     return cvt_reduced_modeline(width, height, refresh_hz)
 
 
-def screen_positions():
-    """Where the running compositor has put each screen, and how wide it is
-    there: { "HDMI-A-1": { "position": "1920,0", "width": 1280 } }.
-
-    Empty outside a session, or if the compositor does not answer.
-    """
+def ask_compositor(method):
+    """The running compositor's answer to `method` (compositor_call.py);
+    None outside a session, or if it does not answer."""
     path = os.environ.get("WAYFIRE_SOCKET")
     if not path:
-        return {}
-    body = json.dumps({"method": "window-rules/list-outputs", "data": {}}).encode()
+        return None
+    body = json.dumps({"method": method, "data": {}}).encode()
     try:
         with socket.socket(socket.AF_UNIX) as connection:
             connection.settimeout(2)
             connection.connect(path)
             connection.sendall(struct.pack("<I", len(body)) + body)
             (length,) = struct.unpack("<I", connection.recv(4, socket.MSG_WAITALL))
-            outputs = json.loads(connection.recv(length, socket.MSG_WAITALL))
+            return json.loads(connection.recv(length, socket.MSG_WAITALL))
     except (OSError, ValueError, struct.error):
+        return None
+
+
+def screen_modes():
+    """Each screen's mode now, as the compositor reports it (its screen-modes
+    plugin): { "HEADLESS-1": { "width": 1280, "height": 800 } }. For screens
+    the kernel does not list, a virtual one say."""
+    answer = ask_compositor("screen-modes/list")
+    if not isinstance(answer, dict):
         return {}
+    modes = {}
+    for screen in answer.get("screens", []):
+        current = screen.get("current", {})
+        if screen.get("name") and current.get("width") and current.get("height"):
+            modes[screen["name"]] = {"width": current["width"], "height": current["height"]}
+    return modes
+
+
+def screen_positions():
+    """Where the running compositor has put each screen, and how wide it is
+    there: { "HDMI-A-1": { "position": "1920,0", "width": 1280 } }.
+
+    Empty outside a session, or if the compositor does not answer.
+    """
+    outputs = ask_compositor("window-rules/list-outputs")
     if not isinstance(outputs, list):
         return {}
     return {output["name"]: {"position": f'{int(output["geometry"]["x"])},{int(output["geometry"]["y"])}',
@@ -378,15 +399,80 @@ def screen_positions():
 ROTATED = ("90", "270", "flipped-90", "flipped-270")
 
 
-def drawn_width(own, scale, screen):
-    """How wide a screen is on the desktop with these settings; None if unknown."""
+def drawn_size(own, scale, screen):
+    """How large a screen is on the desktop with these settings, as
+    (width, height); None if unknown."""
     try:
         width, height = (int(side) for side in str(own["mode"]).split("@")[0].split("x"))
     except (KeyError, ValueError):
         width, height = screen.get("width"), screen.get("height")
+    if not width or not height:
+        return None
     if str(own.get("transform", "normal")) in ROTATED:
-        width = height
-    return width / float(scale) if width else None
+        width, height = height, width
+    return round(width / float(scale)), round(height / float(scale))
+
+
+# Two screens touch when they share this much of an edge (or all of the
+# shorter one's); less, and the pointer could hardly cross. As the settings'
+# src/apps/settings/screen-layout.hpp.
+LEAST_SHARED_EDGE_PX = 100
+
+
+def covers(one, other):
+    """Whether two (x, y, width, height) screens overlap."""
+    return (one[0] < other[0] + other[2] and other[0] < one[0] + one[2]
+            and one[1] < other[1] + other[3] and other[1] < one[1] + one[3])
+
+
+def touching(one, other):
+    """Whether two (x, y, width, height) screens share enough of an edge."""
+    if one[0] + one[2] == other[0] or other[0] + other[2] == one[0]:
+        shared = min(one[1] + one[3], other[1] + other[3]) - max(one[1], other[1])
+        return shared >= min(LEAST_SHARED_EDGE_PX, one[3], other[3])
+    if one[1] + one[3] == other[1] or other[1] + other[3] == one[1]:
+        shared = min(one[0] + one[2], other[0] + other[2]) - max(one[0], other[0])
+        return shared >= min(LEAST_SHARED_EDGE_PX, one[2], other[2])
+    return False
+
+
+def beside(moved, others):
+    """The place nearest to `moved` where it touches one of `others` and covers none."""
+    x, y, width, height = moved
+
+    def along(wanted, size, start, length):
+        share = min(LEAST_SHARED_EDGE_PX, size, length)
+        return max(start - size + share, min(wanted, start + length - share))
+
+    places = []
+    for other_x, other_y, other_width, other_height in others:
+        at_y = along(y, height, other_y, other_height)
+        at_x = along(x, width, other_x, other_width)
+        places += [(other_x + other_width, at_y), (other_x - width, at_y),
+                   (at_x, other_y + other_height), (at_x, other_y - height)]
+    free = [place for place in places if not any(covers((*place, width, height), other) for other in others)]
+    return min(free, key=lambda place: (place[0] - x) ** 2 + (place[1] - y) ** 2, default=(x, y))
+
+
+def tidied(placed, main):
+    """Screens as { NAME: (x, y, width, height) } with every one touching the
+    rest: the main one stays, and the others in turn, nearest first, keep
+    their place if it touches one already placed and covers none, or are
+    moved beside them. After a change of size the saved places no longer fit."""
+    middle = (placed[main][0] + placed[main][2] / 2, placed[main][1] + placed[main][3] / 2)
+
+    def distance(name):
+        x, y, width, height = placed[name]
+        return abs(x + width / 2 - middle[0]) + abs(y + height / 2 - middle[1])
+
+    done = {main: placed[main]}
+    for name in sorted((name for name in placed if name != main), key=distance):
+        screen = placed[name]
+        others = list(done.values())
+        if any(covers(screen, other) for other in others) or not any(touching(screen, other) for other in others):
+            screen = (*beside(screen, others), screen[2], screen[3])
+        done[name] = screen
+    return done
 
 
 def screen_scale(own, general, screen):
@@ -415,33 +501,58 @@ def display_sections(config):
     With several screens, one the config does not place keeps where it is
     now: rewriting the config would otherwise undo an arrangement made
     while the session runs. Once a screen is to be wider or narrower than
-    it is now, the arrangement no longer fits, and Wayfire places them anew.
+    it is now, those places no longer fit and Wayfire places them anew; and
+    screens the config places are moved to touch again (tidied).
     """
     wishes = config.get("display", {})
     general = wishes.get("scale", "auto")
     single = wishes.get("screens", {})
     sections = []
-    names = sorted(set(connected_screens()) | set(single))
     screens = connected_screens()
+    shown = screen_modes()
+    for name, mode in shown.items():
+        screens.setdefault(name, mode)
+    names = sorted(set(screens) | set(single))
     scales = {name: screen_scale(single.get(name, {}), general, screens.get(name, {})) for name in names}
     current = screen_positions()
+    sizes = {name: drawn_size(single.get(name, {}), scales[name], screens.get(name, {})) for name in names}
     for name, now in current.items():
-        width = drawn_width(single.get(name, {}), scales.get(name, 1), screens.get(name, {}))
+        size = sizes.get(name)
         # Fractional scales round to the pixel.
-        if width is not None and abs(width - now["width"]) > 1:
+        if size is not None and abs(size[0] - now["width"]) > 1:
             current = {}
             break
     if len(current) < 2:
         current = {}
+
+    # Where each screen goes: the config's place, else where it is now.
+    places = {}
+    for name in names:
+        written = single.get(name, {}).get("position", current.get(name, {}).get("position"))
+        try:
+            places[name] = tuple(int(number) for number in str(written).split(","))
+        except ValueError:
+            continue
+    # The screens in use: those the compositor shows, if it answers. One
+    # plugged in but switched off has no place to keep.
+    plugged_in = [name for name in names if name in (shown or screens)]
+    if len(plugged_in) > 1 and all(name in places and len(places[name]) == 2 and sizes[name] for name in plugged_in):
+        main = wishes.get("main_screen")
+        main = main if main in plugged_in else plugged_in[0]
+        placed = tidied({name: (*places[name], *sizes[name]) for name in plugged_in}, main)
+        places.update({name: screen[:2] for name, screen in placed.items()})
+
     for name in names:
         own = single.get(name, {})
         scale = scales[name]
         lines = [f"[output:{name}]", f"scale = {scale}"]
-        for key in ("mode", "position", "transform"):
+        for key in ("mode", "transform"):
             if key in own:
                 lines.append(f"{key} = {own[key]}")
-        if "position" not in own and name in current:
-            lines.append(f"position = {current[name]['position']}")
+        if name in places and len(places[name]) == 2:
+            lines.append(f"position = {places[name][0]},{places[name][1]}")
+        elif "position" in own:
+            lines.append(f"position = {own['position']}")
         modeline = custom_mode(own["mode"], screens.get(name, {})) if "mode" in own else None
         if modeline is not None:
             lines.append(f"custom_mode = {modeline}")

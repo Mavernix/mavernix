@@ -66,7 +66,7 @@ static const int slider_width_px = 260;
 static const int write_delay_ms = 500;
 // While the brightness slider is dragged, how often the screen follows it.
 static const int brightness_step_ms = 50;
-// Screens plugged in or taken out, and their sizes changing, come in bursts.
+// Screens plugged in, taken out, resized or moved: such news comes in bursts.
 static const int screens_settle_ms = 300;
 
 DisplayPane::DisplayPane(Choices& choices, QWidget* parent) : QWidget(parent), choices(choices)
@@ -79,19 +79,19 @@ DisplayPane::DisplayPane(Choices& choices, QWidget* parent) : QWidget(parent), c
 
     // With several screens: the picture of them, and whose settings follow.
     arrangement = new ScreenArrangement;
-    arrangement_note = new QLabel;
-    arrangement_note->setEnabled(false);
-    arrangement_note->setAlignment(Qt::AlignHCenter);
-    arrangement_note->setText(in_lines_of(word("display_arrangement_note",
+    // Grey and centred, as wide as the pane.
+    const auto note_of = [](const QString& text) {
+        auto* note = new QLabel;
+        note->setEnabled(false);
+        note->setAlignment(Qt::AlignHCenter);
+        note->setText(in_lines_of(text, note->fontMetrics(), intro_width_px));
+        return note;
+    };
+    arrangement_note = note_of(word("display_arrangement_note",
         "Click a screen to change its settings below. Drag the screens to stand as they do on your desk, "
-        "and drag the bar along the top of one to move the menu bar and dock to another screen."),
-        arrangement_note->fontMetrics(), intro_width_px));
-    one_screen_note = new QLabel;
-    one_screen_note->setEnabled(false);
-    one_screen_note->setAlignment(Qt::AlignHCenter);
-    one_screen_note->setText(in_lines_of(word("display_one_screen",
-        "Plug in another screen to arrange your screens and choose each one's settings here."),
-        one_screen_note->fontMetrics(), intro_width_px));
+        "and drag the bar along the top of one to move the menu bar and dock to another screen."));
+    one_screen_note = note_of(word("display_one_screen",
+        "Plug in another screen to arrange your screens and choose each one's settings here."));
     picked_title = new QLabel;
     QFont title_font = picked_title->font();
     title_font.setBold(true);
@@ -185,7 +185,6 @@ DisplayPane::DisplayPane(Choices& choices, QWidget* parent) : QWidget(parent), c
             screen_pixels = pixels;
             showLooksLike();
         }
-        tidyLater();
     });
     form->addRow(word("display_size", "Size of text and pictures:"), choice);
     form->addRow(QString(), main_here);
@@ -212,7 +211,6 @@ DisplayPane::DisplayPane(Choices& choices, QWidget* parent) : QWidget(parent), c
         pick(picked);
     });
 
-    // Screens plugged in, taken out, rescaled or moved.
     read_later = new QTimer(this);
     read_later->setSingleShot(true);
     read_later->setInterval(screens_settle_ms);
@@ -232,7 +230,6 @@ DisplayPane::DisplayPane(Choices& choices, QWidget* parent) : QWidget(parent), c
     connect(qApp, &QGuiApplication::screenRemoved, this, [this]() { read_later->start(); });
 
     readScreens();
-    pick(mainName());
 
     QList<QWidget*> tab_order = modes->lists();
     tab_order << automatic << chosen << scale << main_here;
@@ -303,11 +300,9 @@ void DisplayPane::readScreens()
     const QList<QScreen*> found = QGuiApplication::screens();
     const QString built_in_word = word("display_built_in", "Built-in screen");
     QList<ArrangedScreen> shown;
-    QMap<QString, QRect> now;
     for (const QScreen* screen : found)
     {
         shown.append({screen->name(), label_of(screen, built_in_word), screen->geometry()});
-        now.insert(screen->name(), screen->geometry());
     }
     arrangement->setScreens(shown);
     arrangement->setMain(mainName());
@@ -319,24 +314,20 @@ void DisplayPane::readScreens()
     one_screen_note->setVisible(!several);
     form->setRowVisible(main_here, several);
 
-    if (tidy_pending)
-    {
-        tidy_pending = false;
-        const QMap<QString, QRect> tidy = tidied(now, mainName());
-        if (tidy != now)
-        {
-            writePositions(positions(tidy, mainName()));
-        }
-    }
-    // The picked screen was taken out, or this is the first reading.
-    if (pickedScreen() == nullptr)
-    {
-        pick(mainName());
-    }
+    // Afresh even if the picked screen stays: the main screen, a name told
+    // apart from a new one's, or the brightness row may have changed. If it
+    // was taken out (or nothing was picked yet), the main screen is.
+    pick(pickedScreen() != nullptr ? picked : mainName());
 }
 
 void DisplayPane::pick(const QString& name)
 {
+    // A scale chosen with the keys a moment ago is the screen picked till now's.
+    if (write_later->isActive())
+    {
+        write_later->stop();
+        write();
+    }
     picked = name;
     arrangement->setPicked(name);
     const QScreen* screen = pickedScreen();
@@ -402,7 +393,6 @@ void DisplayPane::write()
         automatic->isChecked() ? QVariant(QStringLiteral("auto")) : QVariant(stops[scale->value()]));
     all.insert(picked, own);
     choices.set(QStringLiteral("display"), QStringLiteral("screens"), all);
-    tidyLater();
 }
 
 void DisplayPane::writePositions(const QMap<QString, QPoint>& positions)
@@ -415,12 +405,6 @@ void DisplayPane::writePositions(const QMap<QString, QPoint>& positions)
         all.insert(at.key(), own);
     }
     choices.set(QStringLiteral("display"), QStringLiteral("screens"), all);
-}
-
-void DisplayPane::tidyLater()
-{
-    // Done once the compositor has drawn the screen at its new size.
-    tidy_pending = QGuiApplication::screens().size() > 1;
 }
 
 void DisplayPane::showLooksLike()

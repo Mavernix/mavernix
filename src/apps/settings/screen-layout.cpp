@@ -80,36 +80,6 @@ bool touching(const QRect& one, const QRect& other)
     return false;
 }
 
-QMap<QString, QRect> tidied(const QMap<QString, QRect>& screens, const QString& main)
-{
-    if (!screens.contains(main))
-    {
-        return screens;
-    }
-    const QPoint middle = screens.value(main).center();
-    QStringList rest = screens.keys();
-    rest.removeAll(main);
-    std::sort(rest.begin(), rest.end(), [&](const QString& one, const QString& other) {
-        return (screens.value(one).center() - middle).manhattanLength() <
-               (screens.value(other).center() - middle).manhattanLength();
-    });
-
-    QMap<QString, QRect> placed{{main, screens.value(main)}};
-    for (const QString& name : rest)
-    {
-        QRect screen = screens.value(name);
-        const QList<QRect> others = placed.values();
-        const bool covers = std::any_of(others.begin(), others.end(), [&](const QRect& one) { return one.intersects(screen); });
-        const bool touches = std::any_of(others.begin(), others.end(), [&](const QRect& one) { return touching(one, screen); });
-        if (covers || !touches)
-        {
-            screen.moveTopLeft(snapped(screen, others, 0));
-        }
-        placed.insert(name, screen);
-    }
-    return placed;
-}
-
 QMap<QString, QPoint> positions(const QMap<QString, QRect>& screens, const QString& main)
 {
     const QPoint origin = screens.value(main).topLeft();

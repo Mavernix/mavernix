@@ -41,28 +41,6 @@ class TestScreenLayout : public QObject
         QVERIFY(touching(landed, main) || touching(landed, right));
     }
 
-    void aScreenThatShrankIsMovedBack()
-    {
-        // The left screen went from scale 1 to 2: it is half as wide, and the
-        // one beside it stands off by itself.
-        const QMap<QString, QRect> after{
-            {QStringLiteral("DP-1"), QRect(0, 0, 1280, 720)},
-            {QStringLiteral("HDMI-A-1"), QRect(2560, 0, 1920, 1080)},
-        };
-        const QMap<QString, QRect> tidy = tidied(after, QStringLiteral("DP-1"));
-        QCOMPARE(tidy.value(QStringLiteral("DP-1")), QRect(0, 0, 1280, 720));
-        QCOMPARE(tidy.value(QStringLiteral("HDMI-A-1")).topLeft(), QPoint(1280, 0));
-    }
-
-    void screensThatTouchStayWhereTheyAre()
-    {
-        const QMap<QString, QRect> screens{
-            {QStringLiteral("eDP-1"), QRect(0, 0, 1440, 900)},
-            {QStringLiteral("DP-1"), QRect(-2560, -540, 2560, 1440)},
-        };
-        QCOMPARE(tidied(screens, QStringLiteral("eDP-1")), screens);
-    }
-
     void positionsCountFromTheMainScreen()
     {
         const QMap<QString, QRect> screens{

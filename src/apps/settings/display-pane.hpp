@@ -47,10 +47,9 @@ class DisplayPane : public QWidget
     // and the window, slider and all, would change size under the pointer.
     void write();
     void showLooksLike();
+    // Where the screens stand; after a change of size the session moves
+    // them to touch again (make_wayfire_config.py).
     void writePositions(const QMap<QString, QPoint>& positions);
-    // After a change of scale or resolution the picked screen is wider or
-    // narrower, so the others are moved to touch it again.
-    void tidyLater();
     QScreen* pickedScreen() const;
     QString mainName() const;
     QString word(const char* key, const char* fallback) const;
@@ -65,7 +64,7 @@ class DisplayPane : public QWidget
     QFormLayout* form;
     DisplayModes* modes;
     QString picked;
-    // The picked screen's, in its own pixels.
+    // The picked screen's size, in its own pixels.
     QSize screen_pixels;
     // The slider's scales, the largest drawing first.
     QList<double> stops;
@@ -76,9 +75,7 @@ class DisplayPane : public QWidget
     QCheckBox* main_here;
     // Several key steps in a row make one change of the screen.
     QTimer* write_later;
-    // Screens plugged in, taken out or resized come in bursts.
     QTimer* read_later;
-    bool tidy_pending = false;
     // The backlight's name under /sys/class/backlight; the slider is null without one.
     QString backlight;
     QSlider* brightness = nullptr;

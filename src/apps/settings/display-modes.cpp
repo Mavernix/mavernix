@@ -228,7 +228,7 @@ void DisplayModes::choose()
     {
         return;
     }
-    ModedScreen& screen = screens[index];
+    const ModedScreen& screen = screens[index];
     const QSize size = resolution_list->currentData().toSize();
     const int refresh = refresh_list->currentData().toInt();
     // The rate shown for the current mode may be a hair off it (showRefreshRates).
@@ -241,17 +241,26 @@ void DisplayModes::choose()
     const QString name = screen.name;
     const QString before = writtenMode(name);
     writeMode(name, written(size.width(), size.height(), refresh));
-    if (keepAsked())
-    {
-        screen.current.width = size.width();
-        screen.current.height = size.height();
-        screen.current.refresh = refresh;
-        emit modeChanged(name, size);
-    }
-    else
+    const bool kept = keepAsked();
+    if (!kept)
     {
         writeMode(name, before);
-        showScreen();
+    }
+    // While the question was open the screens may have been read anew
+    // (one plugged in), and the rows shown afresh with the old mode.
+    for (ModedScreen& now : screens)
+    {
+        if (now.name == name && kept)
+        {
+            now.current.width = size.width();
+            now.current.height = size.height();
+            now.current.refresh = refresh;
+        }
+    }
+    showScreen();
+    if (kept)
+    {
+        emit modeChanged(name, size);
     }
 }
 

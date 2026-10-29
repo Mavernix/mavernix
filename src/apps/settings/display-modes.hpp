@@ -1,11 +1,10 @@
 // The Display pane's choice of resolution and refresh rate for the screen
 // picked in the pane, from the modes the compositor reports
-// (src/compositor/screen-modes/). A
-// choice is written to [display.screens.NAME] mode and kept only if the user
-// says so within a few seconds, so a mode the screen cannot show undoes
-// itself. Without the compositor's answer, or for a virtual screen with no
-// modes, the rows stay hidden. A built-in panel is offered smaller sizes
-// too (panel-modes.hpp).
+// (src/compositor/screen-modes/). A choice is written to
+// [display.screens.NAME] mode and kept only if the user says so within a few
+// seconds, so a mode the screen cannot show undoes itself. Without the
+// compositor's answer, or for a virtual screen with no modes, the rows stay
+// hidden. A built-in panel is offered smaller sizes too (panel-modes.hpp).
 
 #pragma once
 

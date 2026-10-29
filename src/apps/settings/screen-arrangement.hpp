@@ -68,4 +68,7 @@ class ScreenArrangement : public QWidget
     QPointF pressed_at;
     QPoint held_from;
     QPointF menu_bar_at;
+    // News of the screens that came while one was held.
+    QList<ArrangedScreen> waiting;
+    bool has_waiting = false;
 };
