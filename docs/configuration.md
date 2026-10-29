@@ -175,6 +175,53 @@ more = "More…"
 
 These are the facts you can put in braces: `{os_name}`, `{os_version}`, `{kernel}`, `{host_name}`, `{computer}`, `{processor}`, `{memory}`, `{graphics}`, `{startup_disk}`. They're read from files any user can read (`/proc`, `/sys`, udev's notes, `/etc/os-release`, and the `hwdata` list of graphics cards). Run `mavernix-about --facts` to see what it finds.
 
+## App Store
+
+`mavernix-app-store` installs apps made for Mavernix, such as Bandstand. It finds them on GitHub: every repository of an organisation that carries a certain topic is an app, and its latest release brings what the store shows and installs. Apps are installed for you alone, in `~/.local/share/mavernix/apps/`, so no password is needed. How to publish an app is in [app-store.md](app-store.md). To make its window's title bar run on into its toolbar, list `mavernix-app-store` in `joined_tool_bar_apps`, as Sea Lion does.
+
+Where it looks, and every word it shows, is set under `[app_store]`. How it looks is up to the theme's `[app_store]` (see `docs/themes/programs.md`).
+
+```toml
+[app_store]
+name = "App Store"                     # the window's title, and its name in the app grid and the dock
+organisation = "Mavernix"              # the GitHub organisation whose apps it offers
+topic = "mavernix-app"                 # the topic that makes a repository an app
+
+[app_store.words]
+featured = "Featured"                  # the tabs
+installed = "Installed"
+updates = "Updates"
+search = "Search"                      # in the empty search field
+results = "Results for “{text}”"
+no_results = "No apps match “{text}”."
+featured_heading = "Apps for Mavernix"
+get = "GET"                            # the button: GET, then INSTALL to confirm, then OPEN
+install = "INSTALL"
+open = "OPEN"
+update = "UPDATE"
+update_all = "UPDATE ALL"
+remove = "Remove"
+waiting = "WAITING"                    # while another app installs first
+installing = "INSTALLING"
+removing = "REMOVING"
+whats_new = "What's New in Version {version}"
+information = "Information"            # the column on an app's page, and its rows
+category = "Category"
+released = "Updated"
+version = "Version"
+size = "Size"
+developer = "Developer"
+license = "License"
+website = "Website"
+loading = "Loading…"
+try_again = "Try Again"
+nothing_offered = "There are no apps in the App Store yet."
+nothing_installed = "Apps you get from the App Store show up here."
+no_updates = "No Updates Available"
+one_update = "1 Update Available"
+updates_available = "{count} Updates Available"
+```
+
 ## Living next to another desktop
 
 Some settings are stored per user rather than per desktop. Without some care, another desktop's choices would show up here too: Plasma's dark colours, its icons and font in GTK programs, KDE's background modules and their notifications. So the session keeps its own copies, without touching the other desktop's:

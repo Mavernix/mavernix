@@ -173,7 +173,7 @@ Each part of the desktop has its own table, and its own page:
 - [Dock](dock.md)
 - [Menus and dialogs](menus-and-dialogs.md)
 - [Overlays](overlays.md): program switcher, notifications, volume display, lock screen, app grid, window overview, search
-- [Settings and the Theme Installer](programs.md): the settings window's first page and the Theme Installer's window
+- [Settings, the Theme Installer, About This Computer and the App Store](programs.md): the settings window's first page, and the windows of the Theme Installer, About This Computer and the App Store
 - [Other applications](other-applications.md): icons, and the looks of Qt, GTK and single applications
 
 ## Sounds

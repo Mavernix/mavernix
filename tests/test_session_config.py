@@ -309,6 +309,30 @@ class TestRefreshDesktops(SessionTestCase):
         self.assertEqual(refresh_desktops.refresh(looks, configs), [])
 
 
+class TestSeaLionAppStoreUpdates(unittest.TestCase):
+    """Sea Lion's updates.toml carries the App Store's table to themes imported
+    before it existed. It's a copy of what an import writes, so it must stay
+    the same as make_theme's, and Sea Lion Dark's must have the same keys."""
+
+    def setUp(self):
+        sys.path.insert(0, str(LOOKS_DIR.parent))
+        self.addCleanup(sys.path.remove, str(LOOKS_DIR.parent))
+        import make_theme
+        self.make_theme = make_theme
+        with open(LOOKS_DIR / "sea-lion" / "updates.toml", "rb") as file:
+            self.updates = {update["revision"]: update for update in tomllib.load(file)["update"]}
+
+    def test_the_light_table_is_the_imports(self):
+        made = tomllib.loads(self.make_theme.APP_STORE_TABLE + self.make_theme.APP_STORE_STAND_INS)
+        self.assertEqual(self.updates[2]["themes"], ["sea-lion"])
+        self.assertEqual(self.updates[2]["settings"]["app_store"], made["app_store"])
+
+    def test_the_dark_table_has_the_same_keys(self):
+        self.assertEqual(self.updates[3]["themes"], ["sea-lion-dark"])
+        self.assertEqual(self.updates[3]["settings"]["app_store"].keys(), self.updates[2]["settings"]["app_store"].keys())
+        self.assertEqual(self.updates[3]["settings"]["fonts"], self.updates[2]["settings"]["fonts"])
+
+
 class TestThemeUpdates(unittest.TestCase):
     """The Theme Installer's updates.py: what imported themes get at login,
     and when a new import is offered."""
@@ -353,6 +377,20 @@ class TestThemeUpdates(unittest.TestCase):
         (self.themes / "lion" / "theme.toml").write_text(edited)
         self.assertEqual(self.updates.refresh(self.folder / "looks", self.themes), [])
         self.assertEqual(self.theme_text(), edited)
+
+    def test_an_update_can_be_for_some_themes_only(self):
+        (self.look / "look.toml").write_text('themes = ["lion", "lion-dark"]\n')
+        (self.themes / "lion-dark").mkdir()
+        self.write_updates('[[update]]\nrevision = 1\nthemes = ["lion"]\n[update.settings.window]\ncolor = "#ffffff"\n'
+                           '[[update]]\nrevision = 2\nthemes = ["lion-dark"]\n[update.settings.window]\ncolor = "#202020"\n')
+        for name in ("lion", "lion-dark"):
+            (self.themes / name / "theme.toml").write_text('[theme]\nname = "Lion"\n')
+
+        self.assertEqual(sorted(self.updates.refresh(self.folder / "looks", self.themes)), ["lion", "lion-dark"])
+        light = tomllib.loads(self.theme_text())
+        dark = tomllib.loads((self.themes / "lion-dark" / "theme.toml").read_text())
+        self.assertEqual((light["window"]["color"], light["theme"]["updated_to"]), ("#ffffff", 2))
+        self.assertEqual((dark["window"]["color"], dark["theme"]["updated_to"]), ("#202020", 2))
 
     def test_a_table_written_inline_is_left_alone(self):
         self.write_updates('[[update]]\nrevision = 1\n[update.settings."dock.grid"]\nshare = 0.8\n')

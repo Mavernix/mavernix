@@ -1,4 +1,4 @@
-# Settings, the Theme Installer and About This Computer
+# Settings, the Theme Installer, About This Computer and the App Store
 
 ## Settings window
 
@@ -139,3 +139,101 @@ button_text_baseline_row = 16
 ```
 
 If the first button is left out (the config has nothing for it to start and doesn't keep idle buttons), the rows start at `update_button_top`.
+
+## App Store
+
+The App Store (`src/apps/app-store/`) has a toolbar along the top: ◀ ▶ on the left, its tabs in the middle (Featured, Installed and Updates), and a search field on the right. Under it is the page that's showing. Featured is a grid of tiles: an app's icon, name and category, and a small button. An app's own page has its icon and a larger button on the left, its name, description and what's new in the middle, an Information column on the right, and its screenshots below. Installed and Updates list apps one row each.
+
+The button goes from GET to INSTALL (`button_confirm`) when pressed once. While the app downloads, the button turns into a bar. Then it reads OPEN, or UPDATE when a newer version is out.
+
+```toml
+[fonts]
+app_store_tab     = { family = "DejaVu Sans", size = 12 }               # the toolbar's tabs and Back
+app_store_heading = { family = "DejaVu Sans", size = 15 }               # a heading over part of a page
+app_store_title   = { family = "DejaVu Sans", size = 22 }               # the app's name on its page
+app_store_name    = { family = "DejaVu Sans", size = 13 }               # an app's name in a tile or row
+app_store_text    = { family = "DejaVu Sans", size = 12 }               # descriptions, messages
+app_store_small   = { family = "DejaVu Sans", size = 11 }               # categories, versions, Information
+app_store_button  = { family = "DejaVu Sans", size = 10, bold = true }  # GET, OPEN and the like
+
+[app_store]
+width = 960                          # the window's size when it opens
+height = 660
+background = "#ffffff"
+text_color = "#202020"
+heading_color = "#202020"            # the headings over parts of a page
+secondary_text_color = "#808080"     # categories, versions, the Information labels
+failure_text_color = "#c03030"       # what went wrong with an install
+separator_color = "#dcdcdc"          # the lines under headings and rows
+side_margin = 24                     # room at the pages' edges and between their columns
+# The toolbar: its height, fill and the line under it, while the window is
+# the active one and while it isn't. If the desktop config joins the window's
+# title bar to it (joined_tool_bar_apps, docs/configuration.md), start these
+# fills where the title bar's `background_joined` fills end, so the two look
+# like one piece. The tab that's showing gets the `tab_selected` fill behind
+# it. The Updates tab shows how many updates there are in a `badge`.
+toolbar_height = 48
+toolbar = { color = "#ececec" }
+toolbar_inactive = { color = "#f4f4f4" }
+toolbar_border_color = "#c0c0c0"
+toolbar_border_color_inactive = "#d4d4d4"
+toolbar_margin = 12                  # from the window's sides to ◀ ▶ and to the search field
+toolbar_controls_top = 12            # optional: from the bar's top to ◀ ▶ and the search field; centred if left out
+# ◀ ▶: one capsule, cut in two halves; the pressed half takes
+# back_forward_pressed, and both take back_forward_inactive while the window
+# isn't the active one. A line (back_forward_separator, this wide) parts them.
+# The arrows are pictures, and greyed ones for a half with nowhere to go;
+# without pictures they're triangles in arrow_color.
+back_forward_size = [56, 24]
+back_forward = { color = "#ffffff", radius = 4, border = { color = "#b0b0b0", width = 1 } }
+back_forward_pressed = { color = "#e0e0e0", radius = 4, border = { color = "#b0b0b0", width = 1 } }
+back_forward_inactive = { color = "#f8f8f8", radius = 4, border = { color = "#d0d0d0", width = 1 } }
+back_forward_separator = { color = "#b0b0b0" }
+back_forward_separator_width = 1
+back_forward_separator_inset = [1, 1]   # rows the line leaves free at the capsule's top and bottom
+back_glyph = "images/app_store/back.png"                       # optional
+back_glyph_disabled = "images/app_store/back-disabled.png"     # optional
+forward_glyph = "images/app_store/forward.png"                 # optional
+forward_glyph_disabled = "images/app_store/forward-disabled.png"  # optional
+arrow_color = "#404040"
+# The search field, with a magnifier picture at its left (optional).
+search_field_size = [160, 24]
+search_field = { color = "#ffffff", radius = 12, border = { color = "#b0b0b0", width = 1 } }
+search_icon = "images/app_store/search.png"
+search_text_color = "#202020"
+tab_height = 26
+tab_padding = 12                     # room beside a tab's words
+tab_text_color = "#505050"
+tab_selected_text_color = "#000000"
+tab_selected = { color = "#d4d4d4", radius = 4 }
+badge = { color = "#3a6ea5", radius = 8 }
+badge_text_color = "#ffffff"
+heading_height = 36                  # a heading, with its line at the bottom
+# Featured's tiles, side by side as many as fit.
+tile_width = 290
+tile_height = 96
+tile_icon_size = 64
+# An app's page.
+page_icon_size = 128
+information_width = 200
+screenshot_height = 340              # the most a screenshot is shown at
+# The rows of Installed and Updates.
+row_height = 76
+row_icon_size = 48
+# The buttons: the page's, and the smaller one of tiles and rows. INSTALL
+# uses the `button_confirm` fills; the bar while it downloads is
+# `progress_bar` on `progress_track`.
+button_height = 24
+small_button_height = 20
+button_padding = 12                  # room beside the words
+button = { color = "#ffffff", radius = 4, border = { color = "#b0b0b0", width = 1 } }
+button_pressed = { color = "#e0e0e0", radius = 4, border = { color = "#b0b0b0", width = 1 } }
+button_text_color = "#202020"
+button_confirm = { color = "#3a8a3a", radius = 4 }
+button_confirm_pressed = { color = "#2e6e2e", radius = 4 }
+button_confirm_text_color = "#ffffff"
+progress_track = { color = "#e4e4e4", radius = 4 }
+progress_bar = { color = "#3a6ea5", radius = 4 }
+```
+
+Every key is optional. One your theme leaves out gets the value above, and a font it leaves out is `[fonts] interface`. The pictures are the exception: without them, the arrows are drawn as triangles and the search field has no magnifier.

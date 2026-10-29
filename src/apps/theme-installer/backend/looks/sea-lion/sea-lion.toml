@@ -9,7 +9,7 @@ theme = "sea-lion"
 [window]
 button_side = "left"
 button_order = ["close", "minimize", "maximize"]
-joined_tool_bar_apps = ["mavernix-settings", "org.kde.dolphin", "org.kde.konsole"]
+joined_tool_bar_apps = ["mavernix-settings", "mavernix-app-store", "org.kde.dolphin", "org.kde.konsole"]
 quick_open_close_ms = 120
 
 [panel]
@@ -121,6 +121,7 @@ groups = [
         { name = "Home", icon = "user-home", folder = "~", view = "list", order = "name" },
         { name = "App Grid", icon = "view-app-grid", shell = "app_grid" },
         "foot",
+        "mavernix-app-store",
         "mavernix-settings",
     ],
     [
@@ -372,6 +373,10 @@ low_title = "Your battery is running low."
 low_text = "%1% left. Plug your computer into a power outlet soon."
 critical_title = "You are now running on reserve battery power."
 critical_text = "Your computer will sleep soon unless plugged into a power outlet."
+
+[app_store.words]
+# OS X's search field shows nothing until you type.
+search = ""
 
 [about]
 # The About This Computer window (mavernix-about): the original's About This

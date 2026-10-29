@@ -47,7 +47,7 @@ Bug reports, themes and docs fixes are all welcome, and you don't need to know a
 
 ## Docs
 
-[Usage](docs/usage.md) · [Configuration](docs/configuration.md) · [Themes](docs/themes/README.md) · [Looks](docs/looks.md) · [Panel items](docs/panel-items.md) · [Extensions](docs/extensions.md) · [Sound packs](docs/sound-packs.md) · [Architecture](docs/architecture.md)
+[Usage](docs/usage.md) · [Configuration](docs/configuration.md) · [Themes](docs/themes/README.md) · [Looks](docs/looks.md) · [Panel items](docs/panel-items.md) · [Extensions](docs/extensions.md) · [App Store](docs/app-store.md) · [Sound packs](docs/sound-packs.md) · [Architecture](docs/architecture.md)
 
 ## License
 

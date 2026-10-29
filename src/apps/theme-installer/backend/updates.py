@@ -174,9 +174,11 @@ def refresh_theme(theme_file, updates):
     """Applies the updates the theme has not had yet; whether it changed.
 
     Settings are added where the theme lacks them, corrections made where the
-    theme still holds the value they replace. Afterwards [theme] updated_to
-    records the newest update, so none is applied twice.
+    theme still holds the value they replace. An update with a `themes` list
+    gives them only to the themes it names (the folder's name). Afterwards
+    [theme] updated_to records the newest update, so none is applied twice.
     """
+    name = Path(theme_file).parent.name
     theme = ThemeFile(theme_file)
     marks = theme.table("theme") or {}
     applied_to = max(marks.get("revision", 0), marks.get("updated_to", 0))
@@ -184,6 +186,8 @@ def refresh_theme(theme_file, updates):
     if not pending:
         return False
     for update in pending:
+        if name not in update.get("themes", [name]):
+            continue
         for correction in update.get("corrections", []):
             table = theme.table(correction["table"])
             if table is not None and table.get(correction["key"]) == correction["was"]:

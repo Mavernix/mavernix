@@ -418,6 +418,14 @@ computer = "Computer"
 update = "Update…"
 more = "More…"
 
+[app_store]
+# The App Store (mavernix-app-store): its name in the app grid and the dock,
+# and where it finds apps: the repositories of this GitHub organisation that
+# carry this topic (docs/app-store.md says how to publish one).
+name = "App Store"
+organisation = "Mavernix"
+topic = "mavernix-app"
+
 # A fact can be fixed here instead of asked of the machine:
 # [about.values]
 # computer = "My own build"

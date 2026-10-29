@@ -20,6 +20,15 @@ about_label   = { family = "DejaVu Sans", size = 12, bold = true }
 about_value   = { family = "DejaVu Sans", size = 12 }
 about_button  = { family = "DejaVu Sans", size = 12 }
 about_footer  = { family = "DejaVu Sans", size = 11 }
+# The App Store: its tabs, headings, an app's name on its page and in a tile,
+# descriptions, small print (categories, versions) and its buttons.
+app_store_tab     = { family = "DejaVu Sans", size = 12 }
+app_store_heading = { family = "DejaVu Sans", size = 15 }
+app_store_title   = { family = "DejaVu Sans", size = 22 }
+app_store_name    = { family = "DejaVu Sans", size = 13 }
+app_store_text    = { family = "DejaVu Sans", size = 12 }
+app_store_small   = { family = "DejaVu Sans", size = 11 }
+app_store_button  = { family = "DejaVu Sans", size = 10, bold = true }
 window_title = { family = "DejaVu Sans", size = 13 }
 menu         = { family = "DejaVu Sans", size = 13 }
 panel        = { family = "DejaVu Sans", size = 13 }
@@ -302,6 +311,64 @@ button = { color = "#ffffff", radius = 4, border = { color = "#b0b0b0", width = 
 button_pressed = { color = "#e0e0e0", radius = 4, border = { color = "#b0b0b0", width = 1 } }
 button_disabled = { color = "#f4f4f4", radius = 4, border = { color = "#d0d0d0", width = 1 } }
 button_disabled_text_color = "#a0a0a0"
+
+[app_store]
+# The App Store: a toolbar with tabs, a grid of apps, each app's page, and
+# lists of installed apps and updates. Its buttons go from GET to a green
+# INSTALL, a bar while downloading, then OPEN.
+width = 960
+height = 660
+background = "#ffffff"
+text_color = "#202020"
+heading_color = "#202020"
+secondary_text_color = "#808080"
+failure_text_color = "#c03030"
+separator_color = "#dcdcdc"
+side_margin = 24
+toolbar_height = 48
+toolbar = { color = "#ececec" }
+toolbar_inactive = { color = "#f4f4f4" }
+toolbar_border_color = "#c0c0c0"
+toolbar_border_color_inactive = "#d4d4d4"
+toolbar_margin = 12
+back_forward_size = [56, 24]
+back_forward = { color = "#ffffff", radius = 4, border = { color = "#b0b0b0", width = 1 } }
+back_forward_pressed = { color = "#e0e0e0", radius = 4, border = { color = "#b0b0b0", width = 1 } }
+back_forward_inactive = { color = "#f8f8f8", radius = 4, border = { color = "#d0d0d0", width = 1 } }
+back_forward_separator = { color = "#b0b0b0" }
+back_forward_separator_width = 1
+back_forward_separator_inset = [1, 1]
+arrow_color = "#404040"
+search_field_size = [160, 24]
+search_field = { color = "#ffffff", radius = 12, border = { color = "#b0b0b0", width = 1 } }
+search_text_color = "#202020"
+tab_height = 26
+tab_padding = 12
+tab_text_color = "#505050"
+tab_selected_text_color = "#000000"
+tab_selected = { color = "#d4d4d4", radius = 4 }
+badge = { color = "#3a6ea5", radius = 8 }
+badge_text_color = "#ffffff"
+heading_height = 36
+tile_width = 290
+tile_height = 96
+tile_icon_size = 64
+page_icon_size = 128
+information_width = 200
+screenshot_height = 340
+row_height = 76
+row_icon_size = 48
+button_height = 24
+small_button_height = 20
+button_padding = 12
+button = { color = "#ffffff", radius = 4, border = { color = "#b0b0b0", width = 1 } }
+button_pressed = { color = "#e0e0e0", radius = 4, border = { color = "#b0b0b0", width = 1 } }
+button_text_color = "#202020"
+button_confirm = { color = "#3a8a3a", radius = 4 }
+button_confirm_pressed = { color = "#2e6e2e", radius = 4 }
+button_confirm_text_color = "#ffffff"
+progress_track = { color = "#e4e4e4", radius = 4 }
+progress_bar = { color = "#3a6ea5", radius = 4 }
 
 [settings.overview]
 # The settings window's first page: the icon grid and its group stripes.

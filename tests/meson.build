@@ -66,3 +66,10 @@ test(
         'LOOKS_SOURCE_DIR': meson.project_source_root() / 'src' / 'apps' / 'theme-installer' / 'backend' / 'looks',
     },
 )
+
+test(
+    'app-store',
+    python,
+    args: [files('test_app_store.py')],
+    env: {'APP_STORE_BACKEND_DIR': meson.project_source_root() / 'src' / 'apps' / 'app-store' / 'backend'},
+)

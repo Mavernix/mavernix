@@ -16,6 +16,9 @@
 # corrections     Values an older import wrote that this version changes:
 #                 each replaces `was` with `now`, but only where the theme
 #                 still holds `was`, so a value changed by hand stays.
+# themes          Optional: the themes that get this update's settings and
+#                 corrections, when they aren't for all of them (Sea Lion
+#                 Dark needs dark values where Sea Lion has light ones).
 
 [[update]]
 revision = 1
@@ -59,3 +62,150 @@ now = 100
 news_width = 668
 news_icon_size = 64
 news_item_gap = 4
+
+[[update]]
+revision = 2
+themes = ["sea-lion"]
+import_brings = [
+    "The App Store's toolbar gets Mavericks' own back and forward buttons and search field.",
+]
+
+# The App Store's window. Its table needs nothing from the installer, so a
+# theme imported before it existed gets it as an import makes it
+# (make_theme.APP_STORE_TABLE), with plain stand-ins for the toolbar's
+# pictures (APP_STORE_STAND_INS).
+[update.settings.fonts]
+app_store_tab = { family = ".Lucida Grande UI", size = 11 }
+app_store_heading = { family = ".Lucida Grande UI", size = 14 }
+app_store_title = { family = ".Lucida Grande UI", size = 22 }
+app_store_name = { family = ".Lucida Grande UI", size = 12 }
+app_store_text = { family = ".Lucida Grande UI", size = 12 }
+app_store_small = { family = ".Lucida Grande UI", size = 10 }
+app_store_button = { family = ".Lucida Grande UI", size = 9, bold = true }
+
+[update.settings.app_store]
+width = 1000
+height = 650
+background = "#ffffff"
+text_color = "#000000"
+heading_color = "#53565e"
+secondary_text_color = "#787878"
+failure_text_color = "#c03030"
+separator_color = "#d7d7d7"
+side_margin = 20
+toolbar_height = 33
+toolbar = { gradient = ["#d0d0d0", "#afafaf"] }
+toolbar_inactive = { gradient = ["#ededed", "#dfdfdf"] }
+toolbar_border_color = "#6b6b6b"
+toolbar_border_color_inactive = "#a7a7a7"
+toolbar_margin = 8
+toolbar_controls_top = 2
+back_forward_size = [53, 23]
+arrow_color = "#2d2d2d"
+search_field_size = [148, 23]
+search_text_color = "#000000"
+tab_height = 22
+tab_padding = 10
+tab_text_color = "#424242"
+tab_selected_text_color = "#000000"
+tab_selected = { gradient = ["#00000020", "#00000010"], radius = 4 }
+badge = { color = "#00000000" }
+badge_text_color = "#034ac9"
+heading_height = 30
+tile_width = 245
+tile_height = 108
+tile_icon_size = 64
+page_icon_size = 128
+information_width = 190
+screenshot_height = 340
+row_height = 64
+row_icon_size = 40
+button_height = 22
+small_button_height = 15
+button_padding = 10
+button = { gradient = ["#b5b7bb", "#8d8e90"], radius = 3 }
+button_pressed = { gradient = ["#8d8e90", "#75767a"], radius = 3 }
+button_text_color = "#ffffff"
+button_confirm = { gradient = ["#6dd640", "#3eab08"], radius = 3 }
+button_confirm_pressed = { gradient = ["#4fb823", "#2f8a05"], radius = 3 }
+button_confirm_text_color = "#ffffff"
+progress_track = { gradient = ["#cfd0d3", "#e9eaec"], radius = 3 }
+progress_bar = { gradient = ["#6fa3ec", "#2e65b6"], radius = 3 }
+back_forward = { gradient = ["#fdfdfd", "#dadada"], radius = 4, border = { color = "#8c8c8c", width = 1 } }
+back_forward_pressed = { gradient = ["#c8c8c8", "#b4b4b4"], radius = 4, border = { color = "#7c7c7c", width = 1 } }
+back_forward_inactive = { gradient = ["#fbfbfb", "#efefef"], radius = 4, border = { color = "#b8b8b8", width = 1 } }
+back_forward_separator = { color = "#9a9a9a" }
+back_forward_separator_width = 1
+back_forward_separator_inset = [1, 1]
+search_field = { color = "#ffffff", radius = 11, border = { color = "#9a9a9a", width = 1 } }
+
+# The same for Sea Lion Dark, darkened as its import does it
+# (make_dark_theme: the rule, then change_app_store).
+[[update]]
+revision = 3
+themes = ["sea-lion-dark"]
+
+[update.settings.fonts]
+app_store_tab = { family = ".Lucida Grande UI", size = 11 }
+app_store_heading = { family = ".Lucida Grande UI", size = 14 }
+app_store_title = { family = ".Lucida Grande UI", size = 22 }
+app_store_name = { family = ".Lucida Grande UI", size = 12 }
+app_store_text = { family = ".Lucida Grande UI", size = 12 }
+app_store_small = { family = ".Lucida Grande UI", size = 10 }
+app_store_button = { family = ".Lucida Grande UI", size = 9, bold = true }
+
+[update.settings.app_store]
+width = 1000
+height = 650
+background = "#282828"
+text_color = "#c8c8c8"
+heading_color = "#8a8d97"
+secondary_text_color = "#7d7d7d"
+failure_text_color = "#c03030"
+separator_color = "#414141"
+side_margin = 20
+toolbar_height = 33
+toolbar = { gradient = ["#383838", "#2c2c2c"] }
+toolbar_inactive = { gradient = ["#2e2e2e", "#2c2c2c"] }
+toolbar_border_color = "#131313"
+toolbar_border_color_inactive = "#131313"
+toolbar_margin = 8
+toolbar_controls_top = 2
+back_forward_size = [53, 23]
+arrow_color = "#acacac"
+search_field_size = [148, 23]
+search_text_color = "#c8c8c8"
+tab_height = 22
+tab_padding = 10
+tab_text_color = "#9f9f9f"
+tab_selected_text_color = "#c8c8c8"
+tab_selected = { gradient = ["#00000020", "#00000010"], radius = 4 }
+badge = { color = "#00000000" }
+badge_text_color = "#034ac9"
+heading_height = 30
+tile_width = 245
+tile_height = 108
+tile_icon_size = 64
+page_icon_size = 128
+information_width = 190
+screenshot_height = 340
+row_height = 64
+row_icon_size = 40
+button_height = 22
+small_button_height = 15
+button_padding = 10
+button = { gradient = ["#696c73", "#545556"], radius = 3 }
+button_pressed = { gradient = ["#7b7c7e", "#6d6e71"], radius = 3 }
+button_text_color = "#ffffff"
+button_confirm = { gradient = ["#6dd640", "#3eab08"], radius = 3 }
+button_confirm_pressed = { gradient = ["#4fb823", "#2f8a05"], radius = 3 }
+button_confirm_text_color = "#ffffff"
+progress_track = { gradient = ["#343536", "#434446"], radius = 3 }
+progress_bar = { gradient = ["#6fa3ec", "#2e65b6"], radius = 3 }
+back_forward = { gradient = ["#555555", "#454545"], radius = 4, border = { color = "#1e1e1e", width = 1 } }
+back_forward_pressed = { gradient = ["#3a3a3a", "#303030"], radius = 4, border = { color = "#1e1e1e", width = 1 } }
+back_forward_inactive = { gradient = ["#444444", "#3a3a3a"], radius = 4, border = { color = "#262626", width = 1 } }
+back_forward_separator = { color = "#1e1e1e" }
+back_forward_separator_width = 1
+back_forward_separator_inset = [1, 1]
+search_field = { color = "#2b2b2b", radius = 11, border = { color = "#1e1e1e", width = 1 } }

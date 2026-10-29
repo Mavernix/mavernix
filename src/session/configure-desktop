@@ -125,12 +125,15 @@ write_default_programs() {
 }
 
 # A desktop entry for one of the desktop's own programs (mavernix-FOLDER),
-# if it was built; the config's [FOLDER] name and icon override the defaults.
+# if it was built. Its name and icon in the config override the defaults; the
+# config's table is the folder's name with _ for -, like [theme_installer],
+# the table the program itself reads.
 #
 #   write_program_entry FOLDER DEFAULT_NAME DEFAULT_ICON CATEGORIES [MIME_TYPES [ARGUMENT]]
 write_program_entry() {
     local folder=$1 default_name=$2 default_icon=$3 categories=$4
     local mime_types=${5:-} argument=${6:-}
+    local table=${folder//-/_}
     local program="$program_dir/mavernix-$folder"
     local entry="$state_dir/share/applications/mavernix-$folder.desktop"
     if [[ ! -x "$program" ]]; then
@@ -141,9 +144,9 @@ write_program_entry() {
     {
         echo "[Desktop Entry]"
         echo "Type=Application"
-        echo "Name=$(setting config "$folder" name "$default_name")"
+        echo "Name=$(setting config "$table" name "$default_name")"
         echo "Exec=$program${argument:+ $argument}"
-        echo "Icon=$(setting config "$folder" icon "$default_icon")"
+        echo "Icon=$(setting config "$table" icon "$default_icon")"
         echo "Categories=$categories"
         # An `if`, not `&&`: a false test as the last command trips `set -e`.
         if [[ -n "$mime_types" ]]; then
@@ -157,6 +160,7 @@ write_program_entries() {
     write_program_entry theme-installer "Theme Installer" system-software-install "System;" \
         "application/x-apple-diskimage;application/x-iso9660-image;application/x-cd-image;" "%f"
     write_program_entry about "About This Computer" computer "System;"
+    write_program_entry app-store "App Store" system-software-install "Settings;PackageManager;"
 }
 
 # The theme's share/ folder (an icon theme) behind a fixed link, so a switch

@@ -26,6 +26,8 @@ from pathlib import Path
 
 from PIL import Image, ImageChops, ImageDraw, ImageStat
 
+import make_theme
+
 DARK_LOOK = 5
 
 # Positions in ProKit's rendition keys.
@@ -59,7 +61,7 @@ DESKTOP_PICTURE = "wallpapers/Galaxy.jpg"
 # out: the rule would turn their white text dark.
 RULE_TABLES = [
     "dialog", "about", "settings.overview", "search", "search.clear_button", "search.box", "theme_installer",
-    "lock.box", "lock.field",
+    "lock.box", "lock.field", "app_store",
 ]
 
 # Light colours under keys with these words are text on something coloured
@@ -766,6 +768,54 @@ def change_desktop(theme):
                      "CHOSEN, one of the installer's own desktop pictures, a dark one.")
 
 
+# The App Store's toolbar controls, which the light theme takes from AppKit's
+# light artwork: dark fills instead, and the arrows and magnifier painted light.
+APP_STORE_CONTROLS = {
+    "back_forward": '{ gradient = ["#555555", "#454545"], radius = 4, border = { color = "#1e1e1e", width = 1 } }',
+    "back_forward_pressed": '{ gradient = ["#3a3a3a", "#303030"], radius = 4, border = { color = "#1e1e1e", width = 1 } }',
+    "back_forward_inactive": '{ gradient = ["#444444", "#3a3a3a"], radius = 4, border = { color = "#262626", width = 1 } }',
+    "back_forward_separator": '{ color = "#1e1e1e" }',
+    "back_forward_separator_width": "1",
+    "back_forward_separator_inset": "[1, 1]",
+    "search_field": '{ color = "#2b2b2b", radius = 11, border = { color = "#1e1e1e", width = 1 } }',
+}
+APP_STORE_GLYPH_TOP = (0xe0, 0xe0, 0xe0)
+APP_STORE_GLYPH_BOTTOM = (0xb0, 0xb0, 0xb0)
+APP_STORE_GLYPH_DISABLED = (0x70, 0x70, 0x70)
+APP_STORE_SEARCH_ICON = (0x9a, 0x9a, 0x9a)
+
+
+def change_app_store(theme, prokit):
+    """Runs after change_programs, so these values aren't turned by the rule
+    again. updates.toml's Sea Lion Dark update was made with it, too."""
+    background = prokit.colour("windowBackgroundColor")
+    theme.set("app_store", "toolbar", f'{{ gradient = ["{TITLE_BAR_GRADIENT[1]}", "{background}"] }}',
+              "PROKIT, from where the joined title bar ends to windowBackgroundColor, like [controls.tool_bar].")
+    theme.set("app_store", "toolbar_inactive",
+              f'{{ gradient = ["{TITLE_BAR_GRADIENT_INACTIVE[1]}", "{background}"] }}',
+              "PROKIT, the same for a window that isn't the active one.")
+    for key in ("toolbar_border_color", "toolbar_border_color_inactive"):
+        theme.set("app_store", key, f'"{prokit.colour("paneSeparatorColor")}"', "PROKIT, paneSeparatorColor.")
+    for key, value in APP_STORE_CONTROLS.items():
+        theme.set("app_store", key, value, "CHOSEN, the light theme's picture is AppKit's light artwork.")
+
+
+def paint_app_store_glyphs(artwork_dir, images_dir):
+    """The App Store's arrows and magnifier, painted light for the dark toolbar."""
+    target = images_dir / "app_store"
+    for suffix, theme_suffix in (("1x", ""), ("2x", "@2x")):
+        for name, entry in make_theme.TOOLBAR_GLYPH_ENTRIES.items():
+            shape = Image.open(artwork_dir / "sartfile" / f"{entry:03d}-{suffix}.png")
+            if name == "search":
+                make_theme.paint_glyph(shape, APP_STORE_SEARCH_ICON, APP_STORE_SEARCH_ICON).save(
+                    target / f"search{theme_suffix}.png")
+                continue
+            make_theme.paint_glyph(shape, APP_STORE_GLYPH_TOP, APP_STORE_GLYPH_BOTTOM).save(
+                target / f"{name}{theme_suffix}.png")
+            make_theme.paint_glyph(shape, APP_STORE_GLYPH_DISABLED, APP_STORE_GLYPH_DISABLED).save(
+                target / f"{name}-disabled{theme_suffix}.png")
+
+
 def change_programs(theme):
     for table in theme.table_names():
         top = table.split(".")[0]
@@ -876,6 +926,8 @@ def build(work_dir, light_dir, output_dir):
     change_dialog_and_about(theme)
     change_desktop(theme)
     change_programs(theme)
+    change_app_store(theme, prokit)
+    paint_app_store_glyphs(work_dir / "artwork", images_dir)
     change_banner(theme, prokit)
     change_icons(theme)
     change_lock(theme, prokit)

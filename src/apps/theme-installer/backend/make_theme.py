@@ -63,6 +63,90 @@ TITLE_INACTIVE_OPACITY = 0.63
 
 # The system's interface face in LucidaGrande.ttc.
 TITLE_FONT_FAMILY = ".Lucida Grande UI"
+
+# The App Store, as OS X 10.9.5's draws it (measured from its window): a grey
+# toolbar that carries on the title bar (sea-lion.toml joins the two), a
+# white page, the blue count of updates, grey GET pills that turn into the
+# green Install App, and grey Information labels. The toolbar starts at the
+# colour the joined title bar ends with (background_joined, #d1d1d1 and
+# #eeeeee) and ends at 10.9's.
+#
+# APP_STORE_TABLE needs no picture from the installer, so updates.toml carries
+# it, with APP_STORE_STAND_INS, to themes imported before the App Store
+# existed. An import gets APP_STORE_PICTURES instead: AppKit's own toolbar
+# controls (CONTROL_PICTURES) and glyphs (make_toolbar_glyphs).
+APP_STORE_TABLE = """[app_store]
+width = 1000
+height = 650
+background = "#ffffff"
+text_color = "#000000"
+heading_color = "#53565e"
+secondary_text_color = "#787878"
+failure_text_color = "#c03030"
+separator_color = "#d7d7d7"
+side_margin = 20
+toolbar_height = 33
+toolbar = { gradient = ["#d0d0d0", "#afafaf"] }
+toolbar_inactive = { gradient = ["#ededed", "#dfdfdf"] }
+toolbar_border_color = "#6b6b6b"
+toolbar_border_color_inactive = "#a7a7a7"
+toolbar_margin = 8
+toolbar_controls_top = 2
+back_forward_size = [53, 23]
+arrow_color = "#2d2d2d"
+search_field_size = [148, 23]
+search_text_color = "#000000"
+tab_height = 22
+tab_padding = 10
+tab_text_color = "#424242"
+tab_selected_text_color = "#000000"
+tab_selected = { gradient = ["#00000020", "#00000010"], radius = 4 }
+badge = { color = "#00000000" }
+badge_text_color = "#034ac9"
+heading_height = 30
+tile_width = 245
+tile_height = 108
+tile_icon_size = 64
+page_icon_size = 128
+information_width = 190
+screenshot_height = 340
+row_height = 64
+row_icon_size = 40
+button_height = 22
+small_button_height = 15
+button_padding = 10
+button = { gradient = ["#b5b7bb", "#8d8e90"], radius = 3 }
+button_pressed = { gradient = ["#8d8e90", "#75767a"], radius = 3 }
+button_text_color = "#ffffff"
+button_confirm = { gradient = ["#6dd640", "#3eab08"], radius = 3 }
+button_confirm_pressed = { gradient = ["#4fb823", "#2f8a05"], radius = 3 }
+button_confirm_text_color = "#ffffff"
+progress_track = { gradient = ["#cfd0d3", "#e9eaec"], radius = 3 }
+progress_bar = { gradient = ["#6fa3ec", "#2e65b6"], radius = 3 }
+"""
+APP_STORE_PICTURES = """back_forward = { image = "images/controls/toolbar-segments.png", slice = [0, 5, 0, 5] }
+back_forward_pressed = { image = "images/controls/toolbar-segments-pressed.png", slice = [0, 5, 0, 5] }
+back_forward_inactive = { image = "images/controls/toolbar-segments-inactive.png", slice = [0, 5, 0, 5] }
+back_forward_separator = { image = "images/controls/toolbar-segments-separator.png" }
+back_forward_separator_width = 1
+back_forward_separator_inset = [1, 2]
+back_glyph = "images/app_store/back.png"
+back_glyph_disabled = "images/app_store/back-disabled.png"
+forward_glyph = "images/app_store/forward.png"
+forward_glyph_disabled = "images/app_store/forward-disabled.png"
+search_field = { image = "images/controls/toolbar-search-field.png", slice = [0, 11, 0, 11] }
+search_icon = "images/app_store/search.png"
+"""
+# What a theme from before the App Store gets in place of APP_STORE_PICTURES,
+# until it's imported again: the same shapes, drawn without pictures.
+APP_STORE_STAND_INS = """back_forward = { gradient = ["#fdfdfd", "#dadada"], radius = 4, border = { color = "#8c8c8c", width = 1 } }
+back_forward_pressed = { gradient = ["#c8c8c8", "#b4b4b4"], radius = 4, border = { color = "#7c7c7c", width = 1 } }
+back_forward_inactive = { gradient = ["#fbfbfb", "#efefef"], radius = 4, border = { color = "#b8b8b8", width = 1 } }
+back_forward_separator = { color = "#9a9a9a" }
+back_forward_separator_width = 1
+back_forward_separator_inset = [1, 1]
+search_field = { color = "#ffffff", radius = 11, border = { color = "#9a9a9a", width = 1 } }
+"""
 TITLE_FONT_SIZE = 13
 
 
@@ -241,6 +325,14 @@ CONTROL_PICTURES = {
     "button-disabled": "pushbutton-clear-disabled-regular",
     "button-default": "pushbutton-blue-regular",
     "button-default-pressed": "pushbutton-blue-pressed-regular",
+    # The App Store's toolbar: the ◀ ▶ capsule, its pressed half, the line
+    # between the halves, and the round search field made for toolbars.
+    # "active" is the one a window in front draws; the plain tag is darker.
+    "toolbar-segments": "tbsegments-active-regular",
+    "toolbar-segments-pressed": "tbsegments-pressed-regular",
+    "toolbar-segments-inactive": "tbsegments-inactive-regular",
+    "toolbar-segments-separator": "tbsegments-active-regular-separator",
+    "toolbar-search-field": "textfieldround-active-fortoolbars-regular",
     # The small size, which the About window's buttons have.
     "button-small": "pushbutton-clear-small",
     "button-small-pressed": "pushbutton-clear-pressed-small",
@@ -508,6 +600,73 @@ def copy_control_pictures(artwork_dir, images_dir):
             if len(matches) != 1:
                 fail(f"expected one picture tagged {tags} in {artwork_dir / folder}, found {len(matches)}")
             shutil.copyfile(matches[0], controls_dir / f"{theme_name}{suffix}.png")
+
+
+# --- The App Store's toolbar glyphs ----------------------------------------------
+# Shared art entries: AppKit's ◀ and ▶ (the "go left" and "go right" templates)
+# and the search field's magnifier. They are black shapes; AppKit paints them
+# as it draws them. Measured in the reference VM's App Store toolbar: a
+# usable arrow runs from TOOLBAR_GLYPH_TOP at its top to TOOLBAR_GLYPH_BOTTOM
+# at its bottom, with a light copy one point lower as an embossed edge; one
+# with nowhere to go is lighter; the magnifier is one grey.
+TOOLBAR_GLYPH_ENTRIES = {"back": 127, "forward": 128, "search": 295}
+TOOLBAR_GLYPH_TOP = (0x2d, 0x2d, 0x2d)
+TOOLBAR_GLYPH_BOTTOM = (0x80, 0x80, 0x80)
+TOOLBAR_GLYPH_DISABLED_TOP = (0x70, 0x70, 0x70)
+TOOLBAR_GLYPH_DISABLED_BOTTOM = (0xa8, 0xa8, 0xa8)
+TOOLBAR_GLYPH_EMBOSS = (255, 255, 255, 110)
+SEARCH_ICON_COLOR = (0x74, 0x74, 0x74)
+
+
+def paint_glyph(shape, top, bottom, emboss=None, density=1):
+    """The template `shape` filled from colour `top` to `bottom`, with an
+    `emboss` colour showing one point under it, if given."""
+    shape = shape.convert("RGBA")
+    width, height = shape.size
+    extra = density if emboss else 0
+    painted = Image.new("RGBA", (width, height + extra), (0, 0, 0, 0))
+    if emboss:
+        light = Image.new("RGBA", shape.size, emboss[:3] + (0,))
+        light.putalpha(shape.getchannel("A").point(lambda alpha: alpha * emboss[3] // 255))
+        painted.alpha_composite(light, (0, density))
+    gradient = Image.new("RGBA", shape.size)
+    for y in range(height):
+        share = y / max(1, height - 1)
+        colour = tuple(round(a + (b - a) * share) for a, b in zip(top, bottom))
+        gradient.paste(colour + (255,), (0, y, width, y + 1))
+    gradient.putalpha(shape.getchannel("A"))
+    painted.alpha_composite(gradient, (0, 0))
+    return painted
+
+
+def make_toolbar_glyphs(artwork_dir, images_dir):
+    """Writes images/app_store/: back, forward and their -disabled forms, and search."""
+    target = images_dir / "app_store"
+    target.mkdir(parents=True, exist_ok=True)
+    for suffix, theme_suffix, density in (("1x", "", 1), ("2x", "@2x", 2)):
+        shapes = {}
+        for name, entry in TOOLBAR_GLYPH_ENTRIES.items():
+            source = artwork_dir / "sartfile" / f"{entry:03d}-{suffix}.png"
+            if not source.is_file():
+                fail(f"{source} is missing. Decode SArtFile.bin first.")
+            shapes[name] = Image.open(source)
+        for name in ("back", "forward"):
+            paint_glyph(shapes[name], TOOLBAR_GLYPH_TOP, TOOLBAR_GLYPH_BOTTOM, TOOLBAR_GLYPH_EMBOSS,
+                        density).save(target / f"{name}{theme_suffix}.png")
+            paint_glyph(shapes[name], TOOLBAR_GLYPH_DISABLED_TOP, TOOLBAR_GLYPH_DISABLED_BOTTOM,
+                        TOOLBAR_GLYPH_EMBOSS, density).save(target / f"{name}-disabled{theme_suffix}.png")
+        paint_glyph(shapes["search"], SEARCH_ICON_COLOR, SEARCH_ICON_COLOR).save(target / f"search{theme_suffix}.png")
+
+
+def trim_toolbar_separator(images_dir):
+    """Keeps only the dark line of the ◀ ▶ separator. AppKit draws the picture
+    between two segments, with their border rows and light edges; ours goes
+    over one capsule that has its own, so those would show twice."""
+    for suffix, density in (("", 1), ("@2x", 2)):
+        file = images_dir / "controls" / f"toolbar-segments-separator{suffix}.png"
+        picture = Image.open(file)
+        middle = picture.width // 2 - density // 2
+        picture.crop((middle, density, middle + density, picture.height - 2 * density)).save(file)
 
 
 def cut_button_boxes(images_dir):
@@ -779,6 +938,13 @@ about_label   = {{ family = "{TITLE_FONT_FAMILY}", size = 11, bold = true }}
 about_value   = {{ family = "{TITLE_FONT_FAMILY}", size = 11 }}
 about_button  = {{ family = "{TITLE_FONT_FAMILY}", size = 11 }}
 about_footer  = {{ family = "{TITLE_FONT_FAMILY}", size = 10 }}
+app_store_tab     = {{ family = "{TITLE_FONT_FAMILY}", size = 11 }}
+app_store_heading = {{ family = "{TITLE_FONT_FAMILY}", size = 14 }}
+app_store_title   = {{ family = "{TITLE_FONT_FAMILY}", size = 22 }}
+app_store_name    = {{ family = "{TITLE_FONT_FAMILY}", size = 12 }}
+app_store_text    = {{ family = "{TITLE_FONT_FAMILY}", size = 12 }}
+app_store_small   = {{ family = "{TITLE_FONT_FAMILY}", size = 10 }}
+app_store_button  = {{ family = "{TITLE_FONT_FAMILY}", size = 9, bold = true }}
 program_switcher = {{ family = "{TITLE_FONT_FAMILY}", size = 12, bold = true }}
 desktop_icon = {{ family = "{TITLE_FONT_FAMILY}", size = 12, bold = true }}
 banner_title = {{ family = "{TITLE_FONT_FAMILY}", size = 13, bold = true }}
@@ -937,6 +1103,7 @@ button_pressed = {{ image = "images/controls/button-small-pressed.png", slice = 
 button_disabled = {{ image = "images/controls/button-small-disabled.png", slice = {ABOUT_BUTTON_SLICE} }}
 button_disabled_text_color = "#00000060"
 
+{APP_STORE_TABLE}{APP_STORE_PICTURES}
 [theme_installer]
 width = 640
 height = 500
@@ -1646,6 +1813,8 @@ def main():
     join_scroll_thumb(root / DOCK_RESOURCES, images_dir)
     copy_control_pictures(artwork_dir, images_dir)
     cut_button_boxes(images_dir)
+    trim_toolbar_separator(images_dir)
+    make_toolbar_glyphs(artwork_dir, images_dir)
     copy_app_grid_pictures(root / DOCK_RESOURCES, images_dir)
     copy_window_overview_pictures(root / DOCK_RESOURCES, images_dir)
 

@@ -19,6 +19,7 @@ One rule keeps these apart: you should be able to make a different desktop with 
 | `src/shell/` | the panel, dock, desktop icons, menus, notifications, app grid, window overview, search, lock screen | QML, run by Quickshell |
 | `src/shell/native/` | a QML module for things QML can't do: application menus over D-Bus, file kinds, icons, folder watching, the compositor's socket | C++ |
 | `src/apps/settings/` | the settings window | C++, Qt Widgets |
+| `src/apps/app-store/` | the App Store: a window over a back end (`backend/`) that finds the apps an organisation publishes on GitHub and installs them for the user ([publishing an app](app-store.md)) | C++ with QML; Python |
 | `src/apps/theme-installer/` | the Theme Installer: a window on top of a back end (`backend/`) that makes a look's themes from an installer you own. Each look is a folder in `backend/looks/` ([looks](looks.md)) | C++ with QML; Python |
 | `data/` | what gets installed and read: configs, themes, looks for other programs, the sound pack | TOML, pictures |
 | `tests/` | the tests | C++, Python |
@@ -55,4 +56,5 @@ One rule keeps these apart: you should be able to make a different desktop with 
 | `~/.config/mavernix/desktop` | which desktop starts |
 | `~/.config/mavernix/NAME.json` | what the user changed in desktop NAME |
 | `~/.config/mavernix/extensions/` | the user's extensions |
+| `~/.local/share/mavernix/apps/` | the apps installed from the App Store, each with a desktop entry in `~/.local/share/applications/` |
 | `~/.local/share/mavernix/themes/` | the user's themes, including the imported Sea Lion theme. These are checked before the installed ones |

@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- New App Store. It offers apps made for Mavernix, starting with Bandstand, a music player. GET, then INSTALL, and the app is in your app grid; when a new version comes out, it's under Updates. Apps are installed for you alone, so no password is needed. In Sea Lion it looks like OS X 10.9's App Store, with its toolbar joined to the title bar, Mavericks' own back and forward buttons and search field, and it sits in the Dock next to System Preferences.
+
 ## 0.3.0 (2026-10-29)
 
 - The dock has an Applications folder with all your programs. It works like any folder in the dock, and its Utilities folder opens right inside it, as on OS X.
