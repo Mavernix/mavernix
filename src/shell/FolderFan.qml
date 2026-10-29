@@ -132,7 +132,12 @@ Item {
                 height: fan.iconSize
                 onClicked: {
                     if (entry.file !== null) {
-                        fan.fileChosen(entry.file.path)
+                        // A fan cannot open a folder inside; the folder's own place can.
+                        if (entry.file.entries !== undefined) {
+                            fan.folderChosen()
+                        } else {
+                            fan.fileChosen(entry.file.path)
+                        }
                     } else {
                         fan.folderChosen()
                     }

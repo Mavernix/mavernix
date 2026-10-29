@@ -124,7 +124,9 @@ groups = [
         "mavernix-settings",
     ],
     [
-        { name = "Applications", icon = "folder-applications", programs = true, view = "grid" },
+        # Utilities gathers the programs of the System category, as the
+        # original's holds Terminal, Activity Monitor and Disk Utility.
+        { name = "Applications", icon = "folder-applications", programs = true, view = "grid", subfolders = [{ name = "Utilities", icon = "folder-utilities", categories = ["System"] }] },
         { name = "Downloads", icon = "folder-download", folder = "~/Downloads", view = "fan", order = "added" },
     ],
 ]

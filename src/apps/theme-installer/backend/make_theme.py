@@ -202,7 +202,14 @@ DOCK_PICTURES = {
     # The puff of smoke where a tile is dropped: five frames, stacked.
     "poof": "dock-poof",
     "pileArrow": "dock-folder-tile-open",
+    # Back to the folder before, in a folder opened inside a grid.
+    "back-button": "dock-folder-back",
+    "back-button-pressed": "dock-folder-back-pressed",
 }
+# The thin scroll bar a folder's grid shows while it scrolls, as three
+# pieces (only at single density), stacked into one picture that stretches
+# along its middle row.
+DOCK_SCROLL_THUMB_PIECES = ["ecsbl_thin_thumb_top", "ecsbl_thin_thumb_center", "ecsbl_thin_thumb_bottom"]
 DOCK_INDICATOR_SMALL_BELOW_TILE_SIZE = 28
 DOCK_INDICATOR_CENTER_HEIGHT = 6
 DOCK_SEPARATOR_BOTTOM = 8
@@ -468,6 +475,22 @@ def copy_dock_pictures(resources_dir, images_dir):
             if not source.is_file():
                 fail(f"{source} is missing")
             shutil.copyfile(source, images_dir / f"{theme_name}{suffix}.png")
+
+
+def join_scroll_thumb(resources_dir, images_dir):
+    """Stacks the scroll bar's pieces into dock-folder-scroll-thumb.png."""
+    pieces = []
+    for name in DOCK_SCROLL_THUMB_PIECES:
+        source = resources_dir / f"{name}.png"
+        if not source.is_file():
+            fail(f"{source} is missing")
+        pieces.append(Image.open(source).convert("RGBA"))
+    joined = Image.new("RGBA", (max(piece.width for piece in pieces), sum(piece.height for piece in pieces)))
+    top = 0
+    for piece in pieces:
+        joined.paste(piece, (0, top))
+        top += piece.height
+    joined.save(images_dir / "dock-folder-scroll-thumb.png")
 
 
 def copy_control_pictures(artwork_dir, images_dir):
@@ -1212,6 +1235,15 @@ separator_color = "#ffffff33"
 rim = ["#151515e6", "#c8c8c859", "#c8c8c859", "#0000005c"]
 pointer = {{ width = 25, height = 13 }}
 tile_gap = 4
+# A folder's list: 16 icons before the names, rows of 21, and when it is
+# taller than the room above the dock it ends 5 below the menu bar and
+# scrolls by an arrow strip one row high.
+icon_size = 16
+icon_gap = 4
+icon_item_height = 21
+scroll_arrow_height = 19
+scroll_speed = 100
+top_margin = 5
 
 [volume_display]
 width = 211
@@ -1313,11 +1345,25 @@ fit_spacing = 28
 # The entry the arrow keys chose: the whole cell, light at the top and
 # fading downwards (measured over the box: grey 212 at the top to 104 at the
 # bottom where the box shows 66), corners of 5.
-selection = { gradient = ["#ffffffc4", "#ffffff33"], radius = 5 }
-# A grid that scrolls fades out over 10 at its top and bottom, and comes to
-# rest on a whole row (the time is not measured).
+selection = {{ gradient = ["#ffffffc4", "#ffffff33"], radius = 5 }}
+# A grid that scrolls fades out over 10 at its top and bottom, and moves by
+# whole rows, a row in about 230 ms at an even pace (measured from frames).
 scroll_fade = 10
-scroll_snap_ms = 150
+scroll_snap_ms = 230
+scroll_snap_curve = "linear"
+# The thin scroll bar while it scrolls: the classic one's lane, 6 in from the
+# box's ends (measured with scroll bars always shown); the thin one's place
+# in it and its fading are not measured.
+scroll_bar_width = 7
+scroll_bar_image = "images/dock-folder-scroll-thumb.png"
+scroll_bar_slice = 3
+scroll_bar_inset = 6
+scroll_bar_fade_ms = 300
+# A name cut short shows whole while the pointer is on it: dark on a light
+# capsule 18 high, grey 219 at its top to 165 at its bottom (measured).
+label_expanded = {{ fill = {{ gradient = ["#dbdbdb", "#a5a5a5"], radius = 9 }}, text_color = "#000000", height = 18, padding = 9 }}
+# Back to the folder before, at the box's top left, beside the title.
+back_button = {{ image = "images/dock-folder-back.png", pressed_image = "images/dock-folder-back-pressed.png", left = 7, top = 5 }}
 open_image = "images/dock-folder-open.png"
 
 [dock.folder.fan]
@@ -1597,6 +1643,7 @@ def main():
     copy_shared_art(artwork_dir, images_dir, MENU_HIGHLIGHT_ENTRY, "menu-highlight")
 
     copy_dock_pictures(root / DOCK_RESOURCES, images_dir)
+    join_scroll_thumb(root / DOCK_RESOURCES, images_dir)
     copy_control_pictures(artwork_dir, images_dir)
     cut_button_boxes(images_dir)
     copy_app_grid_pictures(root / DOCK_RESOURCES, images_dir)

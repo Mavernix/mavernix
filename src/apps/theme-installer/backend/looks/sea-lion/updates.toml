@@ -19,14 +19,34 @@
 
 [[update]]
 revision = 1
-import_brings = ["The Applications folder in the dock gets its own icon."]
+import_brings = [
+    "The Applications folder in the dock gets its own icon.",
+    "Folders inside it, such as Utilities, get their own icon and Mavericks' back button.",
+    "Folders in the dock show Mavericks' thin scroll bar while they scroll.",
+]
 
 [update.settings."dock.folder.grid"]
 stage_share = 0.8
 fit_spacing = 28
 selection = { gradient = ["#ffffffc4", "#ffffff33"], radius = 5 }
 scroll_fade = 10
-scroll_snap_ms = 150
+scroll_snap_ms = 230
+scroll_snap_curve = "linear"
+scroll_bar_width = 7
+scroll_bar_inset = 6
+scroll_bar_fade_ms = 300
+label_expanded = { fill = { gradient = ["#dbdbdb", "#a5a5a5"], radius = 9 }, text_color = "#000000", height = 18, padding = 9 }
+# Where the back button goes; its picture comes with a new import.
+back_button = { left = 7, top = 5 }
+
+# A folder's list in the dock: icons, and scrolling when it is taller than the room.
+[update.settings."dock.menu"]
+icon_size = 16
+icon_gap = 4
+icon_item_height = 21
+scroll_arrow_height = 19
+scroll_speed = 100
+top_margin = 5
 
 [[update.corrections]]
 table = "dock.folder.grid"

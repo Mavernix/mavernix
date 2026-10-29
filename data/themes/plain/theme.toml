@@ -621,6 +621,7 @@ title_color = "#20202070"
 screen_margin = 8
 stage_share = 0.8
 selection = { color = "#3a6ea533", radius = 6 }
+label_expanded = { fill = { color = "#ffffff", radius = 8 }, text_color = "#202020", height = 18, padding = 8 }
 scroll_fade = 8
 scroll_snap_ms = 150
 scroll_bar_width = 4

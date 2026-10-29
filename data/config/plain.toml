@@ -306,7 +306,7 @@ time_minutes = "%1 min ago"
 time_hours = "%1 h ago"
 
 [dock]
-groups = [[{ name = "Applications", icon = "view-app-grid", shell = "app_grid" }, { name = "Home", icon = "user-home", folder = "~", view = "list", order = "name" }, "foot", "mavernix-settings"], [{ name = "Programs", icon = "folder-applications", programs = true, view = "grid" }, { name = "Downloads", icon = "folder-download", folder = "~/Downloads", view = "list", order = "added" }]]
+groups = [[{ name = "Applications", icon = "view-app-grid", shell = "app_grid" }, { name = "Home", icon = "user-home", folder = "~", view = "list", order = "name" }, "foot", "mavernix-settings"], [{ name = "Programs", icon = "folder-applications", programs = true, view = "grid", subfolders = [{ name = "System Tools", icon = "folder", categories = ["System"] }] }, { name = "Downloads", icon = "folder-download", folder = "~/Downloads", view = "list", order = "added" }]]
 magnification = false
 autohide = false
 settings_command = ["mavernix-settings", "dock"]
