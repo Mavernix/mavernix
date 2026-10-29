@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Right-clicking a program in the dock lists the program's own entries, such as New Window or New Private Window. Sea Lion shows them only while the program runs, like the original.
+
 ## 0.2.1 (2026-10-29)
 
 - Discord closed to the tray while maximized comes back when you open it again from the tray or the Dock. Before, its window could fail to appear until Discord was quit.

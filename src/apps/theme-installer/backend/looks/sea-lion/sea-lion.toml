@@ -128,6 +128,8 @@ groups = [
 last_group_at_end = true
 trash_label = "Trash"
 new_folder_view = "fan"
+# A program's own menu entries only while it runs, as on the original.
+actions_when_closed = false
 
 [dock.trash_empty.confirm]
 title = "Are you sure you want to permanently erase the items in the Trash?"
