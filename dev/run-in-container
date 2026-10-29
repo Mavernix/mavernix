@@ -11,12 +11,21 @@
 # MAVERNIX_SCREENS=2 starts it with two virtual screens. The VNC window
 # shows one at a time, the one with the menu bar first.
 #
+# MAVERNIX_FEDORA=44 (or 45) uses Fedora instead of Arch Linux and runs the
+# desktop from its packages (packaging/fedora), kept in dev/out/fedora-44/.
+#
 # Needs Podman, and TigerVNC's vncviewer for the window.
 set -euo pipefail
 
 source_dir=$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)
 out_dir=$source_dir/dev/out
 image=mavernix-dev
+build_options=(--file "$source_dir/dev/Containerfile" "$source_dir/dev")
+if [[ -n ${MAVERNIX_FEDORA:-} ]]; then
+    image=mavernix-dev-fedora$MAVERNIX_FEDORA
+    build_options=(--build-arg "FEDORA=$MAVERNIX_FEDORA"
+        --file "$source_dir/dev/Containerfile.fedora" "$source_dir/packaging/fedora")
+fi
 container=${MAVERNIX_CONTAINER:-mavernix-dev}
 
 if [[ "${1:-}" == stop ]]; then
@@ -41,7 +50,7 @@ if [[ "${1:-}" == shell ]]; then
 fi
 desktop=${1:-}
 
-podman build --quiet --tag "$image" --file "$source_dir/dev/Containerfile" "$source_dir/dev" > /dev/null
+podman build --quiet --tag "$image" "${build_options[@]}" > /dev/null
 
 mkdir -p "$out_dir"
 rm -f "$out_dir/vnc.sock"
@@ -56,6 +65,7 @@ options=(
     --userns=keep-id --user root
     --env "DESKTOP_UID=$(id -u)" --env "DESKTOP_GID=$(id -g)"
     --env "MAVERNIX_SCREENS=${MAVERNIX_SCREENS:-1}"
+    --env "MAVERNIX_FEDORA=${MAVERNIX_FEDORA:-}"
 )
 # The host's GPU for rendering, if any; otherwise software rendering.
 if [[ -e /dev/dri/renderD128 ]]; then

@@ -1,0 +1,25 @@
+# A Fedora image for MAVERNIX_FEDORA=44 dev/run-in-container, which builds the
+# Fedora packages (packaging/fedora, the build context) and runs the desktop
+# from them. Nothing is installed on the host.
+
+ARG FEDORA=44
+FROM registry.fedoraproject.org/fedora:${FEDORA}
+
+# What building the packages needs, as far as Fedora has it: our own Wayfire
+# and wf-config come later, from packaging/fedora/build-rpms.
+COPY *.spec /specs/
+RUN dnf install -y rpm-build rpmdevtools 'dnf5-command(builddep)' \
+    && for spec in /specs/*.spec; do dnf builddep -y --skip-unavailable "$spec"; done \
+    && dnf clean all
+
+# What the packages need to run, so a start installs only them; not Fedora's
+# older Wayfire, wf-config and Quickshell.
+RUN rpmspec -q --requires /specs/*.spec | awk '{ print $1 }' | sed 's/(x86-64)$//' \
+        | grep -vxE 'wayfire|wf-config|quickshell' | sort -u \
+        | xargs dnf install -y --skip-unavailable \
+    && dnf clean all
+
+# The session bus, viewing and scripting the desktop, a terminal and editor for
+# the dock, and a file manager to drag files from.
+RUN dnf install -y dbus-daemon procps-ng wayvnc grim wtype foot featherpad thunar \
+    && dnf clean all
