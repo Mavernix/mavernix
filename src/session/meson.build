@@ -29,6 +29,7 @@ install_data(
     'make_shell_config.py',
     'make_wayfire_config.py',
     'pick_desktop.py',
+    'refresh_desktops.py',
     'themes.py',
     'toml_text.py',
     'user_choices.py',

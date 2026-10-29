@@ -22,7 +22,8 @@
 - In the window overview you can close a window from its picture, and add or remove desktops with any theme.
 - Searching in Settings now finds panes by everyday words, like "wifi", "wallpaper" or "brightness".
 - Window buttons and the double-click on a title bar are now set in Settings, Windows, and the side setting moves the buttons of every window.
-- Sea Lion switches spaces with Ctrl+Alt+arrows, so Ctrl+arrows keep moving by words in text fields. Import the theme again to get it.
+- Sea Lion switches spaces with Ctrl+Alt+arrows, so Ctrl+arrows keep moving by words in text fields.
+- An imported look's desktops (Sea Lion's, say) now take in an update's changes by themselves at the next login, without importing the look again. A desktop file you changed by hand is kept beside the new one, as NAME.toml.before-update.
 - Settings panes no longer get cut off or leave large empty areas, and the wording is plainer throughout.
 
 ## 0.1.5 (2026-10-27)

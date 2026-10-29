@@ -269,6 +269,43 @@ class TestScreenScale(SessionTestCase):
         self.assertIn("position = 1280,0", rescaled[1])
 
 
+class TestRefreshDesktops(SessionTestCase):
+    def test_an_imported_desktop_is_brought_up_to_date(self):
+        sys.path[:0] = [self.folder.name, str(SESSION_SOURCE_DIR)]
+        try:
+            import refresh_desktops
+        finally:
+            del sys.path[:2]
+        folder = Path(self.folder.name)
+        looks = folder / "looks"
+        (looks / "lion").mkdir(parents=True)
+        (looks / "lion" / "look.toml").write_text('desktops = ["lion", "lion-dark"]\n')
+        (looks / "lion" / "lion.toml").write_text('theme = "lion"\nnew_word = "Zoom"\n')
+        (looks / "lion" / "lion-dark.toml").write_text('theme = "lion-dark"\n')
+        (looks / "other").mkdir()
+        (looks / "other" / "look.toml").write_text('desktops = ["other"]\n')
+        (looks / "other" / "other.toml").write_text('theme = "other"\n')
+        configs = folder / "configs"
+        configs.mkdir()
+        # Imported before records were kept, and up to date: one stale, one not.
+        (configs / "lion.toml").write_text('theme = "lion"\n')
+        (configs / "lion-dark.toml").write_text('theme = "lion-dark"\n')
+
+        self.assertEqual(refresh_desktops.refresh(looks, configs), ["lion"])
+        self.assertIn("new_word", (configs / "lion.toml").read_text())
+        # Without a record it may have been changed by hand, so it is kept.
+        self.assertEqual((configs / "lion.toml.before-update").read_text(), 'theme = "lion"\n')
+        # A look never imported is not added.
+        self.assertFalse((configs / "other.toml").exists())
+
+        # Next time, a copy as it was installed is replaced without a spare.
+        (configs / "lion.toml.before-update").unlink()
+        (looks / "lion" / "lion.toml").write_text('theme = "lion"\nnewer_word = "Zoom"\n')
+        self.assertEqual(refresh_desktops.refresh(looks, configs), ["lion"])
+        self.assertFalse((configs / "lion.toml.before-update").exists())
+        self.assertEqual(refresh_desktops.refresh(looks, configs), [])
+
+
 class TestPointerSettings(SessionTestCase):
     def test_speed_and_acceleration_reach_the_compositor(self):
         sys.path[:0] = [self.folder.name, str(SESSION_SOURCE_DIR)]

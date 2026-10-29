@@ -18,6 +18,10 @@ set -euo pipefail
 # shellcheck source=paths.sh.in
 source "$(dirname "$(readlink -f "$0")")/paths.sh"
 
+# Desktops a look added are brought up to date with this version; a
+# failure there must not keep the desktop from starting.
+python3 "$session_dir/refresh_desktops.py" || true
+
 name=${1:-}
 if [[ -z "$name" ]]; then
     name=$(python3 "$session_dir/pick_desktop.py")

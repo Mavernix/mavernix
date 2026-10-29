@@ -411,6 +411,10 @@ def install(staging, look, report):
     configs.mkdir(parents=True, exist_ok=True)
     for desktop in reversed(look["desktops"]):
         shutil.copyfile(look["folder"] / f"{desktop}.toml", configs / f"{desktop}.toml")
+        # What was copied, so that a later version's refresh can tell it from
+        # a copy changed by hand (src/session/refresh_desktops.py).
+        copied = (configs / f"{desktop}.toml").read_bytes()
+        (configs / f".{desktop}.toml.installed").write_text(hashlib.sha256(copied).hexdigest() + "\n")
 
     # A link in the user's font folder lets every program find a theme's
     # typeface. (A theme whose fonts/ links to another's shares that one's.)
