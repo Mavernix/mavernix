@@ -157,6 +157,8 @@ A place in the dock can be a folder (the config decides that). Pressing it shows
 
 The names use `[fonts].dock_folder`.
 
+How big a grid gets: the free part of the screen (its width, and its height between the panel and the dock) times `stage_share` is the grid's stage. As many cells fit at once as the stage holds when each counts `fit_spacing` more room than its `cell_width` and `cell_height`. Those cells make a near square: as many columns as the square root of their number, plus one more when the last row would hold no more cells than one fewer than there are rows. So 3 entries make 3 × 1, 7 make 4 × 2 and 10 make 5 × 2. If the stage is too small for that square at full size, the cells shrink to fit, and the rest of a bigger folder scrolls.
+
 `[animation.dock_folder]` sets how the grid comes and goes. Its `kind` is "grow" (the grid grows out of its tile as it fades in), "fade" or "none". It takes `duration_ms` and, optionally, `close_duration_ms`. For the fan it's `[animation.dock_folder_fan]`, with `kind` "rise" (the entries climb out of the tile along the fan's line) or "none".
 
 ```toml
@@ -188,8 +190,10 @@ label_color = "#202020"
 label_shadow_color = "#000000a0"   # optional
 title_baseline = 19       # the folder's name, centred at the top
 title_color = "#20202070"
-screen_margin = 8         # the box keeps this far from the screen's sides, and from the panel at the top
-scroll_bar_width = 4      # optional: a folder with more than fits scrolls, and this bar shows where
+screen_margin = 8         # the box keeps this far from the screen's sides
+stage_share = 0.8         # optional: the share of the free width and height the grid is sized for (else all of it)
+fit_spacing = 0           # optional: room added to each cell when counting how many fit on that stage
+scroll_bar_width = 4      # optional: a folder with more than fits scrolls; with a width, a bar shows where
 scroll_bar_color = "#20202060"   # optional: else the names' colour at half strength
 open_image = "images/open-folder.png"   # optional: the picture of the last entry, which opens the folder itself (else the icon theme's "folder-open")
 open_image_size = 56                   # optional: its size, if not that of an icon

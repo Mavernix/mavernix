@@ -22,6 +22,8 @@ PanelWindow {
     // The middle of the folder tile's top edge, on the screen.
     property real anchorX: 0
     property real anchorY: 0
+    // How much of the screen's height the dock takes while resting.
+    property real dockThickness: 0
 
     signal fileChosen(string path)
     signal folderChosen()
@@ -99,9 +101,8 @@ PanelWindow {
         x: Math.round(Math.max(sideRoom, Math.min(overlay.width - sideRoom - width,
                                                   overlay.anchorX - width / 2)))
         y: Math.round(tipY - pointerLength - height)
-        // Clear of the screen's sides and of the panel's height at the top.
-        mostWidth: overlay.width - 2 * sideRoom
-        mostHeight: tipY - pointerLength - sideRoom - (overlay.settings.theme.panel?.height ?? 0)
+        freeWidth: overlay.width
+        freeHeight: overlay.height - overlay.dockThickness - (overlay.settings.theme.panel?.height ?? 0)
         pointerX: overlay.anchorX - x
 
         opacity: overlay.shown

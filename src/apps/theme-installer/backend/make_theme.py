@@ -1298,6 +1298,11 @@ label_shadow_color = "#000000a0"
 title_baseline = 19
 title_color = "#ffffff6b"
 screen_margin = 32
+# A grid is sized for 80% of the free width and height, counting each cell
+# 28 wider and higher than it is; the cells shrink to fit (measured on 10.9
+# with folders of 1 to 99 files at 1024x768, 1280x800 and 1920x1080).
+stage_share = 0.8
+fit_spacing = 28
 open_image = "images/dock-folder-open.png"
 
 [dock.folder.fan]

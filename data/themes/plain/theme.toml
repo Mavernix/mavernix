@@ -613,6 +613,7 @@ label_color = "#202020"
 title_baseline = 19
 title_color = "#20202070"
 screen_margin = 8
+stage_share = 0.8
 scroll_bar_width = 4
 scroll_bar_color = "#20202060"
 
