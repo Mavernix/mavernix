@@ -541,6 +541,17 @@ def display_sections(config):
         main = main if main in plugged_in else plugged_in[0]
         placed = tidied({name: (*places[name], *sizes[name]) for name in plugged_in}, main)
         places.update({name: screen[:2] for name, screen in placed.items()})
+    # The Display pane puts the main screen at 0,0, so a screen to its left
+    # or above it gets a negative position. Xwayland's screen only starts
+    # at 0,0, though, so X11 programs on such a screen never get the
+    # pointer and their clicks go nowhere (#15). Moving every screen by the
+    # same amount keeps the arrangement and starts it at 0,0.
+    in_use = [places[name] for name in plugged_in if len(places.get(name, ())) == 2]
+    if in_use:
+        left = min(0, *(x for x, _ in in_use))
+        top = min(0, *(y for _, y in in_use))
+        places = {name: (place[0] - left, place[1] - top) if len(place) == 2 else place
+                  for name, place in places.items()}
 
     for name in names:
         own = single.get(name, {})

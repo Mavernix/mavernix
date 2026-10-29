@@ -268,6 +268,23 @@ class TestScreenScale(SessionTestCase):
         self.assertIn("position = 0,0", rescaled[0])
         self.assertIn("position = 1280,0", rescaled[1])
 
+    def test_a_screen_left_of_the_main_one_moves_the_layout_to_0_0(self):
+        # Xwayland can't reach negative positions (#15): DVI-D-1 at -1920
+        # becomes 0, and the main screen moves right by as much.
+        sys.path[:0] = [self.folder.name, str(SESSION_SOURCE_DIR)]
+        try:
+            import make_wayfire_config
+        finally:
+            del sys.path[:2]
+        screens = {"DP-3": {"width": 2560, "height": 1440, "dpi": 93.0},
+                   "DVI-D-1": {"width": 1920, "height": 1080, "dpi": 96.0}}
+        placed = {"DP-3": {"position": "0,0"}, "DVI-D-1": {"position": "-1920,360"}}
+        with unittest.mock.patch.object(make_wayfire_config, "connected_screens", return_value=screens), \
+                unittest.mock.patch.object(make_wayfire_config, "screen_positions", return_value={}):
+            sections = make_wayfire_config.display_sections({"display": {"screens": placed}})
+        self.assertIn("position = 1920,0", sections[0])
+        self.assertIn("position = 0,360", sections[1])
+
 
 class TestRefreshDesktops(SessionTestCase):
     def test_an_imported_desktop_is_brought_up_to_date(self):
