@@ -79,7 +79,7 @@ TrackpadPane::TrackpadPane(Choices& choices, QWidget* parent) : QWidget(parent),
     form->addRow(QString(), with_note(tap, word("trackpad_tap_note", "")));
     form->addRow(QString(), with_note(natural, word("trackpad_natural_scroll_note", "")));
     form->addRow(word("trackpad_speed", "Tracking speed:"),
-        with_end_words(speed, word("mouse_speed_slow", "Slow"), word("mouse_speed_fast", "Fast")));
+        with_end_words(speed, word("trackpad_speed_slow", "Slow"), word("trackpad_speed_fast", "Fast")));
     form->addRow(QString(), acceleration);
     form->addRow(word("trackpad_secondary", "Secondary click:"), secondary);
 }

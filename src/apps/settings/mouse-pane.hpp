@@ -20,7 +20,7 @@ class MousePane : public QWidget
   private:
     // One of the [input] settings.
     void change(const QString& key, const QVariant& value);
-    // Writes both sliders' values.
+    // Once a slider settles: released, or a moment after the last key press.
     void writeSliders();
     // A slider with "Slow" and "Fast" under its ends.
     QWidget* speedSlider(QSlider*& slider, int stops, int at);

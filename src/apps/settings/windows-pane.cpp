@@ -86,9 +86,9 @@ WindowsPane::WindowsPane(Choices& choices, QWidget* parent) : QWidget(parent), c
         const char* word_key;
         const char* fallback;
     } double_click_choices[] = {
-        {"none", "window_double_click_none", "does nothing"},
-        {"minimize", "window_double_click_minimize", "minimises the window"},
-        {"maximize", "window_double_click_maximize", "enlarges the window"},
+        {"none", "windows_double_click_none", "does nothing"},
+        {"minimize", "windows_double_click_minimize", "minimises the window"},
+        {"maximize", "windows_double_click_maximize", "enlarges the window"},
     };
     const QString chosen_double_click = choices.value(table, QStringLiteral("title_double_click")).toString();
     for (const auto& choice : double_click_choices)
@@ -132,6 +132,6 @@ WindowsPane::WindowsPane(Choices& choices, QWidget* parent) : QWidget(parent), c
             word("windows_snap_note",
                 "At the left or right side: that half. In a corner: that quarter. At the top: the whole screen.")));
     form->addRow(word("windows_drag_key", "Move and resize a window by holding:"), drag_key);
-    form->addRow(word("window_double_click", "A double click on a title bar:"), double_click);
+    form->addRow(word("windows_double_click", "A double click on a title bar:"), double_click);
     form->addRow(word("windows_buttons", "Window buttons:"), button_side);
 }
