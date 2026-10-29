@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+# Builds the Fedora packages into OUT_DIR: wf-config and Wayfire 0.11 (Fedora's
+# are older), Quickshell 0.3, and Mavernix from this source tree as it is.
+# Runs inside Fedora as root, since it installs what the builds need. Used by
+# .github/workflows/fedora.yml and, with MAVERNIX_FEDORA, by
+# dev/run-in-container.
+#
+#   packaging/fedora/build-rpms OUT_DIR
+#
+# The dependencies already in OUT_DIR are not built again.
+set -euo pipefail
+
+here=$(cd "$(dirname "$(readlink -f "$0")")" && pwd)
+source_dir=$(cd "$here/../.." && pwd)
+mkdir -p "$1"
+out_dir=$(cd "$1" && pwd)
+top_dir=$(mktemp -d)
+mkdir -p "$top_dir/SOURCES"
+cp "$here"/*.patch "$top_dir/SOURCES/"
+
+dnf install -y --setopt=install_weak_deps=False rpm-build rpmdevtools 'dnf5-command(builddep)'
+
+# Builds SPEC unless it is a dependency already built, and installs its
+# packages, which the next spec may build against.
+build() {
+    local spec=$here/$1.spec
+    local packages
+    mapfile -t packages < <(rpmspec -q --define 'debug_package %{nil}' --qf "$out_dir/%{nvra}.rpm\n" "$spec")
+    if [[ $1 == mavernix || ! -e ${packages[0]} ]]; then
+        if [[ $1 == mavernix ]]; then
+            make_mavernix_source "$spec"
+        else
+            spectool -g -C "$top_dir/SOURCES" "$spec"
+        fi
+        dnf builddep -y "$spec"
+        # At most four jobs: Wayfire's optimised links take gigabytes each.
+        rpmbuild --define "_topdir $top_dir" --define 'debug_package %{nil}' --define '_smp_ncpus_max 4' \
+            -ba "$spec"
+        cp "$top_dir"/RPMS/*/*.rpm "$top_dir"/SRPMS/*.src.rpm "$out_dir/"
+    fi
+    dnf install -y "${packages[@]}"
+}
+
+# The spec's source archive, made from this tree; the versions in meson.build
+# and the spec must agree.
+make_mavernix_source() {
+    local version project_version
+    version=$(rpmspec -q --srpm --qf '%{version}' "$1")
+    project_version=$(sed -n "s/^ *version: '\(.*\)',$/\1/p" "$source_dir/meson.build")
+    if [[ $version != "$project_version" ]]; then
+        echo "build-rpms: meson.build says $project_version, mavernix.spec $version" >&2
+        exit 1
+    fi
+    rm -f "$out_dir"/mavernix-[0-9]*.rpm
+    tar -C "$source_dir" --exclude-vcs --exclude='./build*' --exclude=./dev/out --exclude=./rpms \
+        --transform "s|^\.|mavernix-$version|" -czf "$top_dir/SOURCES/mavernix-$version.tar.gz" .
+}
+
+build wf-config
+build wayfire
+build quickshell
+build mavernix
+rm -rf "$top_dir"
