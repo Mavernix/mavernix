@@ -31,6 +31,8 @@ class CompositorSocket : public QObject
 
   signals:
     void connected();
+    // The compositor has gone away (or was never reached); open() tries again.
+    void disconnected();
     // Only for events asked for, such as with `window-rules/events/watch`.
     void eventReceived(const QJsonObject& event);
 

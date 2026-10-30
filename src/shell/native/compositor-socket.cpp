@@ -12,6 +12,12 @@ const qsizetype LENGTH_FIELD_BYTES = 4;
 CompositorSocket::CompositorSocket(QObject* parent) : QObject(parent)
 {
     connect(&socket, &QLocalSocket::connected, this, &CompositorSocket::connected);
+    connect(&socket, &QLocalSocket::disconnected, this, [this] {
+        // Nothing half-read or awaited carries over to a new connection.
+        unread.clear();
+        waitingForAnswer.clear();
+        emit disconnected();
+    });
     connect(&socket, &QLocalSocket::readyRead, this, &CompositorSocket::readAvailableMessages);
     connect(&socket, &QLocalSocket::errorOccurred, this, [this] {
         qWarning().noquote() << "Shell.Native: cannot talk to the compositor at" << socket.fullServerName() << "-"

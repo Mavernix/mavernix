@@ -14,6 +14,15 @@ WindowAttention::WindowAttention(QObject* parent) : QObject(parent)
             }
         });
     });
+    // Without the compositor nothing can be known to ask any more.
+    connect(&compositor, &CompositorSocket::disconnected, this, [this] {
+        if (!asking.isEmpty())
+        {
+            asking.clear();
+            changes += 1;
+            emit changed();
+        }
+    });
     // The compositor tells only of changes: a window starting or stopping to ask.
     connect(&compositor, &CompositorSocket::eventReceived, this, [this](const QJsonObject& event) {
         if (event.value("event").toString() != "window-attention")
