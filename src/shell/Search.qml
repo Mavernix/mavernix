@@ -11,6 +11,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 import Shell.Native
+import "ApplicationMatch.js" as ApplicationMatch
 import "ThemeValues.js" as ThemeValues
 
 PanelWindow {
@@ -89,10 +90,17 @@ PanelWindow {
         if (wanted === "") {
             return []
         }
-        const matches = DesktopEntries.applications.values.filter(
-            entry => !entry.noDisplay && entry.name.toLowerCase().includes(search.wantedLowerCase))
-        matches.sort((first, second) => search.closerMatchFirst(first.name, second.name))
-        return matches.slice(0, mostOfAKind)
+        // Found by name first, then by what they are or their keywords.
+        const matches = []
+        for (const entry of DesktopEntries.applications.values) {
+            const strength = entry.noDisplay ? 0 : ApplicationMatch.strength(entry, search.wantedLowerCase)
+            if (strength > 0) {
+                matches.push({ entry: entry, strength: strength })
+            }
+        }
+        matches.sort((first, second) => second.strength - first.strength
+                                         || search.closerMatchFirst(first.entry.name, second.entry.name))
+        return matches.slice(0, mostOfAKind).map(match => match.entry)
     }
 
     // Paths from `find`; folders end with a slash.

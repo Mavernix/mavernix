@@ -8,6 +8,7 @@ import QtQuick
 import QtQuick.Effects
 import Quickshell
 import Quickshell.Wayland
+import "ApplicationMatch.js" as ApplicationMatch
 import "ThemeValues.js" as ThemeValues
 
 PanelWindow {
@@ -103,7 +104,7 @@ PanelWindow {
             if (entry.noDisplay) {
                 continue
             }
-            if (wanted !== "" && !entry.name.toLowerCase().includes(wanted)) {
+            if (wanted !== "" && ApplicationMatch.strength(entry, wanted) === 0) {
                 continue
             }
             list.push(entry)
