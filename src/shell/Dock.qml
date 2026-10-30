@@ -379,7 +379,7 @@ PanelWindow {
         const icons = fileKinds.iconsFor(trimmed)
         const icon = themeIcons.find(icons.icon) !== "" ? icons.icon : icons.genericIcon
         return { name: name, icon: icon,
-                 command: (config.open_command ?? ["xdg-open"]).concat([trimmed]) }
+                 command: (config.open_command ?? ["gio", "open"]).concat([trimmed]) }
     }
 
     // Empties the trash with [dock] trash_empty, asking first unless the user

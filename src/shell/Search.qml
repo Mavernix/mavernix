@@ -164,7 +164,7 @@ PanelWindow {
     }
 
     function openPath(path) {
-        Quickshell.execDetached((wishes.open_command ?? ["xdg-open"]).concat([path]))
+        Quickshell.execDetached((wishes.open_command ?? ["gio", "open"]).concat([path]))
     }
 
     // Rows { heading, name, icon, open() }; heading only on a kind's first row.

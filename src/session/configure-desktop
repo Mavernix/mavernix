@@ -161,6 +161,29 @@ write_program_entries() {
         "application/x-apple-diskimage;application/x-iso9660-image;application/x-cd-image;" "%f"
     write_program_entry about "About This Computer" computer "System;"
     write_program_entry app-store "App Store" system-software-install "Settings;PackageManager;"
+    write_mime_cache "$state_dir/share/applications"
+}
+
+# GLib takes which program opens a kind of file from a folder's
+# mimeinfo.cache, not from the entries' MimeType lines (what
+# update-desktop-database writes); without it, `gio open` gave a disk image
+# to no program and xdg-open to the web browser.
+write_mime_cache() {
+    local folder=$1 entry line type
+    local -A programs=()
+    for entry in "$folder"/*.desktop; do
+        [[ -e "$entry" ]] || continue
+        line=$(grep -m1 '^MimeType=' "$entry" || true)
+        for type in $(tr ';' ' ' <<< "${line#MimeType=}"); do
+            programs[$type]+="$(basename "$entry");"
+        done
+    done
+    {
+        echo "[MIME Cache]"
+        for type in "${!programs[@]}"; do
+            echo "$type=${programs[$type]}"
+        done
+    } > "$folder/mimeinfo.cache"
 }
 
 # The theme's share/ folder (an icon theme) behind a fixed link, so a switch

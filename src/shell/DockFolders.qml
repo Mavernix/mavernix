@@ -63,7 +63,7 @@ QtObject {
     }
 
     function openFile(path) {
-        Quickshell.execDetached((config.open_command ?? ["xdg-open"]).concat([path]))
+        Quickshell.execDetached((config.open_command ?? ["gio", "open"]).concat([path]))
     }
 
     // --- The folder of all programs -------------------------------------------
