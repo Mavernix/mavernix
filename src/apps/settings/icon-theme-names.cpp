@@ -71,7 +71,8 @@ QStringList read_theme(const QString& theme, QSet<QString>& names)
 
 QStringList icon_theme_names()
 {
-    QSet<QString> names;
+    QStringList listed;
+    QSet<QString> seen;
     QSet<QString> visited;
     QStringList to_visit = {QIcon::themeName(), QIcon::fallbackThemeName(), last_theme};
     while (!to_visit.isEmpty())
@@ -82,11 +83,23 @@ QStringList icon_theme_names()
             continue;
         }
         visited.insert(theme);
+        QSet<QString> names;
         // A theme's parents are searched before the fallbacks queued above.
         to_visit = read_theme(theme, names) + to_visit;
-    }
 
-    QStringList sorted(names.cbegin(), names.cend());
-    sorted.sort(Qt::CaseInsensitive);
-    return sorted;
+        // Sea Lion draws a hundred icons and inherits Breeze's thousands:
+        // sorted all together, its own would be lost among them.
+        QStringList own;
+        for (const QString& name : names)
+        {
+            if (!seen.contains(name))
+            {
+                seen.insert(name);
+                own.append(name);
+            }
+        }
+        own.sort(Qt::CaseInsensitive);
+        listed += own;
+    }
+    return listed;
 }

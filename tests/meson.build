@@ -33,6 +33,11 @@ tests = {
         'include': test_sources / 'apps/settings',
         'dependencies': [],
     },
+    'icon-theme-names': {
+        'sources': [test_sources / 'apps/settings/icon-theme-names.cpp'],
+        'include': test_sources / 'apps/settings',
+        'dependencies': [qt_widgets],
+    },
     'screen-layout': {
         'sources': [test_sources / 'apps/settings/screen-layout.cpp'],
         'include': test_sources / 'apps/settings',
