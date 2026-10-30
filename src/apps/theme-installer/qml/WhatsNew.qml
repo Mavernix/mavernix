@@ -121,15 +121,31 @@ Window {
                       .arg(window.lookNames)
         }
 
-        // One sentence per feature, each with a bullet.
+        // One sentence per feature, each with a bullet; a sentence that
+        // wraps keeps to the right of its bullet.
         Column {
             width: parent.width
             spacing: looks.news_item_gap ?? 0
             Repeater {
                 model: window.newsLooks.reduce((all, look) => all.concat(look.import_brings), [])
-                delegate: BodyText {
+                delegate: Row {
+                    id: item
                     required property string modelData
-                    text: "•  " + modelData
+                    width: parent.width
+
+                    BodyText {
+                        id: bullet
+                        width: implicitWidth
+                        wrapMode: Text.NoWrap
+                        // About two spaces' room; spaces at a text's end
+                        // add nothing to its width.
+                        rightPadding: Math.round(0.6 * font.pixelSize)
+                        text: "•"
+                    }
+                    BodyText {
+                        width: item.width - bullet.width
+                        text: item.modelData
+                    }
                 }
             }
         }
