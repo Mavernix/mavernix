@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.3 (2026-10-30)
+
+- Dock & Menu Bar has a Show seconds box for the clock.
+- The app grid (Launchpad in Sea Lion) is in the app grid and search like a program. Drag it onto the dock to put its tile back after taking it out. Log out and back in once after updating.
+- Taking a second screenshot during the first one's flash no longer flickers.
+
 ## 0.5.2 (2026-10-30)
 
 - An icon dragged along the dock lands where you let it go, also when the dock lists programs that aren't installed. Holding a press until the menu opens, then sliding along the dock, still moves the icon.
