@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.5.0 (2026-10-30)
+
+- Menus work like a Mac's. Press a menu title, drag to an item and let go to choose it. Submenus stay open while you head for them, and menus fade out as they close.
+- Hold a press on a dock icon to open its menu, then drag to an item and let go.
+- A program's dock icon bounces when one of its windows needs your attention.
+- In Sea Lion, Notification Center slides the desktop aside as on OS X 10.9. Click the desktop to bring it back.
+- In Sea Lion, windows open with a little pop, and the app grid's icons settle into place like Launchpad's.
+- System Preferences grows and shrinks to fit each pane, and its View menu lists every pane.
+- Search and the app grid also find programs by what they do, so "term" finds your terminal.
+- Sea Lion has Mavericks' icon for every program and System Preferences pane, and gives icons to many more Linux programs.
+- Bandstand looks like iTunes 11 in Sea Lion, and the App Store's tabs get Mavericks' icons.
+- The app grid, dock folders and System Preferences open faster, and the shell uses less memory.
+
 ## 0.4.0 (2026-10-30)
 
 - New App Store. It offers apps made for Mavernix, starting with Bandstand, a music player. GET, then INSTALL, and the app is in your app grid; when a new version comes out, it's under Updates. Apps are installed for you alone, so no password is needed. In Sea Lion it looks like OS X 10.9's App Store, with its toolbar joined to the title bar, Mavericks' own back and forward buttons and search field, and it sits in the Dock next to System Preferences.
