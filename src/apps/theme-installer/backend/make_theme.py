@@ -183,6 +183,115 @@ kind = "fade"
 duration_ms = 130
 blink_ms = 60
 """
+
+# Bandstand, the music player, as iTunes 11 draws itself in OS X 10.9.5. Its
+# pictures are iTunes' own (MUSIC_PICTURES, cut by make_music_pictures): the
+# transport buttons, volume slider, LCD with its progress bar and Up Next
+# button, and the blue selection bar. The rest is measured from iTunes 11's
+# window in the reference VM, with Bandstand's title bar joined to its top
+# bar (sea-lion.toml's joined_tool_bar_apps): the top bar runs on from where
+# background_joined ends to iTunes' toolbar bottom, iTunes' toolbar does not
+# change in a window behind, so that takes [controls.tool_bar]'s. The LCD
+# picture spans the toolbar's height with room for its shadow. Bandstand
+# draws everything this table leaves out from [controls]. Only an import
+# makes the pictures, so updates.toml has no copy of it.
+MUSIC_TABLE = """[music.top_bar]
+height = 61
+fill = { gradient = ["#d1d1d1", "#c5c5c5"] }
+fill_inactive = { gradient = ["#eeeeee", "#e0e0e0"] }
+line_color = "#7b7b7b"
+line_color_inactive = "#a6a6a6"
+inset = 20
+transport_spacing = 11
+volume_gap = 20
+volume_width = 100
+volume_slider = { track = "images/music/volume-track.png", track_slice = [0, 7, 0, 7], fill = "images/music/volume-fill.png", thumb = "images/music/volume-knob.png", thumb_pressed = "images/music/volume-knob-pressed.png" }
+
+[music.top_bar.pictures]
+previous = { normal = "images/music/previous.png", pressed = "images/music/previous-pressed.png", disabled = "images/music/previous-disabled.png" }
+next = { normal = "images/music/next.png", pressed = "images/music/next-pressed.png", disabled = "images/music/next-disabled.png" }
+play = { normal = "images/music/play.png", pressed = "images/music/play-pressed.png", disabled = "images/music/play-disabled.png" }
+pause = { normal = "images/music/pause.png", pressed = "images/music/pause-pressed.png", disabled = "images/music/pause-disabled.png" }
+
+[music.search_field]
+width = 167
+height = 23
+fill = { image = "images/controls/toolbar-search-field.png", slice = [0, 11, 0, 11] }
+
+[music.display]
+width = 440
+height = 60
+fill = { image = "images/music/lcd.png", slice = [8, 8, 8, 8] }
+cover_inset = 12
+cover_top = 8
+cover_size = 44
+text_top = 7
+title_color = "#262626"
+artist_color = "#424242"
+idle_color = "#6e6e6e"
+time_color = "#424242"
+scrubber_height = 21
+scrubber_bottom = 6
+line_height = 21
+line_fill = { image = "images/music/scrubber-track.png", slice = [0, 10, 0, 10] }
+line_played_fill = { image = "images/music/scrubber-played.png", slice = [0, 0, 0, 10] }
+knob = "images/music/scrubber-knob.png"
+queue_glyph = { normal = "images/music/up-next.png", pressed = "images/music/up-next-pressed.png", open = "images/music/up-next-pressed.png" }
+queue_button_width = 18
+queue_button_height = 23
+queue_button_inset = 23
+queue_button_fill = { color = "#00000000" }
+queue_button_open_fill = { color = "#00000000" }
+
+[music.sidebar]
+fill = { gradient = ["#eaedf2", "#d3d9e0"] }
+edge_color = "#cccccc"
+row_height = 24
+row_inset = 0
+text_inset = 20
+heading_text_inset = 8
+heading_color = "#707e8c"
+heading_capitals = true
+text_color = "#000000"
+selected_fill = { image = "images/music/selection.png", slice = [2, 0, 2, 0] }
+selected_fill_inactive = { image = "images/music/selection-inactive.png", slice = [2, 0, 2, 0] }
+selected_text_color = "#ffffff"
+
+[music.song_list]
+header_height = 22
+header_fill = { gradient = ["#c4c4c4", "#dedede", "#efefef"], positions = [0, 0.05, 1] }
+header_fill_inactive = { gradient = ["#c0c0c0", "#e3e3e3", "#eeeeee"], positions = [0, 0.05, 1] }
+header_line_color = "#d9d9d9"
+header_separator_color = "#d0d0d0"
+header_text_color = "#626262"
+row_height = 22
+row_color = "#f1f4f7"
+row_alternate_color = "#fafafa"
+text_color = "#000000"
+quiet_text_color = "#000000"
+playing_fill = { image = "images/music/selection.png", slice = [2, 0, 2, 0] }
+playing_fill_inactive = { image = "images/music/selection-inactive.png", slice = [2, 0, 2, 0] }
+playing_text_color = "#ffffff"
+
+[music.tabs]
+height = 30
+tab_height = 17
+padding = 10
+spacing = 9
+centered = true
+bar_fill = { gradient = ["#e3e2e1", "#faf9f8", "#f2f2f2"], positions = [0, 0.1, 1] }
+line_color = "#979797"
+text_color = "#4a4a4a"
+selected_fill = { gradient = ["#d2d0cf", "#e4e3e2"], radius = 8, border = { color = "#b5b4b4", width = 1 } }
+selected_text_color = "#4a4a4a"
+
+[music.status_bar]
+height = 24
+fill = { gradient = ["#e1e1e1", "#c7c7c7"] }
+fill_inactive = { gradient = ["#f8f8f8", "#e2e2e2"] }
+line_color = "#7b7b7b"
+text_color = "#000000"
+"""
 TITLE_FONT_SIZE = 13
 
 
@@ -776,6 +885,83 @@ def cut_button_boxes(images_dir):
             picture.crop((0, first_row, picture.width, last_row)).save(controls_dir / f"{name}-box{suffix}.png")
 
 
+# --- Bandstand's pictures, from iTunes ----------------------------------------------
+# iTunes 11 keeps its pictures numbered in resource files (rsrcfile.py):
+# iTunes.rsrc at normal size, Images.rsrc and Images2.rsrc at double size,
+# each ITUNES_DOUBLE_OFFSET above its twin. Many are strips of states side by
+# side or stacked; each picture here is one cell, as (number, box), the box
+# at normal size as (left, top, right, bottom).
+ITUNES_RESOURCES = "Applications/iTunes.app/Contents/Resources"
+ITUNES_NORMAL_FILES = ["iTunes"]
+ITUNES_DOUBLE_FILES = ["Images", "Images2"]
+ITUNES_DOUBLE_OFFSET = 15000
+
+
+def cell(width, height, column, row=0):
+    """The box of one cell in a grid of `width` by `height` cells."""
+    return (column * width, row * height, (column + 1) * width, (row + 1) * height)
+
+
+# The transport strips have five 30-point cells: without anywhere to go,
+# usable, pressed, then the first two again. The play strip has a row each
+# for play, pause and stop.
+TRANSPORT_CELL = 30
+TRANSPORT_STATES = {"-disabled": 0, "": 1, "-pressed": 2}
+TRANSPORT_STRIPS = {"previous": (317, 0), "next": (319, 0), "play": (321, 0), "pause": (321, 1)}
+
+MUSIC_PICTURES = {
+    "lcd": (150, (0, 0, 464, 60)),
+    # The volume slider: its track, and the part up to the knob.
+    "volume-track": (353, cell(61, 14, 0)),
+    "volume-fill": (353, cell(61, 14, 1)),
+    "volume-knob": (355, cell(13, 14, 0)),
+    "volume-knob-pressed": (355, cell(13, 14, 1)),
+    # The LCD's progress bar: the groove, then the played part, which has no
+    # right end so that it runs into the groove.
+    "scrubber-track": (160, cell(34, 21, 0, 0)),
+    "scrubber-played": (160, cell(34, 21, 0, 1)),
+    # Its knob, without the mark beside it.
+    "scrubber-knob": (8131, (6, 0, 12, 14)),
+    # The Up Next button in the LCD: faint, usable, pressed.
+    "up-next": (894, cell(18, 23, 1)),
+    "up-next-pressed": (894, cell(18, 23, 2)),
+    # The selected row: blue, and grey-blue in a window behind.
+    "selection": (301, cell(32, 24, 0)),
+    "selection-inactive": (301, cell(32, 24, 1)),
+}
+MUSIC_PICTURES.update({
+    name + state: (number, cell(TRANSPORT_CELL, TRANSPORT_CELL, column, row))
+    for name, (number, row) in TRANSPORT_STRIPS.items()
+    for state, column in TRANSPORT_STATES.items()
+})
+
+
+def itunes_picture(artwork_dir, number, density):
+    """iTunes' picture `number` (its normal-size number) at density 1 or 2."""
+    if density == 1:
+        folders, wanted = ITUNES_NORMAL_FILES, number
+    else:
+        folders, wanted = ITUNES_DOUBLE_FILES, number + ITUNES_DOUBLE_OFFSET
+    for folder in folders:
+        source = artwork_dir / "itunes" / folder / f"{wanted}.png"
+        if source.is_file():
+            return Image.open(source).convert("RGBA")
+    fail(f"iTunes has no picture {wanted} in {', '.join(folders)}. Decode its .rsrc files first.")
+
+
+def make_music_pictures(artwork_dir, images_dir):
+    """Writes images/music/: MUSIC_PICTURES cut from iTunes' pictures, at both densities."""
+    target = images_dir / "music"
+    target.mkdir(parents=True, exist_ok=True)
+    for density, suffix in ((1, ""), (2, "@2x")):
+        for name, (number, box) in MUSIC_PICTURES.items():
+            picture = itunes_picture(artwork_dir, number, density)
+            box = tuple(side * density for side in box)
+            if box[2] > picture.width or box[3] > picture.height:
+                fail(f"iTunes' picture {number} at density {density} is {picture.size}, too small for {box}")
+            picture.crop(box).save(target / f"{name}{suffix}.png")
+
+
 def convert_status_picture(pdf_file, target, density):
     """Draws one of the original status pictures, stored as PDF, as a PNG.
 
@@ -1200,6 +1386,7 @@ button_disabled = {{ image = "images/controls/button-small-disabled.png", slice 
 button_disabled_text_color = "#00000060"
 
 {APP_STORE_TABLE}{APP_STORE_PICTURES}
+{MUSIC_TABLE}
 [theme_installer]
 width = 640
 height = 500
@@ -1920,6 +2107,7 @@ def main():
     make_toolbar_glyphs(artwork_dir, images_dir)
     make_tab_glyphs(root, images_dir)
     make_tab_wells(images_dir)
+    make_music_pictures(artwork_dir, images_dir)
     copy_app_grid_pictures(root / DOCK_RESOURCES, images_dir)
     copy_window_overview_pictures(root / DOCK_RESOURCES, images_dir)
 

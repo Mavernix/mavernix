@@ -9,7 +9,7 @@ theme = "sea-lion"
 [window]
 button_side = "left"
 button_order = ["close", "minimize", "maximize"]
-joined_tool_bar_apps = ["mavernix-settings", "mavernix-app-store", "org.kde.dolphin", "org.kde.konsole"]
+joined_tool_bar_apps = ["mavernix-settings", "mavernix-app-store", "bandstand", "org.kde.dolphin", "org.kde.konsole"]
 quick_open_close_ms = 120
 
 [panel]

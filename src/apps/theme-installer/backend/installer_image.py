@@ -42,6 +42,9 @@ DECODED_BY_POSITION = {
     "System/Library/PrivateFrameworks/CoreUI.framework/Versions/A/Resources/ArtFile200.bin",
     "System/Library/PrivateFrameworks/CoreUI.framework/Versions/A/Resources/SArtFile.bin",
     "System/Library/PrivateFrameworks/ProKit.framework/Versions/A/Resources/ProThemeBits.car",
+    "Applications/iTunes.app/Contents/Resources/iTunes.rsrc",
+    "Applications/iTunes.app/Contents/Resources/Images.rsrc",
+    "Applications/iTunes.app/Contents/Resources/Images2.rsrc",
 }
 
 # Packages are installed over the base system, so the base system goes first.

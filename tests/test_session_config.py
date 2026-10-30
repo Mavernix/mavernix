@@ -357,6 +357,51 @@ class TestSeaLionUpdates(unittest.TestCase):
         self.assertEqual(self.updates[5]["settings"]["animation.menu_close"], made["animation"]["menu_close"])
 
 
+class TestSeaLionMusic(unittest.TestCase):
+    """Bandstand's [music] table names pictures make_music_pictures cuts from
+    iTunes' resource files, which the import must take from the installer;
+    Sea Lion Dark writes ProKit's under the same names."""
+
+    def setUp(self):
+        sys.path.insert(0, str(LOOKS_DIR.parent))
+        self.addCleanup(sys.path.remove, str(LOOKS_DIR.parent))
+        import installer_image
+        import make_dark_theme
+        import make_theme
+        self.installer_image = installer_image
+        self.make_dark_theme = make_dark_theme
+        self.make_theme = make_theme
+
+    def pictures_named(self, table):
+        names = set()
+        for value in table.values():
+            if isinstance(value, dict):
+                names |= self.pictures_named(value)
+            elif isinstance(value, str) and value.startswith("images/music/"):
+                names.add(value.removeprefix("images/music/").removesuffix(".png"))
+        return names
+
+    def test_every_named_picture_is_cut(self):
+        music = tomllib.loads(self.make_theme.MUSIC_TABLE)["music"]
+        self.assertLessEqual(self.pictures_named(music), set(self.make_theme.MUSIC_PICTURES))
+
+    def test_itunes_files_are_taken_and_read_by_position(self):
+        taken = self.installer_image.needed_files(LOOKS_DIR / "sea-lion")["Essentials"]
+        for name in self.make_theme.ITUNES_NORMAL_FILES + self.make_theme.ITUNES_DOUBLE_FILES:
+            path = f"{self.make_theme.ITUNES_RESOURCES}/{name}.rsrc"
+            with self.subTest(path=path):
+                self.assertIn(path, taken)
+                self.assertIn(path, self.installer_image.DECODED_BY_POSITION)
+
+    def test_the_dark_pictures_have_light_names(self):
+        dark = self.make_dark_theme
+        written = {name + suffix for name in dark.MUSIC_GLYPHS for suffix in dark.MUSIC_GLYPH_STATES}
+        written |= set(dark.MUSIC_PICTURES) - set(dark.MUSIC_DARK_ONLY)
+        # the -inactive glyphs are the dark theme's own addition
+        self.assertLessEqual({name for name in written if not name.endswith("-inactive")},
+                             set(self.make_theme.MUSIC_PICTURES))
+
+
 class TestSeaLionIcons(unittest.TestCase):
     """make_icons.py reads only what the import takes from the installer, so
     every icon it names must be in needed-files.txt."""

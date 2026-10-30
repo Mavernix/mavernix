@@ -383,10 +383,14 @@ def build(source, work, staging, look_dir, report):
     frameworks = root / "System/Library/PrivateFrameworks"
     coreui = frameworks / "CoreUI.framework/Versions/A"
     artwork = work / "artwork"
+    itunes = root / "Applications/iTunes.app/Contents/Resources"
     decoders = [
         ("the controls' artwork", "artfile.py", coreui / "Resources/ArtFile.bin", artwork / "artfile-1x"),
         ("the controls' artwork at double density", "artfile.py", coreui / "Resources/ArtFile200.bin", artwork / "artfile-2x"),
         ("the shared artwork", "sartfile.py", coreui / "Resources/SArtFile.bin", artwork / "sartfile"),
+        ("iTunes' pictures", "rsrcfile.py", itunes / "iTunes.rsrc", artwork / "itunes/iTunes"),
+        ("iTunes' pictures at double density", "rsrcfile.py", itunes / "Images.rsrc", artwork / "itunes/Images"),
+        ("more of iTunes' pictures at double density", "rsrcfile.py", itunes / "Images2.rsrc", artwork / "itunes/Images2"),
         ("the dark look's artwork", "carfile.py", frameworks / "ProKit.framework/Versions/A/Resources/ProThemeBits.car", artwork / "prokit"),
         ("the colour table", "coreui_colors.py", coreui / "CoreUI", work / "coreui-colors.json"),
     ]

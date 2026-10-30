@@ -33,6 +33,7 @@ DARK_LOOK = 5
 # Positions in ProKit's rendition keys.
 KEY_VALUE = 6      # 0 off, 1 on, 2 mixed
 KEY_TINT = 7       # check boxes only; 0 is the ordinary one
+KEY_GLYPH = 8      # which glyph of a sheet of them, as PlaybackGlyphs_RG's
 KEY_STATE = 10     # see STATE_* below
 KEY_EMPHASIS = 11  # push buttons only; 3 is the blue default button
 
@@ -61,7 +62,7 @@ DESKTOP_PICTURE = "wallpapers/Galaxy.jpg"
 # out: the rule would turn their white text dark.
 RULE_TABLES = [
     "dialog", "about", "settings.overview", "search", "search.clear_button", "search.box", "theme_installer",
-    "lock.box", "lock.field", "app_store",
+    "lock.box", "lock.field", "app_store", "music",
 ]
 
 # Light colours under keys with these words are text on something coloured
@@ -109,14 +110,21 @@ class ProKit:
             fail(f"ProKit's look {DARK_LOOK} has no colour named {name}")
         return value[:7] if value.endswith("ff") else value
 
-    def picture(self, source, scale=1, look=DARK_LOOK, **key_values):
-        """The one picture of `source` at `scale` whose key has the given values."""
-        positions = {"value": KEY_VALUE, "tint": KEY_TINT, "state": KEY_STATE, "emphasis": KEY_EMPHASIS}
-        matches = [
+    def matches(self, source, scale, look, key_values):
+        positions = {"value": KEY_VALUE, "tint": KEY_TINT, "glyph": KEY_GLYPH, "state": KEY_STATE,
+                     "emphasis": KEY_EMPHASIS}
+        return [
             r for r in self.renditions
             if r["source_name"] == source and r["scale"] == scale and r["look"] == look
             and all(r["key"][positions[name]] == wanted for name, wanted in key_values.items())
         ]
+
+    def has_picture(self, source, scale=1, look=DARK_LOOK, **key_values):
+        return len(self.matches(source, scale, look, key_values)) == 1
+
+    def picture(self, source, scale=1, look=DARK_LOOK, **key_values):
+        """The one picture of `source` at `scale` whose key has the given values."""
+        matches = self.matches(source, scale, look, key_values)
         if len(matches) != 1:
             fail(f"expected one picture of {source} in look {look} at scale {scale} with {key_values}, "
                  f"found {len(matches)}")
@@ -602,6 +610,11 @@ class ThemeText:
             key = key_match.group(1) if key_match else ""
             lines[number] = GRADIENT_OR_COLOUR.sub(lambda match: darkened(match.group(0), key), line)
 
+    def remove(self, table, key, note):
+        """Takes `key` out, so the program draws that part its own way."""
+        lines, number = self.key_index(table, key)
+        del lines[number]
+
     def table_names(self):
         return [name for name, _ in self.tables]
 
@@ -831,6 +844,113 @@ def change_programs(theme):
             theme.apply_rule(table)
 
 
+# --- Bandstand -----------------------------------------------------------------------
+# iTunes 11 has no dark look, so the music player's pictures come from the
+# professional programs' transport and display: PlaybackGlyphs_RG (by glyph
+# number), DisplayField as the LCD, the regular slider for the volume and the
+# determinate progress bar for the playing position. They are written under
+# the light theme's names, so [music] only changes where their sizes differ.
+MUSIC_GLYPHS = {"previous": 5, "next": 4, "play": 1, "pause": 2}
+MUSIC_GLYPH_STATES = {"": STATE_ACTIVE, "-pressed": STATE_PRESSED, "-disabled": STATE_DISABLED, "-inactive": 0}
+MUSIC_PICTURES = {
+    "lcd": ("DisplayField.psd", {"state": STATE_ACTIVE}),
+    "volume-track": ("Slider_RG_HorizontalTrack.psd", {"state": STATE_ACTIVE}),
+    "volume-knob": ("Slider_RG_NonDirectionalSlider.psd", {"state": STATE_ACTIVE}),
+    "volume-knob-pressed": ("Slider_RG_NonDirectionalSlider.psd", {"state": STATE_PRESSED}),
+    "scrubber-track": ("ProgressBarDeterminate_RG_Background.psd", {"state": STATE_ACTIVE}),
+    "scrubber-played": ("ProgressBarDeterminate_RG_Fill.psd", {"value": 0, "state": STATE_ACTIVE}),
+    # Pictures only the dark theme has: the search field, the list's column
+    # header (Primary is the sorted column's, tinted) and a footer bar as the
+    # status bar, for a window in front and behind.
+    "search-field": ("TextFieldRounded_RG.psd", {"tint": 0, "state": STATE_ACTIVE, "emphasis": 0}),
+    "list-header": ("TableView_RG_HeaderSecondary.psd", {"state": STATE_ACTIVE}),
+    "list-header-inactive": ("TableView_RG_HeaderSecondary.psd", {"state": 0}),
+    "status-bar": ("PaneCap_RG_FooterBezel.psd", {"state": STATE_ACTIVE}),
+    "status-bar-inactive": ("PaneCap_RG_FooterBezel.psd", {"state": 0}),
+}
+MUSIC_DARK_ONLY = ["search-field", "list-header", "list-header-inactive", "status-bar", "status-bar-inactive"]
+# The progress bar's track has 3 rows of shadow under the bar, which the
+# played part has not; without them both are as tall.
+MUSIC_SCRUBBER_ROWS = 16
+
+
+def prokit_pair(prokit, source, **keys):
+    """A picture at both densities; enlarged where ProKit has the single one only."""
+    single = prokit.picture(source, 1, **keys)
+    if prokit.has_picture(source, 2, **keys):
+        return single, prokit.picture(source, 2, **keys)
+    return single, enlarged(single)
+
+
+def make_music_pictures(prokit, music_dir):
+    for name, glyph in MUSIC_GLYPHS.items():
+        for suffix, state in MUSIC_GLYPH_STATES.items():
+            save_pair(*prokit_pair(prokit, "PlaybackGlyphs_RG.psd", value=0, glyph=glyph, state=state),
+                      music_dir / f"{name}{suffix}.png")
+    for name, (source, keys) in MUSIC_PICTURES.items():
+        single, double = prokit_pair(prokit, source, **keys)
+        if name == "scrubber-track":
+            single = single.crop((0, 0, single.width, MUSIC_SCRUBBER_ROWS))
+            double = double.crop((0, 0, double.width, 2 * MUSIC_SCRUBBER_ROWS))
+        save_pair(single, double, music_dir / f"{name}.png")
+    # Pictures only iTunes has, for parts the dark theme draws its own way.
+    for name in ("volume-fill", "scrubber-knob", "up-next", "up-next-pressed", "selection", "selection-inactive"):
+        for suffix in ("", "@2x"):
+            (music_dir / f"{name}{suffix}.png").unlink()
+
+
+def glyph_pictures(name):
+    return (f'{{ normal = "images/music/{name}.png", pressed = "images/music/{name}-pressed.png", '
+            f'disabled = "images/music/{name}-disabled.png", normal_inactive = "images/music/{name}-inactive.png" }}')
+
+
+def change_music(theme, prokit):
+    """Runs after change_programs: the rule has turned [music]'s colours dark."""
+    background = prokit.colour("windowBackgroundColor")
+    table = "music.top_bar"
+    theme.set(table, "fill", f'{{ gradient = ["{TITLE_BAR_GRADIENT[1]}", "{background}"] }}',
+              "PROKIT, as the App Store's toolbar: on from the joined title bar to windowBackgroundColor.")
+    theme.set(table, "fill_inactive", f'{{ gradient = ["{TITLE_BAR_GRADIENT_INACTIVE[1]}", "{background}"] }}',
+              "PROKIT, the same for a window behind.")
+    theme.set(table, "volume_slider",
+              '{ track = "images/music/volume-track.png", track_slice = [0, 4, 0, 4], '
+              'thumb = "images/music/volume-knob.png", thumb_pressed = "images/music/volume-knob-pressed.png" }',
+              "PROKIT, Slider_RG_HorizontalTrack's caps; it has no picture for the part up to the knob.")
+    for name in MUSIC_GLYPHS:
+        theme.set("music.top_bar.pictures", name, glyph_pictures(name), "PROKIT, PlaybackGlyphs_RG, states 1, 2, 4 and 0.")
+
+    table = "music.display"
+    theme.set(table, "fill", '{ image = "images/music/lcd.png", slice = [5, 5, 5, 5] }', "PROKIT, DisplayField's slices.")
+    theme.set(table, "line_height", str(MUSIC_SCRUBBER_ROWS), "PROKIT, the progress bar's height.")
+    theme.set(table, "scrubber_height", str(MUSIC_SCRUBBER_ROWS), "as the bar.")
+    theme.set(table, "line_fill", '{ image = "images/music/scrubber-track.png", slice = [0, 3, 0, 3] }',
+              "PROKIT, ProgressBarDeterminate_RG_Background's caps.")
+    theme.set(table, "line_played_fill", '{ image = "images/music/scrubber-played.png", slice = [0, 1, 0, 2] }',
+              "PROKIT, ProgressBarDeterminate_RG_Fill's caps.")
+    for key in ("knob", "queue_glyph"):
+        theme.remove(table, key, "only iTunes has these; Bandstand draws the Up Next lines itself.")
+    table = "music.search_field"
+    theme.set(table, "height", "25", "PROKIT, TextFieldRounded_RG's height.")
+    theme.set(table, "fill", '{ image = "images/music/search-field.png", slice = [0, 12, 0, 12] }',
+              "PROKIT, TextFieldRounded_RG, its round ends; the light one is AppKit's light toolbar field.")
+    table = "music.song_list"
+    theme.set(table, "header_height", "17", "PROKIT, TableView_RG_HeaderSecondary's height.")
+    theme.set(table, "header_fill", '{ image = "images/music/list-header.png", slice = [0, 0, 0, 3] }',
+              "PROKIT, TableView_RG_HeaderSecondary, state 1; its first 3 columns are its left end.")
+    theme.set(table, "header_fill_inactive", '{ image = "images/music/list-header-inactive.png", slice = [0, 0, 0, 3] }',
+              "PROKIT, the same in state 0.")
+    table = "music.status_bar"
+    theme.set(table, "height", "20", "PROKIT, PaneCap_RG_FooterBezel's height.")
+    theme.set(table, "fill", '{ image = "images/music/status-bar.png", slice = [0, 1, 0, 1] }',
+              "PROKIT, PaneCap_RG_FooterBezel, state 1, its slices.")
+    theme.set(table, "fill_inactive", '{ image = "images/music/status-bar-inactive.png", slice = [0, 1, 0, 1] }',
+              "PROKIT, the same in state 0.")
+    for table, keys in (("music.sidebar", ("selected_fill", "selected_fill_inactive")),
+                        ("music.song_list", ("playing_fill", "playing_fill_inactive"))):
+        for key in keys:
+            theme.remove(table, key, "iTunes' blue bar; Bandstand takes [controls.selected_item]'s instead.")
+
+
 # Corner radius in pixels, read from the installer's banner1line.png.
 BANNER_RADIUS = 4
 
@@ -936,6 +1056,8 @@ def build(work_dir, light_dir, output_dir):
     change_programs(theme)
     change_app_store(theme, prokit)
     paint_app_store_glyphs(work_dir, images_dir)
+    change_music(theme, prokit)
+    make_music_pictures(prokit, images_dir / "music")
     change_banner(theme, prokit)
     change_icons(theme)
     change_lock(theme, prokit)

@@ -267,3 +267,9 @@ revision = 6
 import_brings = [
     "The App Store's tabs get the icons of Mavericks' App Store, with their names under them, in a toolbar drawn as Mavericks draws one.",
 ]
+
+[[update]]
+revision = 7
+import_brings = [
+    "Bandstand, the music player, looks like iTunes 11: its toolbar, transport buttons, volume slider and LCD, in Sea Lion Dark those of the professional programs.",
+]
