@@ -233,8 +233,8 @@ time_color = "#424242"
 scrubber_height = 21
 scrubber_bottom = 6
 line_height = 21
-line_fill = { image = "images/music/scrubber-track.png", slice = [0, 10, 0, 10] }
-line_played_fill = { image = "images/music/scrubber-played.png", slice = [0, 0, 0, 10] }
+line_fill = { image = "images/music/scrubber-track.png", slice = [0, 5, 0, 5] }
+line_played_fill = { image = "images/music/scrubber-played.png", slice = [0, 0, 0, 5] }
 knob = "images/music/scrubber-knob.png"
 queue_glyph = { normal = "images/music/up-next.png", pressed = "images/music/up-next-pressed.png", open = "images/music/up-next-pressed.png" }
 queue_button_width = 18
@@ -917,9 +917,11 @@ MUSIC_PICTURES = {
     "volume-knob": (355, cell(13, 14, 0)),
     "volume-knob-pressed": (355, cell(13, 14, 1)),
     # The LCD's progress bar: the groove, then the played part, which has no
-    # right end so that it runs into the groove.
-    "scrubber-track": (160, cell(34, 21, 0, 0)),
-    "scrubber-played": (160, cell(34, 21, 0, 1)),
+    # right end so that it runs into the groove. Both without the 6 points of
+    # empty shadow at their sides, so that the groove's ends are where the
+    # knob's ends are.
+    "scrubber-track": (160, (6, 0, 28, 21)),
+    "scrubber-played": (160, (6, 21, 27, 42)),
     # Its knob, without the mark beside it.
     "scrubber-knob": (8131, (6, 0, 12, 14)),
     # The Up Next button in the LCD: faint, usable, pressed.
