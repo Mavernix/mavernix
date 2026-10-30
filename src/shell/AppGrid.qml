@@ -83,8 +83,14 @@ PanelWindow {
         open = false
     }
 
-    // The window stays until the going-away motion is over.
-    visible: open || content.opacity > 0
+    // The window stays until the going-away motion is over, and while the
+    // grid is awake, empty and letting the pointer through: made anew, it
+    // held the grid's first frame back by 40 to 60 ms (on an Intel laptop).
+    readonly property bool showing: open || content.opacity > 0
+    visible: awake
+    mask: Region {
+        item: grid.showing ? content : null
+    }
 
     // --- Kept light -------------------------------------------------------------
     //
@@ -94,7 +100,7 @@ PanelWindow {
     // away, and for a minute after, so that opening it again soon is at
     // once. warmUp() wakes it ahead of time, when the pointer comes to rest
     // on what opens it. Asleep, it holds none of it.
-    readonly property bool awake: visible || staysAwake.running
+    readonly property bool awake: showing || staysAwake.running
     function warmUp() {
         staysAwake.restart()
     }
