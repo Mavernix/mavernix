@@ -36,7 +36,7 @@ kind = "resize"     # "resize" or "none"
 duration_ms = 200   # for a change of 150 points in height
 ```
 
-With "resize", the window grows or shrinks to the new page's height while the page it leaves fades out over it. The time grows with the change in height, as AppKit times a window's resizing: `duration_ms` for every 150 points. Without the table, the window takes the new page's height at once.
+With "resize", the window grows or shrinks to the new page's height while the page it leaves fades out over it. The time grows with the change in height, as AppKit times a window's resizing: `duration_ms` for every 150 points. Between pages of the same height there is only the fade, over half of `duration_ms`. Without the table, the window takes the new page's height at once.
 
 ## Theme Installer
 

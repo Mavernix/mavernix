@@ -525,7 +525,7 @@ void SettingsWindow::changePage(const QPixmap& leftPage, int leftHeight)
     QLabel* left = picture_of(leftPage);
     auto* opacity = new QGraphicsOpacityEffect(left);
     left->setGraphicsEffect(opacity);
-    fading = new QPropertyAnimation(opacity, "opacity", transition);
+    auto* fading = new QPropertyAnimation(opacity, "opacity", transition);
     fading->setStartValue(1.0);
     fading->setEndValue(0.0);
     transition->show();
@@ -569,7 +569,7 @@ bool SettingsWindow::eventFilter(QObject* watched, QEvent* event)
     if (event->type() == QEvent::LayoutRequest && watched == pages->currentWidget())
     {
         // After the page has laid itself out anew.
-        QTimer::singleShot(0, this, [this]() { fitHeight(); });
+        QTimer::singleShot(0, this, &SettingsWindow::fitHeight);
     }
     return QMainWindow::eventFilter(watched, event);
 }

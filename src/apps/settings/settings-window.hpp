@@ -17,7 +17,6 @@ class Overview;
 class QAction;
 class QLineEdit;
 class QPixmap;
-class QPropertyAnimation;
 class QVariantAnimation;
 class QStackedWidget;
 class QToolButton;
@@ -55,9 +54,8 @@ class SettingsWindow : public QMainWindow
     // [animation.settings_page]: { kind: "resize" | "none", duration_ms }.
     QVariantMap page_motion;
     QVariantAnimation* resizing = nullptr;
-    // While pages change: pictures of both over the real pages, and the fade.
+    // While pages change: pictures of both over the real pages.
     QPointer<QWidget> transition;
-    QPointer<QPropertyAnimation> fading;
     QStackedWidget* pages = nullptr;
     QMap<QString, int> pane_pages;
     QMap<QString, QString> pane_titles;
