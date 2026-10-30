@@ -125,7 +125,9 @@ PanelWindow {
         const dockTop = height - restingHeight
         draggedOut = windowY < dockTop - outDistanceInTiles * tileSize
 
-        // Count the other kept tiles whose resting middle is left of the pointer.
+        // Count the other kept tiles whose middle is left of the pointer, as
+        // they are shown: pushed apart by magnification. (Their resting
+        // places put the gap, and the drop, tiles away from the pointer.)
         const wanted = entryText(dragged.listedAs)
         let before = 0
         for (let number = 0; number < places.length; number++) {
@@ -134,11 +136,35 @@ PanelWindow {
                 continue
             }
             const resting = row.tiles[number]
-            if (resting.left + resting.width / 2 < windowX) {
+            const shown = DockLayout.tileEdges(resting.left, resting.width, pushNow)
+            if ((shown.left + shown.right) / 2 < windowX) {
                 before += 1
             }
         }
-        dragLanding = before
+        dragLanding = keptIndexAfterShown(before, wanted)
+    }
+
+    // Kept entries whose program is not installed have no tile, but stay in
+    // keptGroups; the place after the `shownCount`-th shown tile, counted
+    // there (without the dragged entry). Counting tiles alone put the drop a
+    // tile to the left for every such entry before it.
+    function keptIndexAfterShown(shownCount, wanted) {
+        const shown = new Set(places.filter(place => place.kept && !place.isSeparator)
+                                    .map(place => entryText(place.listedAs)))
+        const kept = [].concat(...keptGroups).filter(entry => entryText(entry) !== wanted)
+        if (shownCount === 0) {
+            return 0
+        }
+        let seen = 0
+        for (let index = 0; index < kept.length; index++) {
+            if (shown.has(entryText(kept[index]))) {
+                seen += 1
+                if (seen === shownCount) {
+                    return index + 1
+                }
+            }
+        }
+        return kept.length
     }
 
     function giveUpDrag() {
@@ -1179,6 +1205,7 @@ PanelWindow {
                             && windows.some(window => attention.asks(window.appId, attention.revision))
             onMenuDragged: (windowX, windowY) => placeMenu.markAt(windowX, dock.toScreenY(windowY))
             onMenuReleased: (windowX, windowY) => placeMenu.chooseAt(windowX, dock.toScreenY(windowY))
+            onMenuGivenUp: dock.closeMenu()
             draggable: place.listedAs !== undefined
             lifted: dock.dragged !== null && place.listedAs !== undefined
                     && dock.entryText(place.listedAs) === dock.entryText(dock.dragged.listedAs)

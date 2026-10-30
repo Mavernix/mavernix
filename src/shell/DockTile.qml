@@ -201,6 +201,8 @@ Item {
     // to choose it. These report where, in window coordinates.
     signal menuDragged(real windowX, real windowY)
     signal menuReleased(real windowX, real windowY)
+    // The press that opened the menu went on to move the icon instead.
+    signal menuGivenUp()
 
     // While lifted, the dock draws the icon under the pointer instead. Moves
     // are reported through dragMoved; the dock detects the drag's end itself.
@@ -299,6 +301,13 @@ Item {
             }
         }
         onPositionChanged: mouse => {
+            // Held until the menu opened, then moved along the dock rather
+            // than up to the menu: the icon is being moved after all.
+            const alongDock = mouse.y >= 0 && Math.abs(mouse.x - pressedX) >= 2 * dragStartDistance
+            if (heldForMenu && tile.draggable && alongDock) {
+                heldForMenu = false
+                tile.menuGivenUp()
+            }
             if (heldForMenu) {
                 const point = mapToItem(null, mouse.x, mouse.y)
                 tile.menuDragged(point.x, point.y)
