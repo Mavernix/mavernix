@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.1 (2026-10-30)
+
+- The dock's magnification no longer stutters when the pointer passes over Launchpad or a folder.
+- In Sea Lion, Notification Center no longer shows black at the screen's edge while the desktop slides aside. Log out and back in once after updating for all of the fix.
+- The Theme Installer's list of new features keeps wrapped lines beside their bullet.
+
 ## 0.5.0 (2026-10-30)
 
 - Menus work like a Mac's. Press a menu title, drag to an item and let go to choose it. Submenus stay open while you head for them, and menus fade out as they close.
