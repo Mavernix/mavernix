@@ -96,10 +96,12 @@ PanelWindow {
         const hit = box.rowAt(x - box.x, y - box.y)
         if (hit !== null && hit.index >= 0 && hit.menu.canBeMarked(hit.index)) {
             hit.menu.markRow(hit.index)
-        } else {
-            // Off the items: nothing is marked, as nothing would be chosen.
-            box.innermost().hoveredIndex = -1
+            return
         }
+        // Off the items: nothing is marked, as nothing would be chosen.
+        const menu = hit?.menu ?? box.innermost()
+        menu.hoveredIndex = -1
+        menu.waitingIndex = -1
     }
 
     // Whether there was an item to choose.
