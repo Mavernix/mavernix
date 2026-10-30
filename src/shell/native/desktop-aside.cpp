@@ -4,6 +4,12 @@
 
 DesktopAside::DesktopAside(QObject* parent) : QObject(parent)
 {
+    connect(&compositor, &CompositorSocket::eventReceived, this, [this](const QJsonObject& event) {
+        if (event.value("event").toString() == "desktop-aside-pressed")
+        {
+            emit pressed(event.value("output").toString());
+        }
+    });
     compositor.open();
 }
 

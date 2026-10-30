@@ -1,10 +1,11 @@
 // Slides a screen's desktop (its picture, icons and windows) sideways, and
 // back, through the compositor's "desktop-aside" plugin; the menu bar, the
 // dock and whatever is uncovered stay put. The plugin brings the desktop
-// home by itself if the shell goes away.
+// home by itself if the shell goes away. A press on the desktop while it is
+// aside reaches no window; `pressed` tells of it instead.
 //
 // Usage in QML:
-//   DesktopAside { id: aside }
+//   DesktopAside { id: aside; onPressed: screenName => ... }
 //   aside.move(screen.name, -300, 265, "ease-in-out")   (aside, to the left)
 //   aside.move(screen.name, 0, 265, "ease-in-out")      (home)
 
@@ -24,6 +25,9 @@ class DesktopAside : public QObject
     // `by` in points, negative to the left; `curve` is one of the theme's
     // curve names.
     Q_INVOKABLE void move(const QString& screenName, int by, int durationMs, const QString& curve);
+
+  signals:
+    void pressed(const QString& screenName);
 
   private:
     CompositorSocket compositor;

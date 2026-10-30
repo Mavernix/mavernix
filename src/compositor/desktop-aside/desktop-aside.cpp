@@ -12,6 +12,11 @@
 // so a move can turn one around halfway. If the program that moved the
 // desktop goes away, the desktop comes home at once.
 //
+// A press on the desktop while it is aside goes no further. The program that
+// moved it gets the event "desktop-aside-pressed" (with the output's name)
+// instead, so that it can bring the desktop home, as a click beside
+// Notification Center does.
+//
 // While the desktop is aside, each of its layers' nodes for the screen sits
 // inside a translation node: an offset added at drawing time and to pointer
 // positions, so the slide costs nothing beyond the frames it draws. Once the
@@ -32,12 +37,14 @@
 #include <wayfire/render-manager.hpp>
 #include <wayfire/scene-operations.hpp>
 #include <wayfire/scene.hpp>
+#include <wayfire/signal-definitions.hpp>
 #include <wayfire/unstable/translation-node.hpp>
 #include <wayfire/util.hpp>
 
 namespace desktop_aside
 {
 const std::string MOVE_METHOD = "desktop-aside/move";
+const std::string PRESSED_EVENT = "desktop-aside-pressed";
 
 // What slides, back to front.
 const wf::scene::layer DESKTOP_LAYERS[] = {
@@ -178,6 +185,27 @@ class screen_t : public wf::per_output_plugin_instance_t
     // The program whose move left the desktop aside, if it is.
     wf::ipc::client_interface_t* mover = nullptr;
 
+    /** Whether the node is part of this desktop while it is aside or on its
+     *  way there (not on its way home). */
+    bool holds(wf::scene::node_t* node) const
+    {
+        if (shifts.empty() || (end_offset == 0))
+        {
+            return false;
+        }
+        for (; node != nullptr; node = node->parent())
+        {
+            for (auto& shift : shifts)
+            {
+                if (node == shift.get())
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     void move(double by, int duration_ms, const std::string& new_curve)
     {
         come_home_soon.disconnect();
@@ -248,16 +276,57 @@ class plugin_t : public wf::per_output_plugin_t<screen_t>
         }
     };
 
+    // A press that was kept from the desktop, whose release must be kept
+    // from it too; 0 for none.
+    uint32_t kept_button = 0;
+
+    wf::signal::connection_t<wf::input_event_signal<wlr_pointer_button_event>> on_button =
+        [=](wf::input_event_signal<wlr_pointer_button_event> *signal)
+    {
+        const auto *event = signal->event;
+        if (event->state == WL_POINTER_BUTTON_STATE_RELEASED)
+        {
+            if ((kept_button != 0) && (event->button == kept_button))
+            {
+                signal->mode = wf::input_event_processing_mode_t::IGNORE;
+                kept_button = 0;
+            }
+            return;
+        }
+
+        const auto under = wf::get_core().scene()->find_node_at(wf::get_core().get_cursor_position());
+        if (!under.has_value())
+        {
+            return;
+        }
+        for (auto& [output, screen] : output_instance)
+        {
+            if ((screen->mover != nullptr) && screen->holds(under->node.get()))
+            {
+                signal->mode = wf::input_event_processing_mode_t::IGNORE;
+                kept_button = event->button;
+
+                wf::json_t message;
+                message["event"] = PRESSED_EVENT;
+                message["output"] = output->to_string();
+                screen->mover->send_json(std::move(message));
+                return;
+            }
+        }
+    };
+
   public:
     void init() override
     {
         per_output_plugin_t::init();
         repo->register_method(MOVE_METHOD, on_move);
         repo->connect(&on_client_disconnected);
+        wf::get_core().connect(&on_button);
     }
 
     void fini() override
     {
+        on_button.disconnect();
         on_client_disconnected.disconnect();
         repo->unregister_method(MOVE_METHOD);
         per_output_plugin_t::fini();

@@ -41,6 +41,12 @@ PanelWindow {
     readonly property bool pushes: motion.kind === "push"
     DesktopAside {
         id: desktopAside
+        // A press on the desktop beside the list brings it home.
+        onPressed: screenName => {
+            if (screenName === list.screen.name) {
+                list.open = false
+            }
+        }
     }
     onOpenChanged: {
         if (pushes) {
