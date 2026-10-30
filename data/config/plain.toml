@@ -527,6 +527,7 @@ menu_close = "Close"
 dock_title = "Dock & Menu Bar"
 menu_bar_show = "Show in the menu bar:"
 menu_bar_24_hours = "Show the time with 24 hours"
+menu_bar_seconds = "Show seconds"
 menu_bar_items = { tray = "Icons of running programs", load = "Computer load", bluetooth = "Bluetooth", network = "Wi-Fi", volume = "Volume", battery = "Battery", clock = "Clock", search = "Search", notifications = "Notifications", session = "Session menu" }
 dock_size = "Icon size:"
 dock_size_small = "Small"

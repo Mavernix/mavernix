@@ -117,6 +117,22 @@ DockPane::DockPane(Choices& choices, QWidget* parent) : QWidget(parent), choices
         this->choices.set(QStringLiteral("panel"), QStringLiteral("clock_format"), changed);
     });
     form->addRow(QString(), day_hours);
+
+    // Seconds after the minutes ("HH:mm:ss"), as on OS X; the clock then
+    // ticks every second.
+    const QRegularExpression seconds_part(QStringLiteral(":ss?\\b"));
+    auto* seconds = new QCheckBox(word("menu_bar_seconds", "Show seconds"));
+    seconds->setChecked(format.contains(seconds_part));
+    connect(seconds, &QCheckBox::toggled, this, [this, seconds_part](bool on) {
+        QString changed = this->choices.value(QStringLiteral("panel"), QStringLiteral("clock_format")).toString();
+        changed.remove(seconds_part);
+        if (on)
+        {
+            changed.replace(QRegularExpression(QStringLiteral("\\bmm\\b")), QStringLiteral("mm:ss"));
+        }
+        this->choices.set(QStringLiteral("panel"), QStringLiteral("clock_format"), changed);
+    });
+    form->addRow(QString(), seconds);
 }
 
 int DockPane::currentIconSize() const
