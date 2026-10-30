@@ -8,6 +8,7 @@
 
 class Choices;
 class QListWidget;
+class QListWidgetItem;
 
 class PictureChooser : public QWidget
 {
@@ -16,17 +17,22 @@ class PictureChooser : public QWidget
   public:
     PictureChooser(Choices& choices, QWidget* parent = nullptr);
 
+  protected:
+    void showEvent(QShowEvent* event) override;
+
   private:
     void addPicture(const QString& value);
     void markChosen();
     void choose(const QString& value);
-    // One picture per call, so the window stays responsive.
-    void loadNextThumbnail();
+    // Read in the background, so the window stays responsive.
+    void loadThumbnail(QListWidgetItem* item);
     QString fileOf(const QString& value) const;
     // Empty if the theme's background is no picture.
     QString themeBackground() const;
 
     Choices& choices;
     QListWidget* list;
-    int next_thumbnail_row = 0;
+    // Not before the chooser is first shown: most visits to the settings
+    // never open its pane.
+    bool thumbnails_wanted = false;
 };

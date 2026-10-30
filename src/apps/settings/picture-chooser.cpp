@@ -9,8 +9,8 @@
 #include <QPushButton>
 #include <QStandardPaths>
 #include <QStyle>
-#include <QTimer>
 #include <QVBoxLayout>
+#include <QtConcurrentRun>
 
 #include "choices.hpp"
 
@@ -26,29 +26,31 @@ static const int ROW_SLACK_PX = 8;
 static const int VALUE_ROLE = Qt::UserRole;
 
 // Scaled to cover the size, the overhang cut off evenly; null if unreadable.
-static QPixmap thumbnail_of(const QString& file, qreal pixel_ratio)
+// Safe off the main thread.
+static QImage thumbnail_of(const QString& file, qreal pixel_ratio)
 {
     QImageReader reader(file);
     reader.setAutoTransform(true);
     const QSize whole = reader.size();
     if (!whole.isValid())
     {
-        return QPixmap();
+        return QImage();
     }
 
-    // Asking the reader for the small size skips most of a large photo's decoding.
+    // Asking the reader for the small size skips most of a large photo's
+    // decoding; a 5K photo still takes about 100 ms.
     const QSize wanted = THUMBNAIL_SIZE * pixel_ratio;
     const QSize covering = whole.scaled(wanted, Qt::KeepAspectRatioByExpanding);
     reader.setScaledSize(covering);
     const QImage image = reader.read();
     if (image.isNull())
     {
-        return QPixmap();
+        return QImage();
     }
 
     const QRect middle((covering.width() - wanted.width()) / 2, (covering.height() - wanted.height()) / 2,
         wanted.width(), wanted.height());
-    QPixmap picture = QPixmap::fromImage(image.copy(middle));
+    QImage picture = image.copy(middle);
     picture.setDevicePixelRatio(pixel_ratio);
     return picture;
 }
@@ -106,7 +108,6 @@ PictureChooser::PictureChooser(Choices& choices, QWidget* parent) : QWidget(pare
         {
             addPicture(file);
             choose(file);
-            QTimer::singleShot(0, this, &PictureChooser::loadNextThumbnail);
         }
     });
 
@@ -122,10 +123,27 @@ PictureChooser::PictureChooser(Choices& choices, QWidget* parent) : QWidget(pare
     rows->setContentsMargins(0, 0, 0, 0);
     rows->addWidget(list);
     rows->addLayout(buttons);
+}
 
-    // The pictures are read one at a time between other events, so that
-    // the window is there at once and stays usable meanwhile.
-    QTimer::singleShot(0, this, &PictureChooser::loadNextThumbnail);
+void PictureChooser::showEvent(QShowEvent* event)
+{
+    QWidget::showEvent(event);
+    if (thumbnails_wanted)
+    {
+        return;
+    }
+    thumbnails_wanted = true;
+    // Those around the chosen picture first: the list is scrolled to it.
+    const int chosen_row = std::max(list->currentRow(), 0);
+    for (int step = 0; step < 2 * list->count(); step++)
+    {
+        // chosen_row, then one after, one before, two after, ...
+        const int row = chosen_row + (step % 2 == 0 ? -(step / 2) : step / 2 + 1);
+        if (row >= 0 && row < list->count())
+        {
+            loadThumbnail(list->item(row));
+        }
+    }
 }
 
 void PictureChooser::addPicture(const QString& value)
@@ -147,6 +165,10 @@ void PictureChooser::addPicture(const QString& value)
     item->setIcon(blank);
     list->addItem(item);
     list->setVisible(true);
+    if (thumbnails_wanted)
+    {
+        loadThumbnail(item);
+    }
 }
 
 void PictureChooser::markChosen()
@@ -175,22 +197,17 @@ void PictureChooser::choose(const QString& value)
     markChosen();
 }
 
-void PictureChooser::loadNextThumbnail()
+void PictureChooser::loadThumbnail(QListWidgetItem* item)
 {
-    if (next_thumbnail_row >= list->count())
-    {
-        return;
-    }
-
-    QListWidgetItem* item = list->item(next_thumbnail_row);
-    next_thumbnail_row++;
-    const QPixmap picture = thumbnail_of(fileOf(item->data(VALUE_ROLE).toString()), devicePixelRatioF());
-    if (!picture.isNull())
-    {
-        item->setIcon(picture);
-    }
-
-    QTimer::singleShot(0, this, &PictureChooser::loadNextThumbnail);
+    // The list's items stay as long as the chooser, and the picture is not
+    // handed over if the chooser has gone first.
+    QtConcurrent::run(thumbnail_of, fileOf(item->data(VALUE_ROLE).toString()), devicePixelRatioF())
+        .then(this, [item](const QImage& picture) {
+        if (!picture.isNull())
+        {
+            item->setIcon(QPixmap::fromImage(picture));
+        }
+    });
 }
 
 QString PictureChooser::fileOf(const QString& value) const

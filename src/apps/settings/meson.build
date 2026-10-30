@@ -58,7 +58,7 @@ executable(
         'compositor-call.cpp',
         moc_sources,
     ],
-    dependencies: [qt_widgets, gio],
+    dependencies: [qt_widgets, dependency('qt6', modules: ['Concurrent']), gio],
     install: true,
     install_dir: mavernix_bindir,
 )
