@@ -157,12 +157,12 @@ def animation_sections(theme):
                  "different timing; Wayfire has one timing per kind of effect")
         durations[kind] = duration
 
+    ours = ["[themed-open-close]"]
     for kind, duration in durations.items():
-        if kind in OUR_WINDOW_KINDS:
-            plugins.append("themed-open-close")
-            sections.append(["[themed-open-close]", f"{kind}_duration = {duration}"])
-        else:
-            animate.append(f"{kind}_duration = {duration}")
+        (ours if kind in OUR_WINDOW_KINDS else animate).append(f"{kind}_duration = {duration}")
+    if len(ours) > 1:
+        plugins.append("themed-open-close")
+        sections.append(ours)
 
     sections.append(resize_animation_section(animations))
     return sections, plugins
