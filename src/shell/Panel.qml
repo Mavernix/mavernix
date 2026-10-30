@@ -284,7 +284,7 @@ PanelWindow {
         screen: panel.screen
         settings: panel.settings
         open: panel.openTitle !== null
-        items: panel.shownTitle?.menuItems ?? []
+        items: panel.openTitle?.menuItems ?? []
 
         // Hangs from the panel's inner edge, aligned with the title's box.
         menuX: panel.shownTitle ? panel.shownTitle.mapToItem(null, 0, 0).x - panel.shownTitle.boxOverhang : 0
