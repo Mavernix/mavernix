@@ -15,7 +15,11 @@ PanelWindow {
     readonly property var looks: settings.theme.screenshot_flash ?? ({})
     readonly property var motion: (settings.theme.animation ?? ({})).screenshot_flash ?? ({})
 
+    // Not the animation's `running`: restarting it for a second screenshot
+    // stops it first, which took the window down and made it anew.
+    property bool flashing: false
     function flash() {
+        flashing = true
         clearing.restart()
     }
 
@@ -30,7 +34,7 @@ PanelWindow {
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
     color: "transparent"
     mask: Region {}
-    visible: clearing.running
+    visible: flashing
 
     Rectangle {
         id: veil
@@ -47,5 +51,6 @@ PanelWindow {
         to: 0
         duration: flashWindow.motion.duration_ms ?? 250
         easing.type: ThemeValues.easing(flashWindow.motion.curve ?? "ease-out")
+        onFinished: flashWindow.flashing = false
     }
 }
