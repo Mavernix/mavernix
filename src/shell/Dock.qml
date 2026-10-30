@@ -1151,8 +1151,9 @@ PanelWindow {
             shellAction: custom?.shell ?? ""
             onShellActionWanted: action => dock.shell?.run(action)
             onMenuWanted: dock.openMenu(index)
-            // The tile of a minimised window shows that window, not the program.
-            wantsAttention: minimizedWindow === null
+            // Not a program in front already; nor the tile of a minimised
+            // window, which shows that window, not the program.
+            wantsAttention: minimizedWindow === null && !windows.some(window => window.activated)
                             && windows.some(window => attention.asks(window.appId, attention.revision))
             onMenuDragged: (windowX, windowY) => placeMenu.markAt(windowX, dock.toScreenY(windowY))
             onMenuReleased: (windowX, windowY) => placeMenu.chooseAt(windowX, dock.toScreenY(windowY))

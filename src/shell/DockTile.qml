@@ -95,12 +95,22 @@ Item {
     property bool launching: false
     // Set by the dock while a window of this program asks for attention:
     // the icon bounces as for a launch, as a Mac's Dock does, until the
-    // program no longer asks.
+    // program no longer asks or bounce.longest_ms has passed (X11 programs
+    // may ask for hours, and an endless bounce never lets the screen rest).
     property bool wantsAttention: false
+    readonly property bool bouncesForAttention: wantsAttention && !attentionTired.done
     onWantsAttentionChanged: {
+        attentionTired.done = false
         if (wantsAttention) {
+            attentionTired.restart()
             bounceAnimation.start()
         }
+    }
+    Timer {
+        id: attentionTired
+        property bool done: false
+        interval: tile.bounce.longest_ms
+        onTriggered: done = true
     }
     onRunningChanged: {
         if (running) {
@@ -136,7 +146,7 @@ Item {
             easing.type: Easing.InQuad
         }
         onFinished: {
-            if (tile.launching || tile.wantsAttention) {
+            if (tile.launching || tile.bouncesForAttention) {
                 bounceAnimation.start()
             }
         }
