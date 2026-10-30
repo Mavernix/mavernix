@@ -957,6 +957,9 @@ PanelWindow {
             MouseArea {
                 anchors.fill: parent
                 acceptedButtons: Qt.LeftButton | Qt.RightButton
+                // The pointer shows it can be dragged up and down, as over
+                // the Dock's divider on a Mac.
+                hoverEnabled: true
                 cursorShape: Qt.SizeVerCursor
 
                 property real heightAtPress: 0
@@ -1145,7 +1148,10 @@ PanelWindow {
             opensFolder: custom?.folder !== undefined || folders.isProgramFolder(custom)
             onFolderWanted: dock.showFolder(index)
             onMinimizedWindowWanted: window => dock.bringBack(window)
-            drawnIconSize: dock.magnifies ? dock.largestIconSize : 0
+            // Read once at the largest size while icons change size by the
+            // frame (magnified, or resized by hand) and scaled from that,
+            // rather than read anew at each size.
+            drawnIconSize: dock.magnifies || dock.draggedIconSize > 0 ? dock.largestIconSize : 0
             name: place.isTrash ? (dock.config.trash_label ?? "") : (custom?.name ?? "")
             command: place.isTrash ? (dock.config.trash_command ?? []) : (custom?.command ?? [])
             shellAction: custom?.shell ?? ""
