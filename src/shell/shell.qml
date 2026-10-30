@@ -208,6 +208,14 @@ ShellRoot {
     // [sounds] volume_step, a share of the full loudness.
     readonly property real volumeStep: (settings.config.sounds ?? ({})).volume_step ?? 0.05
 
+    // The pointer is on its way to asking for `action`: what takes a moment
+    // to build is built now.
+    function prepare(action) {
+        if (action === "app_grid") {
+            appGrid.warmUp()
+        }
+    }
+
     function run(action) {
         if (action === "app_grid") {
             appGrid.toggle()

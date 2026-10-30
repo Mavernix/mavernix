@@ -1174,9 +1174,13 @@ PanelWindow {
                              && dock.pointerX >= x && dock.pointerX < x + width)
 
             // The last tile pointed at keeps the label while it fades out.
+            // One that runs a shell action lets the shell get ready for it.
             onHoveredChanged: {
                 if (hovered) {
                     dock.labelledTile = this
+                    if (shellAction !== "") {
+                        dock.shell?.prepare(shellAction)
+                    }
                 }
             }
 
