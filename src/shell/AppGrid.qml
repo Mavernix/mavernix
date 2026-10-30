@@ -39,8 +39,10 @@ PanelWindow {
 
     // { kind: "none" | "fade" | "zoom", duration_ms, close_duration_ms }.
     readonly property var motion: (theme.animation ?? ({})).app_grid ?? ({ kind: "none" })
-    // How large the icons are as a "zoom" begins and ends.
-    readonly property real zoomedOutScale: 1.1
+    // With "zoom", the icons come from this size and go back to it: a little
+    // larger than at rest. They settle in decelerating and leave
+    // accelerating, while the fade beside them keeps an even pace.
+    readonly property real awayScale: 1.1
     readonly property int openDuration: motion.kind === "none" ? 0 : (motion.duration_ms ?? 150)
     readonly property int closeDuration: motion.kind === "none" ? 0
                                          : (motion.close_duration_ms ?? openDuration)
@@ -104,13 +106,16 @@ PanelWindow {
             if (entry.noDisplay) {
                 continue
             }
-            if (wanted !== "" && ApplicationMatch.strength(entry, wanted) === 0) {
+            const strength = wanted === "" ? 0 : ApplicationMatch.strength(entry, wanted)
+            if (wanted !== "" && strength === 0) {
                 continue
             }
-            list.push(entry)
+            list.push({ entry: entry, strength: strength })
         }
-        list.sort((first, second) => first.name.localeCompare(second.name))
-        return list
+        // Found by name first, then by what they are or their keywords.
+        list.sort((first, second) => second.strength - first.strength
+                                     || first.entry.name.localeCompare(second.entry.name))
+        return list.map(found => found.entry)
     }
 
     readonly property int columns: looks.columns ?? 6
@@ -304,7 +309,7 @@ PanelWindow {
         Item {
             id: foreground
             anchors.fill: parent
-            scale: grid.open || grid.motion.kind !== "zoom" ? 1 : grid.zoomedOutScale
+            scale: grid.open || grid.motion.kind !== "zoom" ? 1 : grid.awayScale
             Behavior on scale {
                 NumberAnimation {
                     duration: grid.open ? grid.openDuration : grid.closeDuration
