@@ -15,6 +15,7 @@ import json
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 from PIL import Image
@@ -74,7 +75,9 @@ TITLE_FONT_FAMILY = ".Lucida Grande UI"
 # APP_STORE_TABLE needs no picture from the installer, so updates.toml carries
 # it, with APP_STORE_STAND_INS, to themes imported before the App Store
 # existed. An import gets APP_STORE_PICTURES instead: AppKit's own toolbar
-# controls (CONTROL_PICTURES) and glyphs (make_toolbar_glyphs).
+# controls (CONTROL_PICTURES) and glyphs (make_toolbar_glyphs), and the
+# store's own tab icons in a toolbar as tall as AppKit makes one for icons
+# with their names under them (make_tab_glyphs, make_tab_wells).
 APP_STORE_TABLE = """[app_store]
 width = 1000
 height = 650
@@ -85,22 +88,16 @@ secondary_text_color = "#787878"
 failure_text_color = "#c03030"
 separator_color = "#d7d7d7"
 side_margin = 20
-toolbar_height = 33
 toolbar = { gradient = ["#d0d0d0", "#afafaf"] }
 toolbar_inactive = { gradient = ["#ededed", "#dfdfdf"] }
 toolbar_border_color = "#6b6b6b"
 toolbar_border_color_inactive = "#a7a7a7"
 toolbar_margin = 8
-toolbar_controls_top = 2
 back_forward_size = [53, 23]
 arrow_color = "#2d2d2d"
 search_field_size = [148, 23]
 search_text_color = "#000000"
-tab_height = 22
-tab_padding = 10
 tab_text_color = "#424242"
-tab_selected_text_color = "#000000"
-tab_selected = { gradient = ["#00000020", "#00000010"], radius = 4 }
 badge = { color = "#00000000" }
 badge_text_color = "#034ac9"
 heading_height = 30
@@ -124,7 +121,31 @@ button_confirm_text_color = "#ffffff"
 progress_track = { gradient = ["#cfd0d3", "#e9eaec"], radius = 3 }
 progress_bar = { gradient = ["#6fa3ec", "#2e65b6"], radius = 3 }
 """
-APP_STORE_PICTURES = """back_forward = { image = "images/controls/toolbar-segments.png", slice = [0, 5, 0, 5] }
+# The tabs as an NSToolbar draws items with an icon and a name (measured in
+# the reference VM, TAB_GLYPH_FILES): the bar 55 points under the title bar
+# and its line, each tab as tall, the icon 11 under its top, the name's
+# baseline 51 under it, 6 points beside the wider of the two, and the
+# selected tab's well behind it. A window that isn't the active one draws
+# names and icons lighter. ◀ ▶ and the search field keep their distance
+# from the line under the bar.
+APP_STORE_PICTURES = """toolbar_height = 56
+toolbar_controls_top = 25
+tab_height = 55
+tab_padding = 6
+tab_spacing = 1
+tab_icon_top = 11
+tab_label_baseline = 51
+tab_text_color_inactive = "#7f7f7f"
+tab_selected_text_color = "#424242"
+tab_selected = { image = "images/app_store/tab-selected.png", slice = [0, 2, 0, 2] }
+tab_selected_inactive = { image = "images/app_store/tab-selected-inactive.png", slice = [0, 2, 0, 2] }
+featured_glyph = "images/app_store/featured.png"
+featured_glyph_disabled = "images/app_store/featured-disabled.png"
+installed_glyph = "images/app_store/installed.png"
+installed_glyph_disabled = "images/app_store/installed-disabled.png"
+updates_glyph = "images/app_store/updates.png"
+updates_glyph_disabled = "images/app_store/updates-disabled.png"
+back_forward = { image = "images/controls/toolbar-segments.png", slice = [0, 5, 0, 5] }
 back_forward_pressed = { image = "images/controls/toolbar-segments-pressed.png", slice = [0, 5, 0, 5] }
 back_forward_inactive = { image = "images/controls/toolbar-segments-inactive.png", slice = [0, 5, 0, 5] }
 back_forward_separator = { image = "images/controls/toolbar-segments-separator.png" }
@@ -139,7 +160,13 @@ search_icon = "images/app_store/search.png"
 """
 # What a theme from before the App Store gets in place of APP_STORE_PICTURES,
 # until it's imported again: the same shapes, drawn without pictures.
-APP_STORE_STAND_INS = """back_forward = { gradient = ["#fdfdfd", "#dadada"], radius = 4, border = { color = "#8c8c8c", width = 1 } }
+APP_STORE_STAND_INS = """toolbar_height = 33
+toolbar_controls_top = 2
+tab_height = 22
+tab_padding = 10
+tab_selected_text_color = "#000000"
+tab_selected = { gradient = ["#00000020", "#00000010"], radius = 4 }
+back_forward = { gradient = ["#fdfdfd", "#dadada"], radius = 4, border = { color = "#8c8c8c", width = 1 } }
 back_forward_pressed = { gradient = ["#c8c8c8", "#b4b4b4"], radius = 4, border = { color = "#7c7c7c", width = 1 } }
 back_forward_inactive = { gradient = ["#fbfbfb", "#efefef"], radius = 4, border = { color = "#b8b8b8", width = 1 } }
 back_forward_separator = { color = "#9a9a9a" }
@@ -665,6 +692,66 @@ def make_toolbar_glyphs(artwork_dir, images_dir):
             paint_glyph(shapes[name], TOOLBAR_GLYPH_DISABLED_TOP, TOOLBAR_GLYPH_DISABLED_BOTTOM,
                         TOOLBAR_GLYPH_EMBOSS, density).save(target / f"{name}-disabled{theme_suffix}.png")
         paint_glyph(shapes["search"], SEARCH_ICON_COLOR, SEARCH_ICON_COLOR).save(target / f"search{theme_suffix}.png")
+
+
+# --- The App Store's tabs ----------------------------------------------------------
+# The store's own toolbar icons, black shapes in StoreUI. Its toolbar now
+# comes from Apple's servers without them, so they were measured in an
+# NSToolbar made in the reference VM to hold them, in the icon-and-name mode
+# the store used. AppKit paints them as it paints ◀ and ▶ (paint_glyph,
+# TOOLBAR_GLYPH_*), at their own size. 10.9's store has no Installed tab;
+# it gets the price tag of Purchased, the tab that lists one's apps.
+STORE_UI_RESOURCES = "System/Library/PrivateFrameworks/StoreUI.framework/Versions/A/Resources"
+TAB_GLYPH_FILES = {"featured": "toolbarFeatured.pdf", "installed": "toolbarPurchased.pdf", "updates": "toolbarUpdates.pdf"}
+
+# The well behind the selected tab, black over the bar: none at the bar's
+# top and bottom, rising evenly to its darkest halfway. Its sides have a
+# darker line with a softer one inside it. The darkest opacities of the
+# line, the inner line and the middle, measured in the same NSToolbar, with
+# the window active and with another one in front.
+TAB_WELL_HEIGHT = 55
+TAB_WELL_OPACITIES = {"": (0.462, 0.255, 0.155), "-inactive": (0.246, 0.137, 0.094)}
+
+
+def tab_glyph_shapes(root, density):
+    """StoreUI's toolbar icons as black shapes, by tab, at `density`."""
+    shapes = {}
+    with tempfile.TemporaryDirectory() as folder:
+        for tab, file_name in TAB_GLYPH_FILES.items():
+            drawn = Path(folder) / f"{tab}.png"
+            convert_status_picture(root / STORE_UI_RESOURCES / file_name, drawn, density)
+            shapes[tab] = Image.open(drawn).convert("RGBA")
+    return shapes
+
+
+def make_tab_glyphs(root, images_dir):
+    """Writes images/app_store/TAB.png for each tab, and TAB-disabled.png for a
+    window that isn't the active one, as ◀ ▶ have."""
+    target = images_dir / "app_store"
+    for theme_suffix, density in (("", 1), ("@2x", 2)):
+        for tab, shape in tab_glyph_shapes(root, density).items():
+            paint_glyph(shape, TOOLBAR_GLYPH_TOP, TOOLBAR_GLYPH_BOTTOM, TOOLBAR_GLYPH_EMBOSS,
+                        density).save(target / f"{tab}{theme_suffix}.png")
+            paint_glyph(shape, TOOLBAR_GLYPH_DISABLED_TOP, TOOLBAR_GLYPH_DISABLED_BOTTOM, TOOLBAR_GLYPH_EMBOSS,
+                        density).save(target / f"{tab}-disabled{theme_suffix}.png")
+
+
+def make_tab_wells(images_dir):
+    """Writes images/app_store/tab-selected.png and its -inactive form: five
+    points wide, a side's two lines on each side of the middle, which
+    stretches."""
+    target = images_dir / "app_store"
+    for state, (line, inner_line, middle) in TAB_WELL_OPACITIES.items():
+        for theme_suffix, density in (("", 1), ("@2x", 2)):
+            columns = [line, inner_line, middle, inner_line, line]
+            height = TAB_WELL_HEIGHT * density
+            well = Image.new("RGBA", (len(columns) * density, height))
+            for y in range(height):
+                share = 1 - abs(2 * (y + 0.5) / height - 1)
+                for column, opacity in enumerate(columns):
+                    shade = Image.new("RGBA", (density, 1), (0, 0, 0, round(255 * opacity * share)))
+                    well.paste(shade, (column * density, y))
+            well.save(target / f"tab-selected{state}{theme_suffix}.png")
 
 
 def trim_toolbar_separator(images_dir):
@@ -1826,6 +1913,8 @@ def main():
     cut_button_boxes(images_dir)
     trim_toolbar_separator(images_dir)
     make_toolbar_glyphs(artwork_dir, images_dir)
+    make_tab_glyphs(root, images_dir)
+    make_tab_wells(images_dir)
     copy_app_grid_pictures(root / DOCK_RESOURCES, images_dir)
     copy_window_overview_pictures(root / DOCK_RESOURCES, images_dir)
 

@@ -255,3 +255,9 @@ table = "animation.notification_list"
 key = "kind"
 was = "slide"
 now = "push"
+
+[[update]]
+revision = 6
+import_brings = [
+    "The App Store's tabs get the icons of Mavericks' App Store, with their names under them, in a toolbar drawn as Mavericks draws one.",
+]

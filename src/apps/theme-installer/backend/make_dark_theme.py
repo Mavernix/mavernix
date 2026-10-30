@@ -800,8 +800,10 @@ def change_app_store(theme, prokit):
         theme.set("app_store", key, value, "CHOSEN, the light theme's picture is AppKit's light artwork.")
 
 
-def paint_app_store_glyphs(artwork_dir, images_dir):
-    """The App Store's arrows and magnifier, painted light for the dark toolbar."""
+def paint_app_store_glyphs(work_dir, images_dir):
+    """The App Store's arrows, magnifier and tab icons, painted light for the
+    dark toolbar."""
+    artwork_dir = work_dir / "artwork"
     target = images_dir / "app_store"
     for suffix, theme_suffix in (("1x", ""), ("2x", "@2x")):
         for name, entry in make_theme.TOOLBAR_GLYPH_ENTRIES.items():
@@ -814,6 +816,12 @@ def paint_app_store_glyphs(artwork_dir, images_dir):
                 target / f"{name}{theme_suffix}.png")
             make_theme.paint_glyph(shape, APP_STORE_GLYPH_DISABLED, APP_STORE_GLYPH_DISABLED).save(
                 target / f"{name}-disabled{theme_suffix}.png")
+    for theme_suffix, density in (("", 1), ("@2x", 2)):
+        for tab, shape in make_theme.tab_glyph_shapes(work_dir / "root", density).items():
+            make_theme.paint_glyph(shape, APP_STORE_GLYPH_TOP, APP_STORE_GLYPH_BOTTOM).save(
+                target / f"{tab}{theme_suffix}.png")
+            make_theme.paint_glyph(shape, APP_STORE_GLYPH_DISABLED, APP_STORE_GLYPH_DISABLED).save(
+                target / f"{tab}-disabled{theme_suffix}.png")
 
 
 def change_programs(theme):
@@ -927,7 +935,7 @@ def build(work_dir, light_dir, output_dir):
     change_desktop(theme)
     change_programs(theme)
     change_app_store(theme, prokit)
-    paint_app_store_glyphs(work_dir / "artwork", images_dir)
+    paint_app_store_glyphs(work_dir, images_dir)
     change_banner(theme, prokit)
     change_icons(theme)
     change_lock(theme, prokit)

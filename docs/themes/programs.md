@@ -201,11 +201,29 @@ search_field_size = [160, 24]
 search_field = { color = "#ffffff", radius = 12, border = { color = "#b0b0b0", width = 1 } }
 search_icon = "images/app_store/search.png"
 search_text_color = "#202020"
+# The tabs, side by side in the middle of the bar. A tab is its name, or,
+# with pictures, an icon with the name under it, like the items of an OS X
+# toolbar; then make the tabs about as tall as the bar.
 tab_height = 26
-tab_padding = 12                     # room beside a tab's words
+tab_padding = 12                     # room beside a tab's words, or its icon if that is wider
+tab_spacing = 4                      # optional: between two tabs
 tab_text_color = "#505050"
+tab_text_color_inactive = "#909090"  # optional: every tab's name while the window isn't the active one
 tab_selected_text_color = "#000000"
 tab_selected = { color = "#d4d4d4", radius = 4 }
+tab_selected_inactive = { color = "#e4e4e4", radius = 4 }   # optional: tab_selected while the window isn't the active one
+# Optional: the tabs' icons, and greyed ones for while the window isn't the
+# active one. With them, the icon's top is tab_icon_top under the tab's top,
+# and the name's baseline tab_label_baseline under it (just under the icon
+# if left out).
+featured_glyph = "images/app_store/featured.png"
+featured_glyph_disabled = "images/app_store/featured-disabled.png"
+installed_glyph = "images/app_store/installed.png"
+installed_glyph_disabled = "images/app_store/installed-disabled.png"
+updates_glyph = "images/app_store/updates.png"
+updates_glyph_disabled = "images/app_store/updates-disabled.png"
+tab_icon_top = 6
+tab_label_baseline = 44
 badge = { color = "#3a6ea5", radius = 8 }
 badge_text_color = "#ffffff"
 heading_height = 36                  # a heading, with its line at the bottom
