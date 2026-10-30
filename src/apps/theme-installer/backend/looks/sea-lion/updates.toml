@@ -209,3 +209,10 @@ back_forward_separator = { color = "#1e1e1e" }
 back_forward_separator_width = 1
 back_forward_separator_inset = [1, 1]
 search_field = { color = "#2b2b2b", radius = 11, border = { color = "#1e1e1e", width = 1 } }
+
+[[update]]
+revision = 4
+import_brings = [
+    "Every Mavericks program and System Preferences pane brings its icon, so App Icons can give any program one of them.",
+    "More programs get Mavericks' icons, such as Thunderbird, VLC and Spectacle, and so do the Mouse, Keyboard and Network panes in System Preferences.",
+]

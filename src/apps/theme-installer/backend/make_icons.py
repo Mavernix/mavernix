@@ -5,8 +5,10 @@ Run it after make_theme.py:
     python make_icons.py WORK OUTPUT/sea-lion
 
 WORK is the folder holding the unpacked installer under root/. The icons
-that have a freedesktop.org name are converted from .icns and written as an
-icon theme into OUTPUT/share/icons/SeaLion/; other names fall back to INHERITS.
+that have a freedesktop.org name, and every program's and System Preferences
+pane's under its bundle identifier, are converted from .icns and written as
+an icon theme into OUTPUT/share/icons/SeaLion/; other names fall back to
+INHERITS.
 """
 
 import argparse
@@ -29,8 +31,8 @@ SYSTEM_ICONS = "System/Library/CoreServices/CoreTypes.bundle/Contents/Resources"
 
 # Linux icon name -> (context, source). The context decides the sub-folder.
 # The source is an .icns file in SYSTEM_ICONS, an .icns path from the top of
-# the image (it has a "/"), or an application bundle whose Info.plist names
-# its icon.
+# the image (it has a "/"), or a program's or System Preferences pane's
+# bundle, whose Info.plist names its icon.
 ICONS = {
     "folder": ("places", "GenericFolderIcon.icns"),
     "folder-open": ("places", "OpenFolderIcon.icns"),
@@ -157,7 +159,48 @@ ICONS = {
     "utilities-system-monitor": ("apps", "Applications/Utilities/Activity Monitor.app"),
     "system-software-install": ("apps", "Applications/App Store.app"),
     "help-browser": ("apps", "HelpIcon.icns"),
+    "system-help": ("apps", "HelpIcon.icns"),
     "applications-other": ("apps", "GenericApplicationIcon.icns"),
+    "system-software-update": ("apps", "System/Library/CoreServices/Software Update.app"),
+    "utilities-log-viewer": ("apps", "Applications/Utilities/Console.app"),
+    "applets-screenshooter": ("apps", "Applications/Utilities/Grab.app"),
+    "preferences-desktop-font": ("apps", "Applications/Font Book.app"),
+    "preferences-desktop-font-installer": ("apps", "Applications/Font Book.app"),
+    "preferences-desktop-color": ("apps", "Applications/Utilities/ColorSync Utility.app"),
+    "preferences-desktop-notification": ("apps", "Notifications.icns"),
+
+    # The other System Preferences panes, for the panes of Settings and of
+    # other desktops' settings programs.
+    "input-keyboard": ("devices", "System/Library/PreferencePanes/Keyboard.prefPane"),
+    "preferences-desktop-keyboard": ("apps", "System/Library/PreferencePanes/Keyboard.prefPane"),
+    "input-mouse": ("devices", "System/Library/PreferencePanes/Mouse.prefPane"),
+    "preferences-system-network": ("apps", "System/Library/PreferencePanes/Network.prefPane"),
+    "preferences-system-users": ("apps", "System/Library/PreferencePanes/Accounts.prefPane"),
+    "system-users": ("apps", "System/Library/PreferencePanes/Accounts.prefPane"),
+    # Login items are among a user's settings on OS X.
+    "preferences-system-startup": ("apps", "System/Library/PreferencePanes/Accounts.prefPane"),
+    "preferences-system-login": ("apps", "System/Library/PreferencePanes/Accounts.prefPane"),
+    "preferences-system-time": ("apps", "System/Library/PreferencePanes/DateAndTime.prefPane"),
+    "preferences-desktop-locale": ("apps", "System/Library/PreferencePanes/Localization.prefPane"),
+    "preferences-desktop-accessibility": ("apps", "System/Library/PreferencePanes/UniversalAccessPref.prefPane"),
+    "preferences-desktop-screensaver": ("apps", "System/Library/PreferencePanes/DesktopScreenEffectsPref.prefPane"),
+    "preferences-system-privacy": ("apps", "System/Library/PreferencePanes/Security.prefPane"),
+    "preferences-system-sharing": ("apps", "System/Library/PreferencePanes/SharingPref.prefPane"),
+    "preferences-system-search": ("apps", "System/Library/PreferencePanes/Spotlight.prefPane"),
+    "preferences-devices-printer": ("apps", "System/Library/PreferencePanes/PrintAndScan.prefPane"),
+    "printer": ("devices", "System/Library/CoreServices/AddPrinter.app"),
+
+    "phone": ("devices", "com.apple.iphone-4-black.icns"),
+    "smartphone": ("devices", "com.apple.iphone-4-black.icns"),
+    "multimedia-player": ("devices", "com.apple.ipod-touch-4-black.icns"),
+    "avatar-default": ("status", "UserIcon.icns"),
+    "user-identity": ("status", "UserIcon.icns"),
+    "folder-development": ("places", "DeveloperFolderIcon.icns"),
+    "inode-directory": ("mimetypes", "GenericFolderIcon.icns"),
+    "text-x-generic-template": ("mimetypes", "GenericStationeryIcon.icns"),
+    "text-x-vcard": ("mimetypes", "VCard.icns"),
+    "application-vnd.iccprofile": ("mimetypes", "ColorSyncProfileIcon.icns"),
+    "application-x-apple-diskimage": ("mimetypes", "System/Library/CoreServices/DiskImageMounter.app/Contents/Resources/diskcopy-doc.icns"),
 
     # Single applications, by the Icon= name in their desktop entry.
     "org.kde.dolphin": ("apps", "System/Library/CoreServices/Finder.app"),
@@ -175,7 +218,198 @@ ICONS = {
     "view-app-grid": ("apps", "Applications/Launchpad.app"),
     "org.kde.okular": ("apps", "Applications/Preview.app"),
     "org.kde.gwenview": ("apps", "Applications/Preview.app"),
+    "nemo": ("apps", "System/Library/CoreServices/Finder.app"),
+    "thunar": ("apps", "System/Library/CoreServices/Finder.app"),
+    "org.xfce.thunar": ("apps", "System/Library/CoreServices/Finder.app"),
+    "org.gnome.Console": ("apps", "Applications/Utilities/Terminal.app"),
+    "org.gnome.Terminal": ("apps", "Applications/Utilities/Terminal.app"),
+    "org.xfce.terminal": ("apps", "Applications/Utilities/Terminal.app"),
+    "kitty": ("apps", "Applications/Utilities/Terminal.app"),
+    "Alacritty": ("apps", "Applications/Utilities/Terminal.app"),
+    "com.mitchellh.ghostty": ("apps", "Applications/Utilities/Terminal.app"),
+    "kate": ("apps", "Applications/TextEdit.app"),
+    "kwrite": ("apps", "Applications/TextEdit.app"),
+    "org.gnome.TextEditor": ("apps", "Applications/TextEdit.app"),
+    "org.gnome.gedit": ("apps", "Applications/TextEdit.app"),
+    "org.xfce.mousepad": ("apps", "Applications/TextEdit.app"),
+    "org.gnome.Calculator": ("apps", "Applications/Calculator.app"),
+    "qalculate": ("apps", "Applications/Calculator.app"),
+    "chromium": ("apps", "Applications/Safari.app"),
+    "org.mozilla.firefox": ("apps", "Applications/Safari.app"),
+    "org.gnome.Epiphany": ("apps", "Applications/Safari.app"),
+    "org.kde.falkon": ("apps", "Applications/Safari.app"),
+    "thunderbird": ("apps", "Applications/Mail.app"),
+    "org.mozilla.Thunderbird": ("apps", "Applications/Mail.app"),
+    "org.kde.kmail2": ("apps", "Applications/Mail.app"),
+    "org.gnome.Evolution": ("apps", "Applications/Mail.app"),
+    "org.gnome.Geary": ("apps", "Applications/Mail.app"),
+    "org.gnome.Calendar": ("apps", "Applications/Calendar.app"),
+    "korganizer": ("apps", "Applications/Calendar.app"),
+    "org.gnome.Contacts": ("apps", "Applications/Contacts.app"),
+    "kaddressbook": ("apps", "Applications/Contacts.app"),
+    "elisa": ("apps", "Applications/iTunes.app"),
+    "org.kde.elisa": ("apps", "Applications/iTunes.app"),
+    "rhythmbox": ("apps", "Applications/iTunes.app"),
+    "org.gnome.Rhythmbox3": ("apps", "Applications/iTunes.app"),
+    "strawberry": ("apps", "Applications/iTunes.app"),
+    "vlc": ("apps", "Applications/QuickTime Player.app"),
+    "mpv": ("apps", "Applications/QuickTime Player.app"),
+    "totem": ("apps", "Applications/QuickTime Player.app"),
+    "org.gnome.Totem": ("apps", "Applications/QuickTime Player.app"),
+    "org.kde.haruna": ("apps", "Applications/QuickTime Player.app"),
+    "dragonplayer": ("apps", "Applications/QuickTime Player.app"),
+    "okular": ("apps", "Applications/Preview.app"),
+    "gwenview": ("apps", "Applications/Preview.app"),
+    "org.gnome.Evince": ("apps", "Applications/Preview.app"),
+    "org.gnome.Papers": ("apps", "Applications/Preview.app"),
+    "org.gnome.Loupe": ("apps", "Applications/Preview.app"),
+    "org.gnome.eog": ("apps", "Applications/Preview.app"),
+    "org.gnome.Snapshot": ("apps", "Applications/Photo Booth.app"),
+    "org.gnome.Cheese": ("apps", "Applications/Photo Booth.app"),
+    "org.gnome.SystemMonitor": ("apps", "Applications/Utilities/Activity Monitor.app"),
+    "systemsettings": ("apps", "Applications/System Preferences.app"),
+    "org.gnome.Settings": ("apps", "Applications/System Preferences.app"),
+    "plasmadiscover": ("apps", "Applications/App Store.app"),
+    "org.gnome.Software": ("apps", "Applications/App Store.app"),
+    "org.gnome.Dictionary": ("apps", "Applications/Dictionary.app"),
+    "kfontview": ("apps", "Applications/Font Book.app"),
+    "org.gnome.font-viewer": ("apps", "Applications/Font Book.app"),
+    "gparted": ("apps", "Applications/Utilities/Disk Utility.app"),
+    "partitionmanager": ("apps", "Applications/Utilities/Disk Utility.app"),
+    "org.gnome.DiskUtility": ("apps", "Applications/Utilities/Disk Utility.app"),
+    "kwalletmanager": ("apps", "Applications/Utilities/Keychain Access.app"),
+    "org.gnome.seahorse.Application": ("apps", "Applications/Utilities/Keychain Access.app"),
+    "spectacle": ("apps", "Applications/Utilities/Grab.app"),
+    "org.gnome.Screenshot": ("apps", "Applications/Utilities/Grab.app"),
+    "org.gnome.Logs": ("apps", "Applications/Utilities/Console.app"),
+    "hwinfo": ("apps", "Applications/Utilities/System Information.app"),
+    "ark": ("apps", "System/Library/CoreServices/Archive Utility.app"),
+    "org.gnome.FileRoller": ("apps", "System/Library/CoreServices/Archive Utility.app"),
+    "org.gnome.SimpleScan": ("apps", "Applications/Image Capture.app"),
+    "org.kde.skanlite": ("apps", "Applications/Image Capture.app"),
+    "org.gnome.DejaDup": ("apps", "Applications/Time Machine.app"),
+    "timeshift": ("apps", "Applications/Time Machine.app"),
+    "org.gnome.Chess": ("apps", "Applications/Chess.app"),
+    "knights": ("apps", "Applications/Chess.app"),
+    "org.gnome.Maps": ("apps", "Applications/Maps.app"),
+    "marble": ("apps", "Applications/Maps.app"),
+    "com.github.johnfactotum.Foliate": ("apps", "Applications/iBooks.app"),
+    "org.gnome.Todo": ("apps", "Applications/Reminders.app"),
+    "org.remmina.Remmina": ("apps", "System/Library/CoreServices/Screen Sharing.app"),
+    "krdc": ("apps", "System/Library/CoreServices/Screen Sharing.app"),
+    "kcolorchooser": ("apps", "Applications/Utilities/DigitalColor Meter.app"),
+    "org.gnome.Yelp": ("apps", "System/Library/CoreServices/HelpViewer.app"),
 }
+
+# Every program and System Preferences pane that has an icon of its own,
+# under its bundle identifier ("com.apple.Chess"), so that the Icons pane
+# offers all of Mavericks' icons, also those no Linux program asks for.
+BUNDLES = [
+    "Applications/App Store.app",
+    "Applications/Automator.app",
+    "Applications/Calculator.app",
+    "Applications/Calendar.app",
+    "Applications/Chess.app",
+    "Applications/Contacts.app",
+    "Applications/DVD Player.app",
+    "Applications/Dashboard.app",
+    "Applications/Dictionary.app",
+    "Applications/FaceTime.app",
+    "Applications/Font Book.app",
+    "Applications/Game Center.app",
+    "Applications/Image Capture.app",
+    "Applications/Launchpad.app",
+    "Applications/Mail.app",
+    "Applications/Maps.app",
+    "Applications/Messages.app",
+    "Applications/Mission Control.app",
+    "Applications/Notes.app",
+    "Applications/Photo Booth.app",
+    "Applications/Preview.app",
+    "Applications/QuickTime Player.app",
+    "Applications/Reminders.app",
+    "Applications/Safari.app",
+    "Applications/Stickies.app",
+    "Applications/System Preferences.app",
+    "Applications/TextEdit.app",
+    "Applications/Time Machine.app",
+    "Applications/iBooks.app",
+    "Applications/iTunes.app",
+    "Applications/Utilities/Activity Monitor.app",
+    "Applications/Utilities/AirPort Utility.app",
+    "Applications/Utilities/AppleScript Editor.app",
+    "Applications/Utilities/Audio MIDI Setup.app",
+    "Applications/Utilities/Bluetooth File Exchange.app",
+    "Applications/Utilities/Boot Camp Assistant.app",
+    "Applications/Utilities/ColorSync Utility.app",
+    "Applications/Utilities/Console.app",
+    "Applications/Utilities/DigitalColor Meter.app",
+    "Applications/Utilities/Disk Utility.app",
+    "Applications/Utilities/Firmware Password Utility.app",
+    "Applications/Utilities/Grab.app",
+    "Applications/Utilities/Grapher.app",
+    "Applications/Utilities/Keychain Access.app",
+    "Applications/Utilities/Migration Assistant.app",
+    "Applications/Utilities/Reset Password.app",
+    "Applications/Utilities/System Information.app",
+    "Applications/Utilities/Terminal.app",
+    "Applications/Utilities/VoiceOver Utility.app",
+    "System/Library/CoreServices/AddPrinter.app",
+    "System/Library/CoreServices/AppleScript Utility.app",
+    "System/Library/CoreServices/Applications/Feedback Assistant.app",
+    "System/Library/CoreServices/Applications/Network Utility.app",
+    "System/Library/CoreServices/Applications/RAID Utility.app",
+    "System/Library/CoreServices/Applications/Wireless Diagnostics.app",
+    "System/Library/CoreServices/Archive Utility.app",
+    "System/Library/CoreServices/Bluetooth Setup Assistant.app",
+    "System/Library/CoreServices/Certificate Assistant.app",
+    "System/Library/CoreServices/Directory Utility.app",
+    "System/Library/CoreServices/DiskImageMounter.app",
+    "System/Library/CoreServices/Dock.app",
+    "System/Library/CoreServices/Finder.app",
+    "System/Library/CoreServices/Folder Actions Setup.app",
+    "System/Library/CoreServices/HelpViewer.app",
+    "System/Library/CoreServices/Installer.app",
+    "System/Library/CoreServices/Network Diagnostics.app",
+    "System/Library/CoreServices/Problem Reporter.app",
+    "System/Library/CoreServices/Screen Sharing.app",
+    "System/Library/CoreServices/Setup Assistant.app",
+    "System/Library/CoreServices/Software Update.app",
+    "System/Library/CoreServices/Spotlight.app",
+    "System/Library/CoreServices/System Image Utility.app",
+    "System/Library/CoreServices/Ticket Viewer.app",
+    "System/Library/CoreServices/VoiceOver.app",
+    "System/Library/PreferencePanes/Accounts.prefPane",
+    "System/Library/PreferencePanes/Appearance.prefPane",
+    "System/Library/PreferencePanes/Bluetooth.prefPane",
+    "System/Library/PreferencePanes/DateAndTime.prefPane",
+    "System/Library/PreferencePanes/DesktopScreenEffectsPref.prefPane",
+    "System/Library/PreferencePanes/DigiHubDiscs.prefPane",
+    "System/Library/PreferencePanes/Displays.prefPane",
+    "System/Library/PreferencePanes/Dock.prefPane",
+    "System/Library/PreferencePanes/EnergySaver.prefPane",
+    "System/Library/PreferencePanes/Expose.prefPane",
+    "System/Library/PreferencePanes/FibreChannel.prefPane",
+    "System/Library/PreferencePanes/Ink.prefPane",
+    "System/Library/PreferencePanes/Keyboard.prefPane",
+    "System/Library/PreferencePanes/Localization.prefPane",
+    "System/Library/PreferencePanes/Mouse.prefPane",
+    "System/Library/PreferencePanes/Network.prefPane",
+    "System/Library/PreferencePanes/ParentalControls.prefPane",
+    "System/Library/PreferencePanes/PrintAndScan.prefPane",
+    "System/Library/PreferencePanes/Profiles.prefPane",
+    "System/Library/PreferencePanes/Security.prefPane",
+    "System/Library/PreferencePanes/SharingPref.prefPane",
+    "System/Library/PreferencePanes/Sound.prefPane",
+    "System/Library/PreferencePanes/Speech.prefPane",
+    "System/Library/PreferencePanes/Spotlight.prefPane",
+    "System/Library/PreferencePanes/StartupDisk.prefPane",
+    "System/Library/PreferencePanes/TimeMachine.prefPane",
+    "System/Library/PreferencePanes/Trackpad.prefPane",
+    "System/Library/PreferencePanes/UniversalAccessPref.prefPane",
+    "System/Library/PreferencePanes/Xsan.prefPane",
+    "System/Library/PreferencePanes/iCloudPref.prefPane",
+]
 
 # KDE programs ask for side-bar icons under ordinary names at 22 pixels, as
 # KDE's own theme keeps its one-colour drawings; these go there only.
@@ -232,6 +466,11 @@ def fail(message):
     sys.exit(f"make_icons: {message}")
 
 
+def bundle_info(bundle):
+    with open(bundle / "Contents" / "Info.plist", "rb") as file:
+        return plistlib.load(file)
+
+
 def icns_file_for(root, source):
     """The .icns file a source in ICONS stands for."""
     if source.endswith(".icns"):
@@ -240,9 +479,7 @@ def icns_file_for(root, source):
         return root / SYSTEM_ICONS / source
 
     bundle = root / source
-    with open(bundle / "Contents" / "Info.plist", "rb") as file:
-        info = plistlib.load(file)
-    name = info.get("CFBundleIconFile")
+    name = bundle_info(bundle).get("CFBundleIconFile")
     if name is None:
         fail(f"{bundle} names no icon in its Info.plist")
     if not name.endswith(".icns"):
@@ -387,7 +624,7 @@ def main():
                 converted[icns_file] = extract_sizes(icns_file, Path(scratch) / str(len(converted)))
             return converted[icns_file]
 
-        for icon_name, (context, source) in ICONS.items():
+        def write_icon(icon_name, context, source):
             for size, picture in sizes_of(icon_name, source).items():
                 if size not in SIZES:
                     continue
@@ -395,6 +632,11 @@ def main():
                 target.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(picture, target)
                 contexts_by_size.setdefault((size, 1), set()).add(context)
+
+        for icon_name, (context, source) in ICONS.items():
+            write_icon(icon_name, context, source)
+        for bundle in BUNDLES:
+            write_icon(bundle_info(root / bundle)["CFBundleIdentifier"], "apps", bundle)
 
         for icon_name, (context, source) in SIDE_BAR_ICONS.items():
             whole_file = icns_file_for(root, source)
@@ -416,7 +658,7 @@ def main():
                 contexts_by_size.setdefault((SIDE_BAR_SIZE, scale), set()).add(context)
 
     (theme_directory / "index.theme").write_text(index_text(contexts_by_size))
-    print(f"wrote {len(ICONS) + len(SIDE_BAR_ICONS)} icons from {len(converted)} of the installer's "
+    print(f"wrote {len(ICONS) + len(BUNDLES) + len(SIDE_BAR_ICONS)} icons from {len(converted)} of the installer's "
           f"icon files into {theme_directory}")
 
 

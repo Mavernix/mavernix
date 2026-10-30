@@ -333,6 +333,33 @@ class TestSeaLionAppStoreUpdates(unittest.TestCase):
         self.assertEqual(self.updates[3]["settings"]["fonts"], self.updates[2]["settings"]["fonts"])
 
 
+class TestSeaLionIcons(unittest.TestCase):
+    """make_icons.py reads only what the import takes from the installer, so
+    every icon it names must be in needed-files.txt."""
+
+    def setUp(self):
+        sys.path.insert(0, str(LOOKS_DIR.parent))
+        self.addCleanup(sys.path.remove, str(LOOKS_DIR.parent))
+        import installer_image
+        import make_icons
+        self.make_icons = make_icons
+        self.taken = {path for files in installer_image.needed_files(LOOKS_DIR / "sea-lion").values()
+                      for path in files}
+
+    def test_every_source_is_taken(self):
+        icons = self.make_icons
+        sources = [source for _, source in [*icons.ICONS.values(), *icons.SIDE_BAR_ICONS.values()]]
+        for source in sources + icons.BUNDLES:
+            with self.subTest(source=source):
+                if source.endswith(".icns"):
+                    self.assertIn(source if "/" in source else f"{icons.SYSTEM_ICONS}/{source}", self.taken)
+                else:
+                    # The icon's file name is in the Info.plist, which only the installer has.
+                    self.assertIn(f"{source}/Contents/Info.plist", self.taken)
+                    resources = f"{source}/Contents/Resources/"
+                    self.assertTrue(any(path.startswith(resources) and path.endswith(".icns") for path in self.taken))
+
+
 class TestThemeUpdates(unittest.TestCase):
     """The Theme Installer's updates.py: what imported themes get at login,
     and when a new import is offered."""
