@@ -163,15 +163,14 @@ SettingsWindow::SettingsWindow(Choices& choices) : choices(choices)
     search = new QLineEdit;
     search->setPlaceholderText(words.value(QStringLiteral("search"), QStringLiteral("Search")).toString());
     search->setClearButtonEnabled(true);
-    search->addAction(magnifyingGlass(search->palette().color(QPalette::PlaceholderText)),
-        QLineEdit::LeadingPosition);
+    search->addAction(magnifyingGlass(search->palette().color(QPalette::PlaceholderText)), QLineEdit::LeadingPosition);
     const int search_width = 164;
     const int search_height = 22;
     search->setFixedSize(search_width, search_height);
-    search->setStyleSheet(QStringLiteral(
-        "QLineEdit { background: palette(base); color: palette(text);"
-        " border: 1px solid palette(mid); border-radius: %1px; padding: 0 2px; }"
-        "QLineEdit:focus { border-color: palette(highlight); }").arg(search_height / 2));
+    search->setStyleSheet(QStringLiteral("QLineEdit { background: palette(base); color: palette(text);"
+                                         " border: 1px solid palette(mid); border-radius: %1px; padding: 0 2px; }"
+                                         "QLineEdit:focus { border-color: palette(highlight); }")
+            .arg(search_height / 2));
     tool_bar->addWidget(search);
     add_end_room();
 
@@ -286,12 +285,12 @@ void SettingsWindow::makeMenus(const QVariantMap& words)
     };
 
     QMenu* view = menuBar()->addMenu(word("menu_view", "View"));
-    back_action = view->addAction(word("menu_back", "Back"), QKeySequence(Qt::CTRL | Qt::Key_BracketLeft), this,
-        [this]() { stepInHistory(-1); });
-    forward_action = view->addAction(word("menu_forward", "Forward"),
-        QKeySequence(Qt::CTRL | Qt::Key_BracketRight), this, [this]() { stepInHistory(1); });
-    view->addAction(word("menu_show_all", "Show All"), QKeySequence(Qt::CTRL | Qt::Key_L), this,
-        &SettingsWindow::showOverview);
+    back_action = view->addAction(
+        word("menu_back", "Back"), QKeySequence(Qt::CTRL | Qt::Key_BracketLeft), this, [this]() { stepInHistory(-1); });
+    forward_action = view->addAction(word("menu_forward", "Forward"), QKeySequence(Qt::CTRL | Qt::Key_BracketRight),
+        this, [this]() { stepInHistory(1); });
+    view->addAction(
+        word("menu_show_all", "Show All"), QKeySequence(Qt::CTRL | Qt::Key_L), this, &SettingsWindow::showOverview);
     view->addAction(word("menu_search", "Search"), QKeySequence::Find, this, [this]() {
         search->setFocus();
         search->selectAll();
@@ -309,8 +308,8 @@ void SettingsWindow::makeMenus(const QVariantMap& words)
     }
 
     QMenu* window = menuBar()->addMenu(word("menu_window", "Window"));
-    window->addAction(word("menu_minimize", "Minimize"), QKeySequence(Qt::CTRL | Qt::Key_M), this,
-        &QWidget::showMinimized);
+    window->addAction(
+        word("menu_minimize", "Minimize"), QKeySequence(Qt::CTRL | Qt::Key_M), this, &QWidget::showMinimized);
     window->addAction(word("menu_close", "Close"), QKeySequence::Close, this, &QWidget::close);
 }
 
@@ -513,8 +512,9 @@ void SettingsWindow::changePage(const QPixmap& leftPage, int leftHeight)
     // and the left page's fading out above it.
     transition = new QWidget(pages);
     transition->setAttribute(Qt::WA_TransparentForMouseEvents);
-    transition->setGeometry(0, 0, pages->width(), std::max(new_page.deviceIndependentSize().toSize().height(),
-                                                           leftPage.deviceIndependentSize().toSize().height()));
+    transition->setGeometry(0, 0, pages->width(),
+        std::max(
+            new_page.deviceIndependentSize().toSize().height(), leftPage.deviceIndependentSize().toSize().height()));
     const auto picture_of = [this](const QPixmap& page) {
         auto* shown = new QLabel(transition);
         shown->setPixmap(page);

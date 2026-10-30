@@ -32,8 +32,7 @@ class pop_progress_t : public wf::animation::duration_t
 class pop_animation_t : public wf::animate::animation_base_t
 {
   public:
-    void init(wayfire_view view, wf::animation_description_t duration,
-        wf::animate::animation_type type) override
+    void init(wayfire_view view, wf::animation_description_t duration, wf::animate::animation_type type) override
     {
         this->view = view;
         // The transitions are made anew for the new clock, not copied with it.
@@ -48,14 +47,14 @@ class pop_animation_t : public wf::animate::animation_base_t
         progress.start();
 
         // Scaled about the window's middle: the transformer's default.
-        view->get_transformed_node()->add_transformer(std::make_shared<wf::scene::view_2d_transformer_t>(view),
-            wf::TRANSFORMER_HIGHLEVEL, TRANSFORMER_NAME);
+        view->get_transformed_node()->add_transformer(
+            std::make_shared<wf::scene::view_2d_transformer_t>(view), wf::TRANSFORMER_HIGHLEVEL, TRANSFORMER_NAME);
     }
 
     bool step() override
     {
-        auto transformer = view->get_transformed_node()->get_transformer<wf::scene::view_2d_transformer_t>(
-            TRANSFORMER_NAME);
+        auto transformer =
+            view->get_transformed_node()->get_transformer<wf::scene::view_2d_transformer_t>(TRANSFORMER_NAME);
         if (!transformer)
         {
             return false;
@@ -67,10 +66,7 @@ class pop_animation_t : public wf::animate::animation_base_t
         return progress.running();
     }
 
-    void reverse() override
-    {
-        progress.reverse();
-    }
+    void reverse() override { progress.reverse(); }
 
     ~pop_animation_t() override
     {
@@ -95,15 +91,12 @@ class plugin_t : public wf::plugin_interface_t
     void init() override
     {
         effects->register_effect("pop", wf::animate::effect_description_t{
-            .generator = [] { return std::make_unique<pop_animation_t>(); },
-            .default_duration = [=] { return pop_duration.value(); },
-        });
+                                            .generator = [] { return std::make_unique<pop_animation_t>(); },
+                                            .default_duration = [=] { return pop_duration.value(); },
+                                        });
     }
 
-    void fini() override
-    {
-        effects->unregister_effect("pop");
-    }
+    void fini() override { effects->unregister_effect("pop"); }
 };
 } // namespace themed_open_close
 

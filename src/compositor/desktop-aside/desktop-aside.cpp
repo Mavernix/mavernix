@@ -139,7 +139,8 @@ class screen_t : public wf::per_output_plugin_instance_t
             if (children.empty())
             {
                 wf::scene::remove_child(shift);
-            } else if (auto parent = replace_child(shift, children.front()))
+            }
+            else if (auto parent = replace_child(shift, children.front()))
             {
                 wf::scene::update(parent, wf::scene::update_flag::CHILDREN_LIST);
             }
@@ -162,11 +163,10 @@ class screen_t : public wf::per_output_plugin_instance_t
         output->render->damage_whole();
     }
 
-    wf::effect_hook_t next_frame = [=]()
-    {
+    wf::effect_hook_t next_frame = [=]() {
         const auto elapsed = std::chrono::steady_clock::now() - started;
-        const double progress = (duration.count() > 0) ?
-            std::min(1.0, std::chrono::duration<double>(elapsed) / duration) : 1.0;
+        const double progress =
+            (duration.count() > 0) ? std::min(1.0, std::chrono::duration<double>(elapsed) / duration) : 1.0;
         place(start_offset + (end_offset - start_offset) * along_curve(curve, progress));
 
         if (progress < 1.0)
@@ -254,8 +254,7 @@ class plugin_t : public wf::per_output_plugin_t<screen_t>
 {
     wf::shared_data::ref_ptr_t<wf::ipc::method_repository_t> repo;
 
-    wf::ipc::method_callback_full on_move = [=](const wf::json_t& data, wf::ipc::client_interface_t* client)
-    {
+    wf::ipc::method_callback_full on_move = [=](const wf::json_t& data, wf::ipc::client_interface_t* client) {
         const std::string name = wf::ipc::json_get_string(data, "output");
         auto output = wf::get_core().output_layout->find_output(name);
         if ((output == nullptr) || !output_instance.count(output))
@@ -274,8 +273,7 @@ class plugin_t : public wf::per_output_plugin_t<screen_t>
     };
 
     wf::signal::connection_t<wf::ipc::client_disconnected_signal> on_client_disconnected =
-        [=](wf::ipc::client_disconnected_signal *event)
-    {
+        [=](wf::ipc::client_disconnected_signal* event) {
         for (auto& [output, screen] : output_instance)
         {
             if (screen->mover == event->client)
@@ -291,9 +289,8 @@ class plugin_t : public wf::per_output_plugin_t<screen_t>
     uint32_t kept_button = 0;
 
     wf::signal::connection_t<wf::input_event_signal<wlr_pointer_button_event>> on_button =
-        [=](wf::input_event_signal<wlr_pointer_button_event> *signal)
-    {
-        const auto *event = signal->event;
+        [=](wf::input_event_signal<wlr_pointer_button_event>* signal) {
+        const auto* event = signal->event;
         if (event->state == WL_POINTER_BUTTON_STATE_RELEASED)
         {
             if ((kept_button != 0) && (event->button == kept_button))

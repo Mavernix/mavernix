@@ -63,9 +63,9 @@ class TestIconThemeNames : public QObject
 
         // Each theme's sorted, a name only where it is first found; neither
         // one-colour icons nor folders the index leaves out.
-        QCOMPARE(icon_theme_names(), QStringList({QStringLiteral("folder"), QStringLiteral("web-browser"),
-                                         QStringLiteral("akregator"), QStringLiteral("Zoom"),
-                                         QStringLiteral("aardvark")}));
+        QCOMPARE(
+            icon_theme_names(), QStringList({QStringLiteral("folder"), QStringLiteral("web-browser"),
+                                    QStringLiteral("akregator"), QStringLiteral("Zoom"), QStringLiteral("aardvark")}));
     }
 };
 

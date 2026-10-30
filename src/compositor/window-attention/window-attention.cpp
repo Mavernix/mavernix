@@ -53,8 +53,7 @@ class plugin_t : public wf::plugin_interface_t
         }
     }
 
-    wf::ipc::method_callback_full on_watch = [=](const wf::json_t&, wf::ipc::client_interface_t* client)
-    {
+    wf::ipc::method_callback_full on_watch = [=](const wf::json_t&, wf::ipc::client_interface_t* client) {
         if (std::find(watchers.begin(), watchers.end(), client) == watchers.end())
         {
             watchers.push_back(client);
@@ -67,15 +66,13 @@ class plugin_t : public wf::plugin_interface_t
     };
 
     wf::signal::connection_t<wf::ipc::client_disconnected_signal> on_client_disconnected =
-        [=](wf::ipc::client_disconnected_signal *event)
-    {
+        [=](wf::ipc::client_disconnected_signal* event) {
         watchers.erase(std::remove(watchers.begin(), watchers.end(), event->client), watchers.end());
     };
 
     // Hints change for other reasons too; only starting or stopping to ask counts.
     wf::signal::connection_t<wf::view_hints_changed_signal> on_hints_changed =
-        [=](wf::view_hints_changed_signal *signal)
-    {
+        [=](wf::view_hints_changed_signal* signal) {
         if (!signal->view)
         {
             return;
@@ -90,15 +87,15 @@ class plugin_t : public wf::plugin_interface_t
         if (signal->demands_attention)
         {
             asking[id] = app_id;
-        } else
+        }
+        else
         {
             asking.erase(id);
         }
         tell_all(id, app_id, signal->demands_attention);
     };
 
-    wf::signal::connection_t<wf::view_unmapped_signal> on_unmapped = [=](wf::view_unmapped_signal *signal)
-    {
+    wf::signal::connection_t<wf::view_unmapped_signal> on_unmapped = [=](wf::view_unmapped_signal* signal) {
         const auto found = signal->view ? asking.find(signal->view->get_id()) : asking.end();
         if (found != asking.end())
         {
