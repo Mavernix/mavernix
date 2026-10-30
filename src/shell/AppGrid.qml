@@ -358,6 +358,8 @@ PanelWindow {
                             width: cell.iconSize
                             height: cell.iconSize
                             sourceSize: Qt.size(width, height)
+                            // Off the main thread: there is one for every program.
+                            asynchronous: true
                             source: grid.iconFor(cell.modelData)
                             opacity: press.dragging ? 0.3 : (press.pressed ? 0.6 : 1)
                         }
