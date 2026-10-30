@@ -39,6 +39,10 @@ Item {
         width: cell.pictureSize
         height: cell.pictureSize
         sourceSize: Qt.size(width, height)
+        // Decoded off the shell's main thread: a folder of a hundred programs
+        // would otherwise hold the shell still for the best part of a second
+        // before it could open.
+        asynchronous: true
         source: {
             if (cell.hasOwnPicture) {
                 return "file://" + cell.folderGrid.themeDirectory + "/" + cell.looks.open_image
