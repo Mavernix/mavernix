@@ -175,9 +175,10 @@ Item {
 
     signal menuWanted()
     // A press held this long opens the menu too, as on a Mac (on 10.9, about
-    // half a second). The press may then drag to an item and let go to
-    // choose it; these report where, in window coordinates.
+    // half a second).
     readonly property int holdForMenuMs: 500
+    // A press held until the menu opened may drag on to an item and let go
+    // to choose it. These report where, in window coordinates.
     signal menuDragged(real windowX, real windowY)
     signal menuReleased(real windowX, real windowY)
 
@@ -264,6 +265,8 @@ Item {
         }
         onPressAndHold: mouse => {
             if (dragging || mouse.button !== Qt.LeftButton) {
+                // Not taken, so the release still clicks.
+                mouse.accepted = false
                 return
             }
             heldForMenu = true
@@ -293,9 +296,8 @@ Item {
         }
         onCanceled: dragging = false
         onClicked: mouse => {
-            if (dragging || heldForMenu) {
+            if (dragging) {
                 dragging = false
-                heldForMenu = false
                 return
             }
             if (mouse.button === Qt.RightButton) {
