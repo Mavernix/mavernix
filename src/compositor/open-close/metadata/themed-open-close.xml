@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="themed-open-close">
+		<_short>Themed Open and Close</_short>
+		<_long>Adds the effect "pop" for opening and closing windows to the animate plugin: the window grows to its size from a little smaller as it fades in. Choose it with animate's open_animation and close_animation options.</_long>
+		<category>Effects</category>
+		<option name="pop_duration" type="animation">
+			<_short>Pop duration</_short>
+			<_long>How long the pop effect takes, and its curve.</_long>
+			<default>200ms circle</default>
+		</option>
+	</plugin>
+</wayfire>

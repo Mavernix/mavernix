@@ -226,6 +226,20 @@ kind = "fade"
 duration_ms = 130
 blink_ms = 60
 
+# Windows open with a pop, from a little smaller, as on OS X, instead of
+# Wayfire's zoom from a third of their size.
+[[update.corrections]]
+table = "animation.window_open"
+key = "kind"
+was = "zoom"
+now = "pop"
+
+[[update.corrections]]
+table = "animation.window_open"
+key = "curve"
+was = "linear"
+now = "ease-out"
+
 # The list of notifications opens as Notification Center does: the desktop
 # slides aside and uncovers it.
 [[update.corrections]]

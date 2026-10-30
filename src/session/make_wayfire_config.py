@@ -102,9 +102,11 @@ WAYFIRE_CURVES = {
     "ease-in": "sigmoid",
 }
 
-# Minimise effects from our plugin; open/close effects from Wayfire's animate.
+# Minimise effects from our plugin; open/close effects from Wayfire's animate,
+# and one ("pop") from our plugin.
 OUR_MINIMIZE_KINDS = ("genie", "scale")
 WAYFIRE_WINDOW_KINDS = ("fade", "zoom")
+OUR_WINDOW_KINDS = ("pop",)
 # Theme name -> Wayfire grid plugin name, for maximise and tiling.
 WAYFIRE_RESIZE_KINDS = {"blend": "crossfade", "none": "none"}
 
@@ -139,9 +141,9 @@ def animation_sections(theme):
     for name, option in (("window_open", "open_animation"), ("window_close", "close_animation")):
         animation = animations.get(name, {"kind": "none"})
         kind = animation.get("kind", "none")
-        if kind not in WAYFIRE_WINDOW_KINDS + ("none",):
+        if kind not in WAYFIRE_WINDOW_KINDS + OUR_WINDOW_KINDS + ("none",):
             fail(f'animation.{name}.kind is "{kind}"; it must be one of '
-                 f'{", ".join(WAYFIRE_WINDOW_KINDS)} or "none"')
+                 f'{", ".join(WAYFIRE_WINDOW_KINDS + OUR_WINDOW_KINDS)} or "none"')
         animate.append(f"{option} = {kind}")
         if kind == "none":
             continue
@@ -156,20 +158,26 @@ def animation_sections(theme):
         durations[kind] = duration
 
     for kind, duration in durations.items():
-        animate.append(f"{kind}_duration = {duration}")
+        if kind in OUR_WINDOW_KINDS:
+            plugins.append("themed-open-close")
+            sections.append(["[themed-open-close]", f"{kind}_duration = {duration}"])
+        else:
+            animate.append(f"{kind}_duration = {duration}")
 
     sections.append(resize_animation_section(animations))
     return sections, plugins
 
 
-def shorten_open_and_close(animate_section, duration_ms):
+def shorten_open_and_close(animation_sections, duration_ms):
     """Overrides the open/close duration ([window] quick_open_close_ms),
     keeping the theme's curve."""
-    for index, line in enumerate(animate_section):
-        name, _, value = line.partition(" = ")
-        if name in ("fade_duration", "zoom_duration"):
-            curve = value.partition(" ")[2]
-            animate_section[index] = f"{name} = {int(duration_ms)}ms {curve}"
+    durations = [f"{kind}_duration" for kind in WAYFIRE_WINDOW_KINDS + OUR_WINDOW_KINDS]
+    for section in animation_sections:
+        for index, line in enumerate(section):
+            name, _, value = line.partition(" = ")
+            if name in durations:
+                curve = value.partition(" ")[2]
+                section[index] = f"{name} = {int(duration_ms)}ms {curve}"
 
 
 def resize_animation_section(animations):
@@ -965,7 +973,7 @@ def main():
     animations, animation_plugins = animation_sections(theme)
     quick_open_close_ms = config.get("window", {}).get("quick_open_close_ms")
     if quick_open_close_ms is not None:
-        shorten_open_and_close(animations[0], quick_open_close_ms)
+        shorten_open_and_close(animations, quick_open_close_ms)
     sections += animations
     plugins += animation_plugins
 

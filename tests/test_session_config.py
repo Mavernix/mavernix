@@ -193,6 +193,24 @@ class TestThemes(SessionTestCase):
         self.assertEqual(json.loads(written.read_text())["theme"]["icons"]["theme"], "breeze")
 
 
+class TestWindowAnimations(SessionTestCase):
+    def test_pop_is_our_plugins_and_can_be_shortened(self):
+        sys.path[:0] = [self.folder.name, str(SESSION_SOURCE_DIR)]
+        try:
+            import make_wayfire_config
+        finally:
+            del sys.path[:2]
+        theme = {"animation": {"window_open": {"kind": "pop", "duration_ms": 200, "curve": "ease-out"}}}
+        sections, plugins = make_wayfire_config.animation_sections(theme)
+        self.assertIn("themed-open-close", plugins)
+        self.assertIn("open_animation = pop", sections[0])
+        self.assertIn(["[themed-open-close]", "pop_duration = 200ms circle"], sections)
+
+        # A desktop's [window] quick_open_close_ms keeps the curve.
+        make_wayfire_config.shorten_open_and_close(sections, 120)
+        self.assertIn(["[themed-open-close]", "pop_duration = 120ms circle"], sections)
+
+
 class TestScreenScale(SessionTestCase):
     def test_a_stretched_mode_is_less_dense(self):
         # A dense panel shown at half its width is drawn at once, not twice.

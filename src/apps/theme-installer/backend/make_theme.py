@@ -1729,9 +1729,9 @@ kind = "genie"
 duration_ms = 500
 
 [animation.window_open]
-kind = "zoom"
+kind = "pop"
 duration_ms = 200
-curve = "linear"
+curve = "ease-out"
 
 [animation.window_resize]
 kind = "blend"

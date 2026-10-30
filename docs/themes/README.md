@@ -213,7 +213,7 @@ curve = "ease-out"
 
 - `kind` picks the effect. `"none"` always works.
   - For `minimize`: `"genie"` (the window pours through a funnel into its place in the dock) or `"scale"` (it shrinks straight onto that place). That place is the window's tile in the dock. Both effects do their own easing, so `curve` isn't used.
-  - For `window_open` and `window_close`: `"fade"` or `"zoom"`, which are the compositor's own effects. If both use the same kind, they have to have the same timing.
+  - For `window_open` and `window_close`: `"fade"`, `"zoom"` (the compositor's own effects: zoom grows the window from a third of its size) or `"pop"` (the window grows from a little smaller as it fades in, as on OS X). If both use the same kind, they have to have the same timing.
   - For `window_resize`: `"blend"`. This is for a window that jumps to a new size in one go, like when it's made as large as the screen and back, or put on half of it. The window's old picture is stretched to the new size while the new one fades in over it. Without the table, the change is instant.
 - `curve` is one of `"linear"`, `"ease-in"`, `"ease-out"`, `"ease-in-out"`. The compositor has no real ease-in, so it uses ease-in-out instead.
 
