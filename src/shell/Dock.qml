@@ -113,9 +113,14 @@ PanelWindow {
         followDrag(screenX, screenY - (screen.height - height))
     }
 
+    // The dock's window spans the screen's width along its bottom edge.
+    function toScreenY(windowY) {
+        return screen.height - height + windowY
+    }
+
     function followDrag(windowX, windowY) {
         dragScreenX = windowX
-        dragScreenY = screen.height - height + windowY
+        dragScreenY = toScreenY(windowY)
 
         const dockTop = height - restingHeight
         draggedOut = windowY < dockTop - outDistanceInTiles * tileSize
@@ -1146,6 +1151,8 @@ PanelWindow {
             shellAction: custom?.shell ?? ""
             onShellActionWanted: action => dock.shell?.run(action)
             onMenuWanted: dock.openMenu(index)
+            onMenuDragged: (windowX, windowY) => placeMenu.markAt(windowX, dock.toScreenY(windowY))
+            onMenuReleased: (windowX, windowY) => placeMenu.chooseAt(windowX, dock.toScreenY(windowY))
             draggable: place.listedAs !== undefined
             lifted: dock.dragged !== null && place.listedAs !== undefined
                     && dock.entryText(place.listedAs) === dock.entryText(dock.dragged.listedAs)

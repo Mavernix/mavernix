@@ -174,6 +174,12 @@ Item {
     readonly property bool hovered: pointerOver && press.enabled
 
     signal menuWanted()
+    // A press held this long opens the menu too, as on a Mac (on 10.9, about
+    // half a second). The press may then drag to an item and let go to
+    // choose it; these report where, in window coordinates.
+    readonly property int holdForMenuMs: 500
+    signal menuDragged(real windowX, real windowY)
+    signal menuReleased(real windowX, real windowY)
 
     // While lifted, the dock draws the icon under the pointer instead. Moves
     // are reported through dragMoved; the dock detects the drag's end itself.
@@ -246,13 +252,35 @@ Item {
         property real pressedX: 0
         property real pressedY: 0
         property bool dragging: false
+        // The press was held until the menu opened.
+        property bool heldForMenu: false
 
+        pressAndHoldInterval: tile.holdForMenuMs
         onPressed: mouse => {
             pressedX = mouse.x
             pressedY = mouse.y
             dragging = false
+            heldForMenu = false
+        }
+        onPressAndHold: mouse => {
+            if (dragging || mouse.button !== Qt.LeftButton) {
+                return
+            }
+            heldForMenu = true
+            tile.menuWanted()
+        }
+        onReleased: mouse => {
+            if (heldForMenu) {
+                const point = mapToItem(null, mouse.x, mouse.y)
+                tile.menuReleased(point.x, point.y)
+            }
         }
         onPositionChanged: mouse => {
+            if (heldForMenu) {
+                const point = mapToItem(null, mouse.x, mouse.y)
+                tile.menuDragged(point.x, point.y)
+                return
+            }
             if (!tile.draggable || !(pressedButtons & Qt.LeftButton)) {
                 return
             }
@@ -265,8 +293,9 @@ Item {
         }
         onCanceled: dragging = false
         onClicked: mouse => {
-            if (dragging) {
+            if (dragging || heldForMenu) {
                 dragging = false
+                heldForMenu = false
                 return
             }
             if (mouse.button === Qt.RightButton) {
