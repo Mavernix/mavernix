@@ -4,7 +4,8 @@
 //
 // A menu opens at once and goes away as [animation.menu_close] says: a
 // chosen item blinks, then the menu fades. Whoever sets `open` keeps the
-// menu's items and place until it has faded (`visible` turns false then).
+// menu's place until it has faded (`visible` turns false then); the items
+// it shows stay as they were when it closed, whatever the choice changes.
 // While it fades, the pointer and keys already reach what is underneath.
 
 import QtQuick
@@ -20,6 +21,13 @@ PanelWindow {
     property bool open: false
 
     property var items: []
+    // What the box shows: the items, held still once the menu closes.
+    property var shownItems: []
+    onItemsChanged: {
+        if (open) {
+            shownItems = items
+        }
+    }
     property real menuX: 0
     property real menuY: 0
     // Whether the menu hangs from something along its whole top edge.
@@ -64,6 +72,7 @@ PanelWindow {
     onOpenChanged: {
         goingAway.stop()
         if (open) {
+            shownItems = items
             box.opacity = 1
             keys.forceActiveFocus()
         } else if (fades) {
@@ -87,6 +96,9 @@ PanelWindow {
         const hit = box.rowAt(x - box.x, y - box.y)
         if (hit !== null && hit.index >= 0 && hit.menu.canBeMarked(hit.index)) {
             hit.menu.markRow(hit.index)
+        } else {
+            // Off the items: nothing is marked, as nothing would be chosen.
+            box.innermost().hoveredIndex = -1
         }
     }
 
@@ -206,7 +218,7 @@ PanelWindow {
         settings: overlay.settings
         looks: overlay.looks
         pointerX: overlay.pointerScreenX >= 0 ? overlay.pointerScreenX - x : -1
-        items: overlay.items
+        items: overlay.shownItems
         x: Math.max(0, Math.min(overlay.menuX, overlay.width - width))
         y: overlay.menuY
         still: !overlay.open

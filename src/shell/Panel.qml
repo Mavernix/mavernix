@@ -227,9 +227,9 @@ PanelWindow {
 
     // A press on a title keeps the pointer until it is released, and may
     // drag on, as on a Mac: across the titles it opens theirs, and in the
-    // open menu it marks the item under it, which the release chooses.
-    // Points are in the panel window's coordinates.
-    // (A press that closed a menu drags nothing.)
+    // open menu it marks the item under it, which the release chooses. A
+    // press that closed a menu drags nothing. Points are in the panel
+    // window's coordinates.
     function dragTo(point) {
         if (openTitle === null) {
             return

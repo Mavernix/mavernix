@@ -153,6 +153,11 @@ Item {
     property point lastPointer: Qt.point(-1, -1)
     // A crossed item to mark once the pointer rests, -1 for none.
     property int waitingIndex: -1
+    onOpenSubmenuChanged: {
+        if (openSubmenu === null) {
+            lastPointer = Qt.point(-1, -1)
+        }
+    }
 
     function headsForSubmenu(point) {
         if (openSubmenu === null || lastPointer.x < 0) {
