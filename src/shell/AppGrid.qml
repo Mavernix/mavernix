@@ -106,9 +106,12 @@ PanelWindow {
             if (entry.noDisplay) {
                 continue
             }
-            const strength = wanted === "" ? 0 : ApplicationMatch.strength(entry, wanted)
-            if (wanted !== "" && strength === 0) {
-                continue
+            let strength = 0
+            if (wanted !== "") {
+                strength = ApplicationMatch.strength(entry, wanted)
+                if (strength === 0) {
+                    continue
+                }
             }
             list.push({ entry: entry, strength: strength })
         }
