@@ -254,7 +254,7 @@ Each of these is described on its part's page, but here's the full list. If you 
 duration_ms = 300
 curve = "ease-out"
 
-[animation.app_grid]          # overlays.md: "fade" or "none"
+[animation.app_grid]          # overlays.md: "fade", "zoom" or "none"
 kind = "fade"
 duration_ms = 200
 close_duration_ms = 150

@@ -36,8 +36,10 @@ PanelWindow {
     readonly property var dotLooks: looks.page_dots ?? ({})
     readonly property string themeDirectory: settings.theme_directory
 
-    // { kind: "none" | "fade", duration_ms, close_duration_ms }.
+    // { kind: "none" | "fade" | "zoom", duration_ms, close_duration_ms }.
     readonly property var motion: (theme.animation ?? ({})).app_grid ?? ({ kind: "none" })
+    // How large the icons are as a "zoom" begins and ends.
+    readonly property real zoomedOutScale: 1.1
     readonly property int openDuration: motion.kind === "none" ? 0 : (motion.duration_ms ?? 150)
     readonly property int closeDuration: motion.kind === "none" ? 0
                                          : (motion.close_duration_ms ?? openDuration)
@@ -295,226 +297,241 @@ PanelWindow {
             onWheel: wheel => grid.scrolled(wheel)
         }
 
-        // --- The icons ----------------------------------------------------
-
-        // Every application has its place on the strip, which is moved so
-        // that the shown page is on the screen.
+        // Everything but the backdrop: with "zoom", it settles into place
+        // from a little larger as it fades in, as Launchpad's icons do, and
+        // grows again as it fades out.
         Item {
-            id: strip
-            x: -Math.round(grid.stripPosition * content.width)
-            width: content.width
-            height: content.height
+            id: foreground
+            anchors.fill: parent
+            scale: grid.open || grid.motion.kind !== "zoom" ? 1 : grid.zoomedOutScale
+            Behavior on scale {
+                NumberAnimation {
+                    duration: grid.open ? grid.openDuration : grid.closeDuration
+                    easing.type: grid.open ? Easing.OutQuad : Easing.InQuad
+                }
+            }
 
-            Repeater {
-                id: cells
-                model: grid.applications
+            // --- The icons ----------------------------------------------------
 
-                Item {
-                    id: cell
+            // Every application has its place on the strip, which is moved so
+            // that the shown page is on the screen.
+            Item {
+                id: strip
+                x: -Math.round(grid.stripPosition * content.width)
+                width: content.width
+                height: content.height
 
-                    required property var modelData
-                    required property int index
+                Repeater {
+                    id: cells
+                    model: grid.applications
 
-                    readonly property int onPage: Math.floor(index / grid.perPage)
-                    readonly property int placeOnPage: index % grid.perPage
-                    readonly property int column: placeOnPage % grid.columns
-                    readonly property int row: Math.floor(placeOnPage / grid.columns)
-                    readonly property real iconSize: grid.looks.icon_size ?? 64
+                    Item {
+                        id: cell
 
-                    // Columns are spread evenly about the page's middle.
-                    width: grid.looks.column_pitch ?? 160
-                    height: grid.looks.row_pitch ?? 120
-                    x: onPage * content.width
-                       + Math.round(content.width / 2 + (column - grid.columns / 2) * width)
-                       + (grid.looks.columns_shift ?? 0)
-                    y: (grid.looks.first_row_top ?? 80) + row * height
-                    visible: Math.abs(onPage - grid.stripPosition) < 1
+                        required property var modelData
+                        required property int index
 
-                    Image {
-                        id: icon
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        width: cell.iconSize
-                        height: cell.iconSize
-                        sourceSize: Qt.size(width, height)
-                        source: grid.iconFor(cell.modelData)
-                        opacity: press.dragging ? 0.3 : (press.pressed ? 0.6 : 1)
-                    }
+                        readonly property int onPage: Math.floor(index / grid.perPage)
+                        readonly property int placeOnPage: index % grid.perPage
+                        readonly property int column: placeOnPage % grid.columns
+                        readonly property int row: Math.floor(placeOnPage / grid.columns)
+                        readonly property real iconSize: grid.looks.icon_size ?? 64
 
-                    Text {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        width: parent.width - 8
-                        horizontalAlignment: Text.AlignHCenter
-                        elide: Text.ElideRight
-                        // Placed by its baseline.
-                        y: (grid.looks.label_baseline ?? (cell.iconSize + 18)) - baselineOffset
-                        text: cell.modelData.name
-                        color: ThemeValues.color(grid.looks.label_color ?? "#ffffff")
-                        font.family: grid.theme.fonts.app_grid_label.family
-                        font.pixelSize: grid.theme.fonts.app_grid_label.size
-                        font.bold: grid.theme.fonts.app_grid_label.bold ?? false
-                        style: grid.looks.label_shadow_color !== undefined ? Text.Raised : Text.Normal
-                        styleColor: ThemeValues.color(grid.looks.label_shadow_color ?? "#00000000")
-                    }
+                        // Columns are spread evenly about the page's middle.
+                        width: grid.looks.column_pitch ?? 160
+                        height: grid.looks.row_pitch ?? 120
+                        x: onPage * content.width
+                           + Math.round(content.width / 2 + (column - grid.columns / 2) * width)
+                           + (grid.looks.columns_shift ?? 0)
+                        y: (grid.looks.first_row_top ?? 80) + row * height
+                        visible: Math.abs(onPage - grid.stripPosition) < 1
 
-                    MouseArea {
-                        id: press
-                        // The icon and its name, not the whole cell: between
-                        // icons a press means "close".
-                        acceptedButtons: Qt.LeftButton | Qt.RightButton
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        width: cell.iconSize + 24
-                        height: (grid.looks.label_baseline ?? (cell.iconSize + 18)) + 6
+                        Image {
+                            id: icon
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            width: cell.iconSize
+                            height: cell.iconSize
+                            sourceSize: Qt.size(width, height)
+                            source: grid.iconFor(cell.modelData)
+                            opacity: press.dragging ? 0.3 : (press.pressed ? 0.6 : 1)
+                        }
 
-                        readonly property real dragStartDistance: 8
-                        property real pressedX: 0
-                        property real pressedY: 0
-                        readonly property bool dragging: grid.draggedEntry === cell.modelData
-                        // The press that ended a drag is not a click.
-                        property bool wasDragged: false
+                        Text {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            width: parent.width - 8
+                            horizontalAlignment: Text.AlignHCenter
+                            elide: Text.ElideRight
+                            // Placed by its baseline.
+                            y: (grid.looks.label_baseline ?? (cell.iconSize + 18)) - baselineOffset
+                            text: cell.modelData.name
+                            color: ThemeValues.color(grid.looks.label_color ?? "#ffffff")
+                            font.family: grid.theme.fonts.app_grid_label.family
+                            font.pixelSize: grid.theme.fonts.app_grid_label.size
+                            font.bold: grid.theme.fonts.app_grid_label.bold ?? false
+                            style: grid.looks.label_shadow_color !== undefined ? Text.Raised : Text.Normal
+                            styleColor: ThemeValues.color(grid.looks.label_shadow_color ?? "#00000000")
+                        }
 
-                        onPressed: mouse => {
-                            pressedX = mouse.x
-                            pressedY = mouse.y
-                            wasDragged = false
-                            if (mouse.button === Qt.RightButton) {
+                        MouseArea {
+                            id: press
+                            // The icon and its name, not the whole cell: between
+                            // icons a press means "close".
+                            acceptedButtons: Qt.LeftButton | Qt.RightButton
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            width: cell.iconSize + 24
+                            height: (grid.looks.label_baseline ?? (cell.iconSize + 18)) + 6
+
+                            readonly property real dragStartDistance: 8
+                            property real pressedX: 0
+                            property real pressedY: 0
+                            readonly property bool dragging: grid.draggedEntry === cell.modelData
+                            // The press that ended a drag is not a click.
+                            property bool wasDragged: false
+
+                            onPressed: mouse => {
+                                pressedX = mouse.x
+                                pressedY = mouse.y
+                                wasDragged = false
+                                if (mouse.button === Qt.RightButton) {
+                                    const point = mapToItem(null, mouse.x, mouse.y)
+                                    grid.openMenu(cell.modelData, point.x, point.y)
+                                }
+                            }
+                            onPositionChanged: mouse => {
+                                if (!pressed) {
+                                    return
+                                }
+                                if (!dragging && Math.hypot(mouse.x - pressedX, mouse.y - pressedY) < dragStartDistance) {
+                                    return
+                                }
+                                grid.draggedEntry = cell.modelData
+                                wasDragged = true
+                                // The grid's window covers the screen, so a
+                                // place in it is a place on the screen.
                                 const point = mapToItem(null, mouse.x, mouse.y)
-                                grid.openMenu(cell.modelData, point.x, point.y)
+                                grid.dragMoved(cell.modelData, icon.source, point.x, point.y)
+                            }
+                            onReleased: {
+                                if (dragging) {
+                                    grid.draggedEntry = null
+                                    grid.dragEnded()
+                                }
+                            }
+                            onCanceled: {
+                                if (dragging) {
+                                    grid.draggedEntry = null
+                                    grid.dragGivenUp()
+                                }
+                            }
+                            onClicked: mouse => {
+                                if (wasDragged || mouse.button === Qt.RightButton) {
+                                    return
+                                }
+                                cell.modelData.execute()
+                                grid.close()
                             }
                         }
-                        onPositionChanged: mouse => {
-                            if (!pressed) {
-                                return
-                            }
-                            if (!dragging && Math.hypot(mouse.x - pressedX, mouse.y - pressedY) < dragStartDistance) {
-                                return
-                            }
-                            grid.draggedEntry = cell.modelData
-                            wasDragged = true
-                            // The grid's window covers the screen, so a
-                            // place in it is a place on the screen.
-                            const point = mapToItem(null, mouse.x, mouse.y)
-                            grid.dragMoved(cell.modelData, icon.source, point.x, point.y)
-                        }
-                        onReleased: {
-                            if (dragging) {
-                                grid.draggedEntry = null
-                                grid.dragEnded()
-                            }
-                        }
-                        onCanceled: {
-                            if (dragging) {
-                                grid.draggedEntry = null
-                                grid.dragGivenUp()
-                            }
-                        }
-                        onClicked: mouse => {
-                            if (wasDragged || mouse.button === Qt.RightButton) {
-                                return
-                            }
-                            cell.modelData.execute()
+                    }
+                }
+            }
+
+            // --- The search field ---------------------------------------------
+
+            Item {
+                id: searchBox
+                width: grid.searchLooks.width ?? 240
+                height: grid.searchLooks.height ?? 28
+                x: Math.round((content.width - width) / 2)
+                y: grid.searchLooks.top ?? 24
+
+                Fill {
+                    anchors.fill: parent
+                    fill: grid.searchLooks.background ?? ({ color: "#00000040", radius: 6 })
+                    themeDirectory: grid.themeDirectory
+                }
+                Image {
+                    readonly property var inset: grid.searchLooks.icon_inset ?? [8, 6]
+                    visible: grid.searchLooks.icon !== undefined
+                    x: inset[0]
+                    y: inset[1]
+                    source: grid.searchLooks.icon !== undefined
+                        ? "file://" + grid.themeDirectory + "/" + grid.searchLooks.icon : ""
+                }
+                TextInput {
+                    id: searchField
+                    x: grid.searchLooks.text_left ?? 10
+                    width: parent.width - x - 10
+                    anchors.verticalCenter: parent.verticalCenter
+                    clip: true
+                    focus: true
+                    color: ThemeValues.color(grid.searchLooks.text_color ?? "#ffffff")
+                    font.family: grid.theme.fonts.interface.family
+                    font.pixelSize: grid.theme.fonts.interface.size
+                    onTextChanged: grid.jumpToPage(0)
+
+                    // The field has the keyboard for as long as the grid is
+                    // up, so the grid's own keys are handled here.
+                    Keys.onEscapePressed: {
+                        if (text !== "") {
+                            text = ""
+                        } else {
                             grid.close()
                         }
                     }
-                }
-            }
-        }
-
-        // --- The search field ---------------------------------------------
-
-        Item {
-            id: searchBox
-            width: grid.searchLooks.width ?? 240
-            height: grid.searchLooks.height ?? 28
-            x: Math.round((content.width - width) / 2)
-            y: grid.searchLooks.top ?? 24
-
-            Fill {
-                anchors.fill: parent
-                fill: grid.searchLooks.background ?? ({ color: "#00000040", radius: 6 })
-                themeDirectory: grid.themeDirectory
-            }
-            Image {
-                readonly property var inset: grid.searchLooks.icon_inset ?? [8, 6]
-                visible: grid.searchLooks.icon !== undefined
-                x: inset[0]
-                y: inset[1]
-                source: grid.searchLooks.icon !== undefined
-                    ? "file://" + grid.themeDirectory + "/" + grid.searchLooks.icon : ""
-            }
-            TextInput {
-                id: searchField
-                x: grid.searchLooks.text_left ?? 10
-                width: parent.width - x - 10
-                anchors.verticalCenter: parent.verticalCenter
-                clip: true
-                focus: true
-                color: ThemeValues.color(grid.searchLooks.text_color ?? "#ffffff")
-                font.family: grid.theme.fonts.interface.family
-                font.pixelSize: grid.theme.fonts.interface.size
-                onTextChanged: grid.jumpToPage(0)
-
-                // The field has the keyboard for as long as the grid is
-                // up, so the grid's own keys are handled here.
-                Keys.onEscapePressed: {
-                    if (text !== "") {
-                        text = ""
-                    } else {
-                        grid.close()
+                    // Return starts the only application left.
+                    onAccepted: {
+                        if (grid.applications.length === 1) {
+                            grid.applications[0].execute()
+                            grid.close()
+                        }
+                    }
+                    Keys.onPressed: event => {
+                        // With text typed, the arrow keys move in the text.
+                        if (text !== "") {
+                            return
+                        }
+                        if (event.key === Qt.Key_Left) {
+                            grid.turnPage(-1)
+                            event.accepted = true
+                        } else if (event.key === Qt.Key_Right) {
+                            grid.turnPage(1)
+                            event.accepted = true
+                        }
                     }
                 }
-                // Return starts the only application left.
-                onAccepted: {
-                    if (grid.applications.length === 1) {
-                        grid.applications[0].execute()
-                        grid.close()
-                    }
-                }
-                Keys.onPressed: event => {
-                    // With text typed, the arrow keys move in the text.
-                    if (text !== "") {
-                        return
-                    }
-                    if (event.key === Qt.Key_Left) {
-                        grid.turnPage(-1)
-                        event.accepted = true
-                    } else if (event.key === Qt.Key_Right) {
-                        grid.turnPage(1)
-                        event.accepted = true
-                    }
+                // Keeps a press in the field from closing the grid.
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: searchField.forceActiveFocus()
                 }
             }
-            // Keeps a press in the field from closing the grid.
-            MouseArea {
-                anchors.fill: parent
-                onClicked: searchField.forceActiveFocus()
-            }
-        }
 
-        // --- The page dots --------------------------------------------------
+            // --- The page dots --------------------------------------------------
 
-        Row {
-            visible: grid.pageCount > 1
-            readonly property real dotSize: grid.dotLooks.size ?? 8
-            spacing: (grid.dotLooks.pitch ?? 16) - dotSize
-            x: Math.round((content.width - width) / 2)
-            y: content.height - (grid.dotLooks.center_above_bottom ?? 40) - dotSize / 2
+            Row {
+                visible: grid.pageCount > 1
+                readonly property real dotSize: grid.dotLooks.size ?? 8
+                spacing: (grid.dotLooks.pitch ?? 16) - dotSize
+                x: Math.round((content.width - width) / 2)
+                y: content.height - (grid.dotLooks.center_above_bottom ?? 40) - dotSize / 2
 
-            Repeater {
-                model: grid.pageCount
+                Repeater {
+                    model: grid.pageCount
 
-                Rectangle {
-                    required property int index
-                    width: parent.dotSize
-                    height: parent.dotSize
-                    radius: width / 2
-                    color: ThemeValues.color(index === grid.page
-                        ? (grid.dotLooks.color ?? "#ffffff")
-                        : (grid.dotLooks.other_color ?? "#ffffff50"))
+                    Rectangle {
+                        required property int index
+                        width: parent.dotSize
+                        height: parent.dotSize
+                        radius: width / 2
+                        color: ThemeValues.color(index === grid.page
+                            ? (grid.dotLooks.color ?? "#ffffff")
+                            : (grid.dotLooks.other_color ?? "#ffffff50"))
 
-                    MouseArea {
-                        anchors.fill: parent
-                        anchors.margins: -4
-                        onClicked: grid.slideToPage(parent.index)
+                        MouseArea {
+                            anchors.fill: parent
+                            anchors.margins: -4
+                            onClicked: grid.slideToPage(parent.index)
+                        }
                     }
                 }
             }

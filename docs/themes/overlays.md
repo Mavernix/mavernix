@@ -179,7 +179,7 @@ color = "#ffffff8c"
 
 ## Application grid
 
-A grid of all installed applications that covers the screen. The names use `[fonts].app_grid_label` and the search field's text uses `[fonts].interface`. `[animation.app_grid]` sets how the grid comes and goes: `kind` "fade" or "none", `duration_ms`, and optionally `close_duration_ms` if closing should take a different time than opening.
+A grid of all installed applications that covers the screen. The names use `[fonts].app_grid_label` and the search field's text uses `[fonts].interface`. `[animation.app_grid]` sets how the grid comes and goes: `kind` "fade", "zoom" (it fades too, while the icons settle into place from a little larger, and grow again as they go) or "none", `duration_ms`, and optionally `close_duration_ms` if closing should take a different time than opening.
 
 The pages sit side by side in a strip that follows a swipe on a touchpad or a drag. `[animation.app_grid_page]` sets how the strip settles on a page after a swipe, or after you turn the page with a key, the wheel or a dot (`kind` "slide" or "none", `duration_ms`, `curve`).
 

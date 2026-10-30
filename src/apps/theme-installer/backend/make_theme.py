@@ -1757,7 +1757,7 @@ duration_ms = 240
 curve = "ease-in-out"
 
 [animation.app_grid]
-kind = "fade"
+kind = "zoom"
 duration_ms = 150
 close_duration_ms = 220
 

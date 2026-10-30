@@ -240,6 +240,14 @@ key = "curve"
 was = "linear"
 now = "ease-out"
 
+# The application grid's icons settle into place from a little larger, as
+# Launchpad's do.
+[[update.corrections]]
+table = "animation.app_grid"
+key = "kind"
+was = "fade"
+now = "zoom"
+
 # The list of notifications opens as Notification Center does: the desktop
 # slides aside and uncovers it.
 [[update.corrections]]
