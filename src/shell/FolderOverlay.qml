@@ -85,7 +85,10 @@ PanelWindow {
     // Cover panels and docks too, so that positions in this window are
     // positions on the screen.
     exclusionMode: ExclusionMode.Ignore
-    WlrLayershell.layer: WlrLayer.Overlay
+    // Waiting empty, on the top layer, which the compositor leaves out under
+    // a fullscreen window (a film, a game) instead of drawing it over every
+    // frame.
+    WlrLayershell.layer: showing ? WlrLayer.Overlay : WlrLayer.Top
     // The keys, while open, as a menu takes them.
     WlrLayershell.keyboardFocus: open ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     color: "transparent"

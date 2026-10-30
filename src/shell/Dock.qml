@@ -1450,6 +1450,15 @@ PanelWindow {
         anchorY: lastAnchorY
         dockThickness: dock.restingHeight
 
+        // Once its window is let go, the folder's entries are too, so that a
+        // folder that changes often (Downloads) is not read again and laid
+        // out unseen at every change. Not while a folder's list menu shows.
+        onVisibleChanged: {
+            if (!visible && dock.menuIndex < 0) {
+                folders.listedFolder = null
+            }
+        }
+
         onFileChosen: path => {
             dock.closeFolder()
             folders.openEntry(folders.listedFolder, path)
