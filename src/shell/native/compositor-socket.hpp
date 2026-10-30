@@ -24,13 +24,14 @@ class CompositorSocket : public QObject
     // before the caller listens for `connected`.
     void open();
     bool isConnected() const;
+    bool isConnecting() const;
 
     // An answer that is a list arrives as an object with the field "list".
     void request(const QString& method, const QJsonObject& data, AnswerHandler onAnswer);
 
   signals:
     void connected();
-    // Only for events asked for with `window-rules/events/watch`.
+    // Only for events asked for, such as with `window-rules/events/watch`.
     void eventReceived(const QJsonObject& event);
 
   private:

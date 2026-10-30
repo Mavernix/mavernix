@@ -38,6 +38,11 @@ bool CompositorSocket::isConnected() const
     return socket.state() == QLocalSocket::ConnectedState;
 }
 
+bool CompositorSocket::isConnecting() const
+{
+    return socket.state() == QLocalSocket::ConnectingState;
+}
+
 void CompositorSocket::request(const QString& method, const QJsonObject& data, AnswerHandler onAnswer)
 {
     if (!isConnected())

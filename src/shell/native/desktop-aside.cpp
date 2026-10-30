@@ -33,10 +33,10 @@ void DesktopAside::move(const QString& screenName, int by, int durationMs, const
         return;
     }
 
+    // Connected on the first move, and again if the connection was lost.
     waitingMove = question;
-    if (!opened)
+    if (!compositor.isConnecting())
     {
-        opened = true;
         compositor.open();
     }
 }

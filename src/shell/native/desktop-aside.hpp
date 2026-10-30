@@ -35,7 +35,6 @@ class DesktopAside : public QObject
     void send(const QJsonObject& question);
 
     CompositorSocket compositor;
-    bool opened = false;
     // The latest move asked for while the connection was being made.
     QJsonObject waitingMove;
 };

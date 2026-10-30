@@ -155,8 +155,9 @@ class screen_t : public wf::per_output_plugin_instance_t
             // Whole points, so that text stays sharp.
             shift->set_offset({std::round(offset), 0});
         }
-        // Wayfire only works out what is visible after a geometry change; a
-        // window thought hidden would stay unpainted. One update for all.
+        // Wayfire only works out what is visible, and what is under the
+        // pointer, after a geometry change; a window thought hidden would
+        // stay unpainted. One update for all.
         wf::scene::update(wf::get_core().scene(), wf::scene::update_flag::GEOMETRY);
         output->render->damage_whole();
     }
@@ -175,9 +176,6 @@ class screen_t : public wf::per_output_plugin_instance_t
         }
 
         stop_sliding();
-        // What is under the pointer has moved; the pointer is told once,
-        // when the desktop stops.
-        wf::scene::update(wf::get_core().scene(), wf::scene::update_flag::INPUT_STATE);
         if (end_offset == 0)
         {
             come_home_soon.run_once([=]() { come_home(); });
