@@ -3,6 +3,7 @@
 ## 0.5.3 (2026-10-30)
 
 - Dock & Menu Bar has a Show seconds box for the clock.
+- Right-click the dock's divider to add Applications, Home, Desktop, Documents, Downloads, Pictures or Music to the dock.
 - The app grid (Launchpad in Sea Lion) is in the app grid and search like a program. Drag it onto the dock to put its tile back after taking it out. Log out and back in once after updating.
 - Taking a second screenshot during the first one's flash no longer flickers.
 
