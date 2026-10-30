@@ -141,6 +141,64 @@ Item {
         }
     }
 
+    // --- Heading for a submenu --------------------------------------------------
+    //
+    // On its way from an item to that item's submenu, the pointer often
+    // crosses other items. As on a Mac, the submenu stays open while the
+    // pointer heads for it: while it moves within the triangle between
+    // where it just was and the submenu's near edge. An item crossed that
+    // way is marked only once the pointer rests on it for a moment.
+
+    // The pointer's last place on the rows, in this menu's coordinates.
+    property point lastPointer: Qt.point(-1, -1)
+    // A crossed item to mark once the pointer rests, -1 for none.
+    property int waitingIndex: -1
+
+    function headsForSubmenu(point) {
+        if (openSubmenu === null || lastPointer.x < 0) {
+            return false
+        }
+        const edgeX = openSubmenu.x < 0 ? openSubmenu.x + openSubmenu.width : openSubmenu.x
+        const corners = [lastPointer, Qt.point(edgeX, openSubmenu.y),
+                         Qt.point(edgeX, openSubmenu.y + openSubmenu.height)]
+        // Inside when the point is on the same side of all three edges.
+        let sides = 0
+        for (let index = 0; index < 3; index++) {
+            const from = corners[index]
+            const to = corners[(index + 1) % 3]
+            const cross = (to.x - from.x) * (point.y - from.y) - (to.y - from.y) * (point.x - from.x)
+            sides += Math.sign(cross)
+        }
+        return Math.abs(sides) === 3
+    }
+
+    // Marks the item under the pointer, opening its submenu if it has one.
+    function markRow(index) {
+        waitingIndex = -1
+        if (hoveredIndex === index) {
+            return
+        }
+        hoveredIndex = index
+        const item = items[index]
+        if (item.children.length > 0 && item.enabled) {
+            submenuWanted(item.id)
+            submenuIndex = index
+        } else {
+            submenuIndex = -1
+        }
+    }
+
+    // The pointer rested on a crossed item.
+    Timer {
+        id: restingOnCrossed
+        interval: 250
+        onTriggered: {
+            if (menu.waitingIndex >= 0) {
+                menu.markRow(menu.waitingIndex)
+            }
+        }
+    }
+
     // The widest row decides the menu's width.
     property real widestRow: 0
     function measureRows() {
@@ -437,21 +495,30 @@ Item {
                         onWheel: wheel => { wheel.accepted = false }
                         // Follows pointer movement, not presence, so a menu opening under a
                         // resting pointer does not light an item.
-                        onPositionChanged: {
-                            if (menu.still || menu.hoveredIndex === row.index) {
+                        onPositionChanged: mouse => {
+                            if (menu.still) {
                                 return
                             }
-                            menu.hoveredIndex = row.index
-                            if (row.hasSubmenu && row.modelData.enabled) {
-                                menu.submenuWanted(row.modelData.id)
-                                menu.submenuIndex = row.index
+                            const point = mapToItem(menu, mouse.x, mouse.y)
+                            const crossing = menu.submenuIndex >= 0 && menu.submenuIndex !== row.index
+                                             && menu.headsForSubmenu(point)
+                            menu.lastPointer = point
+                            if (crossing) {
+                                menu.waitingIndex = row.index
+                                restingOnCrossed.restart()
                             } else {
-                                menu.submenuIndex = -1
+                                menu.markRow(row.index)
                             }
                         }
                         onExited: {
-                            if (!menu.still && menu.hoveredIndex === row.index) {
+                            if (menu.still) {
+                                return
+                            }
+                            if (menu.hoveredIndex === row.index) {
                                 menu.hoveredIndex = -1
+                            }
+                            if (menu.waitingIndex === row.index) {
+                                menu.waitingIndex = -1
                             }
                         }
                         onClicked: {
