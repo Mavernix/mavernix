@@ -105,10 +105,29 @@ PanelWindow {
         followDrag(windowX, windowY)
     }
 
+    // The application grid's own entry (mavernix-app-grid, written by the
+    // session's configure-desktop) is kept as the dock's app grid tile, which
+    // opens the grid in place: the desktop's own tile if its config has one,
+    // the way to put it back once it was taken out.
+    readonly property string appGridEntry: "mavernix-app-grid"
+    function asShellTile(listedAs) {
+        if (listedAs !== appGridEntry) {
+            return listedAs
+        }
+        for (const group of config.groups ?? []) {
+            for (const place of group) {
+                if (typeof place === "object" && place.shell === "app_grid") {
+                    return place
+                }
+            }
+        }
+        return { name: "App Grid", icon: "view-app-grid", shell: "app_grid" }
+    }
+
     // Something dragged in from elsewhere, such as a program from the application grid.
     function dragFromOutside(listedAs, iconSource, screenX, screenY) {
         if (dragged === null) {
-            dragged = { listedAs: listedAs, iconSource: iconSource, fromOutside: true }
+            dragged = { listedAs: asShellTile(listedAs), iconSource: iconSource, fromOutside: true }
         }
         followDrag(screenX, screenY - (screen.height - height))
     }
@@ -1308,10 +1327,17 @@ PanelWindow {
     // For the application grid's menu: whether a program is kept in the dock,
     // and keeping or letting it go.
     function keeps(id) {
+        if (id === appGridEntry) {
+            return keptGroups.some(group => group.some(kept => kept?.shell === "app_grid"))
+        }
         return keptGroups.some(group => group.some(kept => entryText(kept) === entryText(id)))
     }
     function setKept(id, kept) {
-        choices.set("dock", "groups", kept ? groupsWith(id) : groupsWithout(id))
+        if (id === appGridEntry && !kept) {
+            choices.set("dock", "groups", keptGroups.map(group => group.filter(place => place?.shell !== "app_grid")))
+            return
+        }
+        choices.set("dock", "groups", kept ? groupsWith(asShellTile(id)) : groupsWithout(id))
     }
 
     function groupsWithout(listedAs) {

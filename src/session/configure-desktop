@@ -161,7 +161,35 @@ write_program_entries() {
         "application/x-apple-diskimage;application/x-iso9660-image;application/x-cd-image;" "%f"
     write_program_entry about "About This Computer" computer "System;"
     write_program_entry app-store "App Store" system-software-install "Settings;PackageManager;"
+    write_app_grid_entry
     write_mime_cache "$state_dir/share/applications"
+}
+
+# The application grid as a program, as Launchpad is one on OS X: in the grid,
+# the programs folder and search, and dragged onto the dock it becomes the
+# dock's app grid tile again (Dock.qml, asShellTile). Named and pictured as
+# the desktop's own tile, unless [app_grid] name or icon says otherwise.
+write_app_grid_entry() {
+    local entry="$state_dir/share/applications/mavernix-app-grid.desktop"
+    local tile
+    tile=$(python3 -c "
+import json, sys
+config = json.load(open(sys.argv[1])).get('config', {})
+tiles = [place for group in config.get('dock', {}).get('groups', []) for place in group
+         if isinstance(place, dict) and place.get('shell') == 'app_grid']
+tile = tiles[0] if tiles else {}
+own = config.get('app_grid', {})
+print(own.get('name') or tile.get('name') or 'App Grid')
+print(own.get('icon') or tile.get('icon') or 'view-app-grid')" "$shell_settings")
+    mkdir -p "$(dirname "$entry")"
+    {
+        echo "[Desktop Entry]"
+        echo "Type=Application"
+        echo "Name=$(sed -n 1p <<< "$tile")"
+        echo "Exec=qs -p $shell_dir ipc call shell run app_grid"
+        echo "Icon=$(sed -n 2p <<< "$tile")"
+        echo "Categories=System;"
+    } > "$entry"
 }
 
 # GLib takes which program opens a kind of file from a folder's
