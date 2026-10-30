@@ -39,6 +39,8 @@ desktop_entry = "share/applications/bandstand.desktop"
 
 The store unpacks the bundle into `~/.local/share/mavernix/apps/NAME/bundle/`. It copies the desktop entry to `~/.local/share/applications/`, pointing its `Exec` at `command` and its `Icon` at the listing's icon. That puts the app in the app grid. Name the entry after the app's window: the dock recognises windows by it (`QGuiApplication::setDesktopFileName` in a Qt app).
 
+To have the title bar run on into your toolbar, as the store's does, add `X-Mavernix-JoinedToolBar=true` to the desktop entry. Your toolbar then has to carry on the title bar's look itself.
+
 A bundle has to run wherever it lands, so:
 
 - **The program finds its files next to itself**, not at a fixed path: QML, helpers and the like relative to where the program is (`QCoreApplication::applicationDirPath()`).

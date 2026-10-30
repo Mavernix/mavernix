@@ -14,12 +14,41 @@ extern "C"
 #include <wlr/types/wlr_xdg_decoration_v1.h>
 }
 
+#include <cstdlib>
+#include <fstream>
+#include <sstream>
+
 #include "deco-subsurface.hpp"
 #include "wayfire/core.hpp"
 #include "wayfire/plugin.hpp"
 #include "wayfire/signal-provider.hpp"
 #include "wayfire/toplevel-view.hpp"
 #include "wayfire/toplevel.hpp"
+
+// An app can ask for a joined tool bar itself, in its desktop entry.
+static bool app_asks_to_join(const std::string& app_id)
+{
+    const char *home = std::getenv("HOME");
+    const char *data_dirs = std::getenv("XDG_DATA_DIRS");
+    std::stringstream dirs(std::string(home ? home : "") + "/.local/share:" +
+        (data_dirs ? data_dirs : "/usr/local/share:/usr/share"));
+
+    std::string dir;
+    while (std::getline(dirs, dir, ':'))
+    {
+        std::ifstream entry(dir + "/applications/" + app_id + ".desktop");
+        std::string line;
+        while (std::getline(entry, line))
+        {
+            if (line == "X-Mavernix-JoinedToolBar=true")
+            {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
 
 class wayfire_decoration : public wf::plugin_interface_t
 {
@@ -197,7 +226,8 @@ class wayfire_decoration : public wf::plugin_interface_t
     {
         auto toplevel = view->toplevel();
 
-        toplevel->store_data(std::make_unique<wf::simple_decorator_t>(view, joined_views.matches(view)));
+        toplevel->store_data(std::make_unique<wf::simple_decorator_t>(view,
+            joined_views.matches(view) || app_asks_to_join(view->get_app_id())));
         auto deco     = toplevel->get_data<wf::simple_decorator_t>();
         auto& pending = toplevel->pending();
         pending.margins = deco->get_margins(pending);
