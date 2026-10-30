@@ -295,6 +295,14 @@ class plugin_t : public wf::per_output_plugin_t<screen_t>
             return;
         }
 
+        // Most presses come while every desktop is at home; they cost a glance.
+        const bool any_aside = std::any_of(output_instance.begin(), output_instance.end(),
+            [](const auto& entry) { return entry.second->mover != nullptr; });
+        if (!any_aside)
+        {
+            return;
+        }
+
         const auto under = wf::get_core().scene()->find_node_at(wf::get_core().get_cursor_position());
         if (!under.has_value())
         {
