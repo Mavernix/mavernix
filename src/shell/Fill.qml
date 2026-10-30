@@ -87,10 +87,12 @@ Item {
         id: coverPicture
         anchors.fill: parent
         visible: root.coversArea
-        source: root.coversArea ? root.imageAddress : ""
-        fillMode: Image.PreserveAspectCrop
         // A wallpaper file can be far larger than the screen; decode it at
         // the size it is shown at instead of holding all of it in memory.
+        // Not before there is a size: a size of 0 means the file's own, and a
+        // window not yet shown (the app grid, the lock screen) has none.
+        source: root.coversArea && width > 0 && height > 0 ? root.imageAddress : ""
+        fillMode: Image.PreserveAspectCrop
         sourceSize.width: width
         sourceSize.height: height
         asynchronous: true
