@@ -15,7 +15,7 @@ One rule keeps these apart: you should be able to make a different desktop with 
 | Folder | What it is | Language |
 |---|---|---|
 | `src/session/` | starts the desktop: turns a config and its theme into settings for the compositor and the shell, sets up the environment, then runs Wayfire | shell scripts, Python |
-| `src/compositor/` | Wayfire plugins: window frames drawn from the theme, the minimise effects and the pop of opening windows, pictures of single windows for the dock, touchpad gestures, keys that tile windows, shared edges between tiled windows, parts of the shell that stay put while desktops slide, sliding the desktop aside for the list of notifications, recording a shortcut | C++ |
+| `src/compositor/` | Wayfire plugins: window frames drawn from the theme, the minimise effects and the pop of opening windows, pictures of single windows for the dock, touchpad gestures, keys that tile windows, shared edges between tiled windows, parts of the shell that stay put while desktops slide, sliding the desktop aside for the list of notifications, windows asking for attention, recording a shortcut | C++ |
 | `src/shell/` | the panel, dock, desktop icons, menus, notifications, app grid, window overview, search, lock screen | QML, run by Quickshell |
 | `src/shell/native/` | a QML module for things QML can't do: application menus over D-Bus, file kinds, icons, folder watching, the compositor's socket | C++ |
 | `src/apps/settings/` | the settings window | C++, Qt Widgets |

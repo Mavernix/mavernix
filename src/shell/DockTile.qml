@@ -93,6 +93,15 @@ Item {
 
     // Until the first window appears or bounce.longest_ms has passed.
     property bool launching: false
+    // Set by the dock while a window of this program asks for attention:
+    // the icon bounces as for a launch, as a Mac's Dock does, until the
+    // program no longer asks.
+    property bool wantsAttention: false
+    onWantsAttentionChanged: {
+        if (wantsAttention && !bounceAnimation.running) {
+            bounceAnimation.start()
+        }
+    }
     onRunningChanged: {
         if (running) {
             launching = false
@@ -105,7 +114,8 @@ Item {
         onTriggered: tile.launching = false
     }
 
-    // One bounce is a parabola, repeated while launching and always finished.
+    // One bounce is a parabola, repeated while launching or asking for
+    // attention, and always finished.
     SequentialAnimation {
         id: bounceAnimation
         // [factor, offset] of the tile's size.
@@ -126,7 +136,7 @@ Item {
             easing.type: Easing.InQuad
         }
         onFinished: {
-            if (tile.launching) {
+            if (tile.launching || tile.wantsAttention) {
                 bounceAnimation.start()
             }
         }

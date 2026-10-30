@@ -45,6 +45,7 @@ BASE_PLUGINS = [
     "screen-modes",
     "desktop-focus",
     "desktop-aside",
+    "window-attention",
 ]
 
 

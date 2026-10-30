@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="window-attention">
+		<_short>Window Attention</_short>
+		<_long>Tells programs that ask through the control socket (method "window-attention/watch") when a window asks for the user's attention, so a dock can bounce its program's icon. Only X11 programs can ask, through their urgency hint.</_long>
+		<category>Utility</category>
+	</plugin>
+</wayfire>

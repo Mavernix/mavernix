@@ -19,6 +19,7 @@
 #include "menu-registrar.hpp"
 #include "session-watch.hpp"
 #include "sound-pack.hpp"
+#include "window-attention.hpp"
 #include "window-picture-provider.hpp"
 #include "window-pictures.hpp"
 
@@ -41,6 +42,7 @@ void ShellNativePlugin::registerTypes(const char* uri)
     qmlRegisterType<MenuRegistrar>(uri, major_version, minor_version, "MenuRegistrar");
     qmlRegisterType<SessionWatch>(uri, major_version, minor_version, "SessionWatch");
     qmlRegisterType<SoundPack>(uri, major_version, minor_version, "SoundPack");
+    qmlRegisterType<WindowAttention>(uri, major_version, minor_version, "WindowAttention");
     qmlRegisterType<WindowPictures>(uri, major_version, minor_version, "WindowPictures");
 }
 

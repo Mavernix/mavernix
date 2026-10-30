@@ -105,7 +105,7 @@ pointer_height = 6
 gap = 28                  # from the tile's top up to the pointer's tip
 fade_out_ms = 167         # it appears instantly and fades away
 
-[dock.launch_bounce]      # while an application starts, its icon bounces up and falls back
+[dock.launch_bounce]      # while an application starts, or one of its windows asks for attention, its icon bounces up and falls back
 half_period_ms = 350      # time up, and time down
 height = [0.2, 4.4]       # of the tile's size
 longest_ms = 120000       # give up after this

@@ -1151,6 +1151,9 @@ PanelWindow {
             shellAction: custom?.shell ?? ""
             onShellActionWanted: action => dock.shell?.run(action)
             onMenuWanted: dock.openMenu(index)
+            // Not once the user has turned to it, whether or not it says so.
+            wantsAttention: windows.some(window => attention.appIds.includes(window.appId))
+                            && !windows.some(window => window.activated)
             onMenuDragged: (windowX, windowY) => placeMenu.markAt(windowX, dock.toScreenY(windowY))
             onMenuReleased: (windowX, windowY) => placeMenu.chooseAt(windowX, dock.toScreenY(windowY))
             draggable: place.listedAs !== undefined
@@ -1182,6 +1185,11 @@ PanelWindow {
             height: width
             y: dock.fromBottom(dock.base + lift, height)
         }
+    }
+
+    // Programs whose windows ask for the user's attention bounce (DockTile).
+    WindowAttention {
+        id: attention
     }
 
     // --- The menu of a place ------------------------------------------------------
