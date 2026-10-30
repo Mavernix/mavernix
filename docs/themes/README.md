@@ -279,7 +279,7 @@ kind = "fade"
 duration_ms = 130
 blink_ms = 60
 
-[animation.notification_list] # overlays.md: "slide" or "none"
+[animation.notification_list] # overlays.md: "slide", "push" or "none"
 kind = "slide"
 duration_ms = 250
 curve = "ease-out"

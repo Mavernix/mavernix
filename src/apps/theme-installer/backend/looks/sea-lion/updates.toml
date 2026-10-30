@@ -225,3 +225,11 @@ revision = 5
 kind = "fade"
 duration_ms = 130
 blink_ms = 60
+
+# The list of notifications opens as Notification Center does: the desktop
+# slides aside and uncovers it.
+[[update.corrections]]
+table = "animation.notification_list"
+key = "kind"
+was = "slide"
+now = "push"

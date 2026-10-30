@@ -65,7 +65,11 @@ How long a banner stays is behaviour, so it's in the desktop config (`[notificat
 
 ## The list of past notifications
 
-Once a banner has gone, its notification lands in a list. That's a panel at the screen's far side, sorted program by program. Its fonts are `[fonts].notification_list` (titles, in bold, and texts), `notification_list_heading` (the heading and the programs' names) and `notification_list_time`. `[animation.notification_list]` sets how it slides in (`kind` "slide" or "none", `duration_ms`, `curve`).
+Once a banner has gone, its notification lands in a list. That's a panel at the screen's far side, sorted program by program. Its fonts are `[fonts].notification_list` (titles, in bold, and texts), `notification_list_heading` (the heading and the programs' names) and `notification_list_time`. `[animation.notification_list]` sets how it comes in (`kind`, `duration_ms`, `curve`):
+
+- `"slide"`: the list slides in over the desktop.
+- `"push"`: the list lies still at the screen's edge, and the desktop (its picture, icons and windows) slides aside to uncover it, while the panel and dock stay where they are. The list's `edge_shadow` runs along the desktop's edge as it goes. This needs the compositor's `desktop-aside` plugin, which the session loads.
+- `"none"`: it's there at once.
 
 ```toml
 [notifications.list]

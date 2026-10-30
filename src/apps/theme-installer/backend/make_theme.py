@@ -1262,8 +1262,9 @@ entry_bottom_padding = 6
 divider_color = "#00000040"
 empty_text_top = 289
 
+# As on 10.9, the desktop slides aside and uncovers the list.
 [animation.notification_list]
-kind = "slide"
+kind = "push"
 duration_ms = 265
 curve = "ease-in-out"
 

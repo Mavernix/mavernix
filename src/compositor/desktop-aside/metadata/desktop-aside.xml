@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="desktop-aside">
+		<_short>Desktop Aside</_short>
+		<_long>Slides a screen's desktop picture, icons and windows sideways when asked through the control socket (method "desktop-aside/move"), uncovering what lies under them, while the menu bar and dock stay put. The shell uses it to open its list of notifications the way OS X 10.9 opens its Notification Center.</_long>
+		<category>Utility</category>
+	</plugin>
+</wayfire>

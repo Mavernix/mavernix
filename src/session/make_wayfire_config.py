@@ -44,6 +44,7 @@ BASE_PLUGINS = [
     "shortcut-capture",
     "screen-modes",
     "desktop-focus",
+    "desktop-aside",
 ]
 
 
