@@ -98,7 +98,7 @@ Item {
     // program no longer asks.
     property bool wantsAttention: false
     onWantsAttentionChanged: {
-        if (wantsAttention && !bounceAnimation.running) {
+        if (wantsAttention) {
             bounceAnimation.start()
         }
     }

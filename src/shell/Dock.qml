@@ -1151,9 +1151,9 @@ PanelWindow {
             shellAction: custom?.shell ?? ""
             onShellActionWanted: action => dock.shell?.run(action)
             onMenuWanted: dock.openMenu(index)
-            // Not once the user has turned to it, whether or not it says so.
-            wantsAttention: windows.some(window => attention.appIds.includes(window.appId))
-                            && !windows.some(window => window.activated)
+            // The tile of a minimised window shows that window, not the program.
+            wantsAttention: minimizedWindow === null
+                            && windows.some(window => attention.asks(window.appId, attention.revision))
             onMenuDragged: (windowX, windowY) => placeMenu.markAt(windowX, dock.toScreenY(windowY))
             onMenuReleased: (windowX, windowY) => placeMenu.chooseAt(windowX, dock.toScreenY(windowY))
             draggable: place.listedAs !== undefined
@@ -1187,9 +1187,19 @@ PanelWindow {
         }
     }
 
-    // Programs whose windows ask for the user's attention bounce (DockTile).
+    // Programs whose windows ask for the user's attention bounce (DockTile),
+    // until the user turns to them.
     WindowAttention {
         id: attention
+    }
+    Connections {
+        target: ToplevelManager
+        function onActiveToplevelChanged() {
+            const appId = ToplevelManager.activeToplevel?.appId ?? ""
+            if (appId !== "") {
+                attention.answered(appId)
+            }
+        }
     }
 
     // --- The menu of a place ------------------------------------------------------

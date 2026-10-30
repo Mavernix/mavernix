@@ -1,23 +1,27 @@
 #include "window-attention.hpp"
 
+#include <QDebug>
+
 WindowAttention::WindowAttention(QObject* parent) : QObject(parent)
 {
     connect(&compositor, &CompositorSocket::connected, this, [this] {
-        compositor.request("window-attention/watch", {}, [](const QJsonObject&) {});
+        compositor.request("window-attention/watch", {}, [](const QJsonObject& answer) {
+            if (answer.contains("error"))
+            {
+                qWarning().noquote() << "Shell.Native: windows asking for attention go unseen:"
+                                     << answer.value("error").toString()
+                                     << "(is the compositor's \"window-attention\" plugin loaded?)";
+            }
+        });
     });
+    // The compositor tells only of changes: a window starting or stopping to ask.
     connect(&compositor, &CompositorSocket::eventReceived, this, [this](const QJsonObject& event) {
         if (event.value("event").toString() != "window-attention")
         {
             return;
         }
         const qint64 id = event.value("id").toInteger();
-        const bool wants = event.value("wants").toBool();
-        // Hints change for other reasons too; only a change in asking counts.
-        if (wants == asking.contains(id))
-        {
-            return;
-        }
-        if (wants)
+        if (event.value("wants").toBool())
         {
             asking.insert(id, event.value("app-id").toString());
         }
@@ -25,14 +29,34 @@ WindowAttention::WindowAttention(QObject* parent) : QObject(parent)
         {
             asking.remove(id);
         }
+        changes += 1;
         emit changed();
     });
     compositor.open();
 }
 
-QStringList WindowAttention::appIds() const
+bool WindowAttention::asks(const QString& appId, int) const
 {
-    QStringList app_ids = asking.values();
-    app_ids.removeDuplicates();
-    return app_ids;
+    for (const QString& asking_app : asking)
+    {
+        if (asking_app == appId)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+void WindowAttention::answered(const QString& appId)
+{
+    if (asking.removeIf([&appId](auto entry) { return entry.value() == appId; }) > 0)
+    {
+        changes += 1;
+        emit changed();
+    }
+}
+
+int WindowAttention::revision() const
+{
+    return changes;
 }
