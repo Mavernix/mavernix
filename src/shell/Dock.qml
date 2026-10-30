@@ -851,6 +851,21 @@ PanelWindow {
     readonly property bool pointerInside: pointer.hovered
     readonly property real pointerX: pointer.point.scenePosition.x
 
+    // What a tile opens is got ready only once the pointer rests on it, not
+    // as the pointer passes over it: getting the application grid or a
+    // folder's window ready holds up the dock's frames, which showed as
+    // magnification stuttering past Launchpad and folders.
+    Timer {
+        id: pointerRests
+        interval: 100
+        onTriggered: {
+            if (dock.labelledTile?.hovered ?? false) {
+                dock.labelledTile.getReady()
+            }
+        }
+    }
+    onPointerXChanged: pointerRests.restart()
+
     // While a menu is open the pointer's place is held (heldPointer, -1 for none),
     // so an enlarged icon does not shrink away from under its menu.
     property real heldPointer: -1
@@ -1182,17 +1197,21 @@ PanelWindow {
                              && dock.pointerX >= x && dock.pointerX < x + width)
 
             // The last tile pointed at keeps the label while it fades out.
-            // One that runs a shell action lets the shell get ready for it,
-            // and a folder shown as a grid or fan gets its window made.
             onHoveredChanged: {
                 if (hovered) {
                     dock.labelledTile = this
-                    if (shellAction !== "") {
-                        dock.shell?.prepare(shellAction)
-                    }
-                    if (opensFolder && folders.viewOf(custom) !== "list") {
-                        folderOverlay.warmUp()
-                    }
+                }
+            }
+
+            // Once the pointer rests on it (pointerRests), a tile that runs a
+            // shell action lets the shell get ready for it, and a folder
+            // shown as a grid or fan gets its window made.
+            function getReady() {
+                if (shellAction !== "") {
+                    dock.shell?.prepare(shellAction)
+                }
+                if (opensFolder && folders.viewOf(custom) !== "list") {
+                    folderOverlay.warmUp()
                 }
             }
 

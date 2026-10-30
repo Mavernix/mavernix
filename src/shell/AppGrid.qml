@@ -100,13 +100,19 @@ PanelWindow {
     // away, and for a minute after, so that opening it again soon is at
     // once. warmUp() wakes it ahead of time, when the pointer comes to rest
     // on what opens it. Asleep, it holds none of it.
-    readonly property bool awake: showing || staysAwake.running
+    readonly property bool awake: showing || keptAwake
+    // Not the timer's `running`: restarting a running timer stops it first,
+    // which put the grid to sleep and woke it again, its window and all, at
+    // every pass of the pointer.
+    property bool keptAwake: false
     function warmUp() {
+        keptAwake = true
         staysAwake.restart()
     }
     Timer {
         id: staysAwake
         interval: 60000
+        onTriggered: grid.keptAwake = false
     }
 
     anchors {
@@ -604,7 +610,7 @@ PanelWindow {
         if (open) {
             searchField.forceActiveFocus()
         } else {
-            staysAwake.restart()
+            warmUp()
         }
     }
 

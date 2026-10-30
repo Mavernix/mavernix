@@ -44,7 +44,7 @@ PanelWindow {
         if (open) {
             grid.reset()
         } else {
-            staysMade.restart()
+            warmUp()
         }
     }
     Behavior on shown {
@@ -58,13 +58,19 @@ PanelWindow {
     // with the window already made). warmUp() makes it ahead of time, when
     // the pointer comes to rest on a folder.
     readonly property bool showing: open || shown > 0
-    visible: showing || staysMade.running
+    visible: showing || keptMade
+    // Not the timer's `running`: restarting a running timer stops it first,
+    // which took the window down and made it anew at every pass of the
+    // pointer.
+    property bool keptMade: false
     function warmUp() {
+        keptMade = true
         staysMade.restart()
     }
     Timer {
         id: staysMade
         interval: 60000
+        onTriggered: overlay.keptMade = false
     }
     mask: Region {
         item: overlay.showing ? pressesOutside : null
