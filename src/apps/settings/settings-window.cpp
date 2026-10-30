@@ -3,6 +3,10 @@
 #include <QIcon>
 #include <QLineEdit>
 #include <QEvent>
+#include <QMenu>
+#include <QMenuBar>
+#include <QPainter>
+#include <QPixmap>
 #include <QStackedWidget>
 #include <QTimer>
 #include <QTabWidget>
@@ -10,6 +14,7 @@
 #include <QToolButton>
 #include <QVBoxLayout>
 
+#include <algorithm>
 #include <cstdio>
 
 #include "bluetooth-pane.hpp"
@@ -33,6 +38,22 @@
 #include "trackpad-pane.hpp"
 #include "toolkits-pane.hpp"
 #include "windows-pane.hpp"
+
+// A small magnifying glass in one colour, for the search field: icon themes'
+// own are often large and coloured.
+static QIcon magnifyingGlass(const QColor& colour)
+{
+    const int side = 16;
+    QPixmap glass(side, side);
+    glass.fill(Qt::transparent);
+    QPainter painter(&glass);
+    painter.setRenderHint(QPainter::Antialiasing);
+    painter.setPen(QPen(colour, 1.5, Qt::SolidLine, Qt::RoundCap));
+    // The lens, upper left, and the handle down to the lower right.
+    painter.drawEllipse(QRectF(3.5, 3.5, 7, 7));
+    painter.drawLine(QPointF(9.5, 9.5), QPointF(12.5, 12.5));
+    return QIcon(glass);
+}
 
 // Each known pane's theme icon, and the title used when the config gives none.
 struct KnownPane
@@ -80,6 +101,16 @@ SettingsWindow::SettingsWindow(Choices& choices) : choices(choices)
     tool_bar->setMovable(false);
     tool_bar->setContextMenuPolicy(Qt::PreventContextMenu);
 
+    // Room between the window's sides and the controls at its ends, as on a
+    // Mac (the style adds a little of its own).
+    const auto add_end_room = [tool_bar]() {
+        const int end_room_px = 6;
+        auto* room = new QWidget;
+        room->setFixedWidth(end_room_px);
+        tool_bar->addWidget(room);
+    };
+    add_end_room();
+
     back_button = new QToolButton;
     back_button->setArrowType(Qt::LeftArrow);
     forward_button = new QToolButton;
@@ -109,12 +140,22 @@ SettingsWindow::SettingsWindow(Choices& choices) : choices(choices)
     spring->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     tool_bar->addWidget(spring);
 
+    // Round at the ends with a magnifying glass, as a search field in a
+    // Mac's tool bar is, in the colours the style gives any text field.
     search = new QLineEdit;
     search->setPlaceholderText(words.value(QStringLiteral("search"), QStringLiteral("Search")).toString());
     search->setClearButtonEnabled(true);
-    const int search_width = 160;
-    search->setFixedWidth(search_width);
+    search->addAction(magnifyingGlass(search->palette().color(QPalette::PlaceholderText)),
+        QLineEdit::LeadingPosition);
+    const int search_width = 164;
+    const int search_height = 22;
+    search->setFixedSize(search_width, search_height);
+    search->setStyleSheet(QStringLiteral(
+        "QLineEdit { background: palette(base); color: palette(text);"
+        " border: 1px solid palette(mid); border-radius: %1px; padding: 0 2px; }"
+        "QLineEdit:focus { border-color: palette(highlight); }").arg(search_height / 2));
     tool_bar->addWidget(search);
+    add_end_room();
 
     pages = new QStackedWidget;
     setCentralWidget(pages);
@@ -210,9 +251,49 @@ SettingsWindow::SettingsWindow(Choices& choices) : choices(choices)
     delete placeholder;
     pages->insertWidget(0, overview);
 
+    makeMenus(words);
+
     // Not resizable by hand: it takes each page's own height.
     setFixedWidth(overview->sizeHint().width());
     showOverview();
+}
+
+// In the desktop's menu bar, as a Mac's System Preferences has them: View
+// moves about (back and forward, the overview, the search field, and every
+// pane by name), Window minimises and closes.
+void SettingsWindow::makeMenus(const QVariantMap& words)
+{
+    const auto word = [&words](const char* key, const char* fallback) {
+        return words.value(QLatin1String(key), QString::fromUtf8(fallback)).toString();
+    };
+
+    QMenu* view = menuBar()->addMenu(word("menu_view", "View"));
+    back_action = view->addAction(word("menu_back", "Back"), QKeySequence(Qt::CTRL | Qt::Key_BracketLeft), this,
+        [this]() { stepInHistory(-1); });
+    forward_action = view->addAction(word("menu_forward", "Forward"),
+        QKeySequence(Qt::CTRL | Qt::Key_BracketRight), this, [this]() { stepInHistory(1); });
+    view->addAction(word("menu_show_all", "Show All"), QKeySequence(Qt::CTRL | Qt::Key_L), this,
+        &SettingsWindow::showOverview);
+    view->addAction(word("menu_search", "Search"), QKeySequence::Find, this, [this]() {
+        search->setFocus();
+        search->selectAll();
+    });
+    view->addSeparator();
+    QStringList names = pane_titles.keys();
+    std::sort(names.begin(), names.end(), [this](const QString& first, const QString& second) {
+        return pane_titles.value(first).localeAwareCompare(pane_titles.value(second)) < 0;
+    });
+    for (const QString& name : names)
+    {
+        // "&" would mark a shortcut letter, as in "Dock & Menu Bar".
+        const QString title = QString(pane_titles.value(name)).replace(QLatin1Char('&'), QStringLiteral("&&"));
+        view->addAction(title, this, [this, name]() { showPane(name); });
+    }
+
+    QMenu* window = menuBar()->addMenu(word("menu_window", "Window"));
+    window->addAction(word("menu_minimize", "Minimize"), QKeySequence(Qt::CTRL | Qt::Key_M), this,
+        &QWidget::showMinimized);
+    window->addAction(word("menu_close", "Close"), QKeySequence::Close, this, &QWidget::close);
 }
 
 QWidget* SettingsWindow::makePane(const QString& name)
@@ -360,6 +441,8 @@ void SettingsWindow::showPlace()
     }
     back_button->setEnabled(history_place > 0);
     forward_button->setEnabled(history_place + 1 < history.size());
+    back_action->setEnabled(back_button->isEnabled());
+    forward_action->setEnabled(forward_button->isEnabled());
 
     // The window takes the page's height: every page but the one shown
     // gives up its claim to room, else the highest page would decide.

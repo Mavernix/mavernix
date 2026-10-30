@@ -1,6 +1,7 @@
 // The settings window: an overview of the panes (overview.hpp) and one pane
-// at a time, with back and forward and a search field. The config's
-// [settings] panes and [settings.words] say which panes there are.
+// at a time, with back and forward and a search field, and the View and
+// Window menus a Mac's System Preferences has. The config's [settings] panes
+// and [settings.words] say which panes there are.
 
 #pragma once
 
@@ -8,9 +9,11 @@
 #include <QMap>
 #include <QString>
 #include <QStringList>
+#include <QVariantMap>
 
 class Choices;
 class Overview;
+class QAction;
 class QLineEdit;
 class QStackedWidget;
 class QToolButton;
@@ -36,6 +39,7 @@ class SettingsWindow : public QMainWindow
     // Null for a name this program does not know.
     QWidget* makePane(const QString& name);
     QWidget* makeKeyboardPane();
+    void makeMenus(const QVariantMap& words);
 
     Choices& choices;
     QString program_name;
@@ -52,6 +56,8 @@ class SettingsWindow : public QMainWindow
     Overview* overview = nullptr;
     QToolButton* back_button = nullptr;
     QToolButton* forward_button = nullptr;
+    QAction* back_action = nullptr;
+    QAction* forward_action = nullptr;
     QLineEdit* search = nullptr;
     QStringList history;
     int history_place = -1;
