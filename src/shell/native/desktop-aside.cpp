@@ -10,7 +10,13 @@ DesktopAside::DesktopAside(QObject* parent) : QObject(parent)
             emit pressed(event.value("output").toString());
         }
     });
-    compositor.open();
+    connect(&compositor, &CompositorSocket::connected, this, [this] {
+        if (!waitingMove.isEmpty())
+        {
+            send(waitingMove);
+            waitingMove = {};
+        }
+    });
 }
 
 void DesktopAside::move(const QString& screenName, int by, int durationMs, const QString& curve)
@@ -21,6 +27,22 @@ void DesktopAside::move(const QString& screenName, int by, int durationMs, const
         {"duration_ms", durationMs},
         {"curve", curve},
     };
+    if (compositor.isConnected())
+    {
+        send(question);
+        return;
+    }
+
+    waitingMove = question;
+    if (!opened)
+    {
+        opened = true;
+        compositor.open();
+    }
+}
+
+void DesktopAside::send(const QJsonObject& question)
+{
     compositor.request("desktop-aside/move", question, [](const QJsonObject& answer) {
         if (answer.contains("error"))
         {

@@ -119,7 +119,8 @@ PanelWindow {
     // edge uncovers a list that stays put.
     Item {
         id: shownPart
-        x: (1 - list.shown) * list.width
+        // Whole points, as the desktop moves, so no seam opens between them.
+        x: Math.round((1 - list.shown) * list.width)
         width: list.width - x
         height: parent.height
         clip: list.pushes

@@ -2,7 +2,9 @@
 // back, through the compositor's "desktop-aside" plugin; the menu bar, the
 // dock and whatever is uncovered stay put. The plugin brings the desktop
 // home by itself if the shell goes away. A press on the desktop while it is
-// aside reaches no window; `pressed` tells of it instead.
+// aside reaches no window; `pressed` tells of it instead. The connection to
+// the compositor is opened by the first move, so a shell that never moves
+// the desktop has none.
 //
 // Usage in QML:
 //   DesktopAside { id: aside; onPressed: screenName => ... }
@@ -30,5 +32,10 @@ class DesktopAside : public QObject
     void pressed(const QString& screenName);
 
   private:
+    void send(const QJsonObject& question);
+
     CompositorSocket compositor;
+    bool opened = false;
+    // The latest move asked for while the connection was being made.
+    QJsonObject waitingMove;
 };

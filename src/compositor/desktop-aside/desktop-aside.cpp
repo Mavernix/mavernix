@@ -12,10 +12,11 @@
 // so a move can turn one around halfway. If the program that moved the
 // desktop goes away, the desktop comes home at once.
 //
-// A press on the desktop while it is aside goes no further. The program that
-// moved it gets the event "desktop-aside-pressed" (with the output's name)
-// instead, so that it can bring the desktop home, as a click beside
-// Notification Center does.
+// A press of a pointer button on the desktop while it is aside goes no
+// further. The program that moved it gets the event "desktop-aside-pressed"
+// (with the output's name) instead, so that it can bring the desktop home,
+// as a click beside Notification Center does. (Touches and scrolling still
+// reach the windows.)
 //
 // While the desktop is aside, each of its layers' nodes for the screen sits
 // inside a translation node: an offset added at drawing time and to pointer
@@ -74,19 +75,21 @@ static double along_curve(const std::string& curve, double t)
     return (t < 0.5) ? 2 * t * t : 1 - 2 * (1 - t) * (1 - t);
 }
 
-/** Puts `replacement` in `node`'s place among its parent's children. */
-static void replace_child(wf::scene::node_ptr node, wf::scene::node_ptr replacement)
+/** Puts `replacement` in `node`'s place among its parent's children, and
+ *  returns that parent; null, and nothing changed, if there is none that
+ *  takes it. Leaves telling the scene of the change to the caller. */
+static wf::scene::node_ptr replace_child(wf::scene::node_ptr node, wf::scene::node_ptr replacement)
 {
     auto parent = dynamic_cast<wf::scene::floating_inner_node_t*>(node->parent());
     if (parent == nullptr)
     {
-        return;
+        return nullptr;
     }
 
     auto children = parent->get_children();
     std::replace(children.begin(), children.end(), node, replacement);
     parent->set_children_list(children);
-    wf::scene::update(parent->shared_from_this(), wf::scene::update_flag::CHILDREN_LIST);
+    return parent->shared_from_this();
 }
 
 class screen_t : public wf::per_output_plugin_instance_t
@@ -113,9 +116,14 @@ class screen_t : public wf::per_output_plugin_instance_t
         {
             auto layer_node = output->node_for_layer(layer);
             auto shift = std::make_shared<wf::scene::translation_node_t>();
-            replace_child(layer_node, shift);
+            auto parent = replace_child(layer_node, shift);
+            if (!parent)
+            {
+                continue;
+            }
+            // Once the layer's node is out of its parent, it can go in here.
             shift->set_children_list({layer_node});
-            wf::scene::update(shift, wf::scene::update_flag::CHILDREN_LIST);
+            wf::scene::update(parent, wf::scene::update_flag::CHILDREN_LIST);
             shifts.push_back(shift);
         }
     }
@@ -131,9 +139,9 @@ class screen_t : public wf::per_output_plugin_instance_t
             if (children.empty())
             {
                 wf::scene::remove_child(shift);
-            } else
+            } else if (auto parent = replace_child(shift, children.front()))
             {
-                replace_child(shift, children.front());
+                wf::scene::update(parent, wf::scene::update_flag::CHILDREN_LIST);
             }
         }
         shifts.clear();
@@ -146,10 +154,10 @@ class screen_t : public wf::per_output_plugin_instance_t
         {
             // Whole points, so that text stays sharp.
             shift->set_offset({std::round(offset), 0});
-            // Wayfire only works out what is visible after a geometry
-            // change; a window thought hidden would stay unpainted.
-            wf::scene::update(shift, wf::scene::update_flag::GEOMETRY);
         }
+        // Wayfire only works out what is visible after a geometry change; a
+        // window thought hidden would stay unpainted. One update for all.
+        wf::scene::update(wf::get_core().scene(), wf::scene::update_flag::GEOMETRY);
         output->render->damage_whole();
     }
 
@@ -167,6 +175,9 @@ class screen_t : public wf::per_output_plugin_instance_t
         }
 
         stop_sliding();
+        // What is under the pointer has moved; the pointer is told once,
+        // when the desktop stops.
+        wf::scene::update(wf::get_core().scene(), wf::scene::update_flag::INPUT_STATE);
         if (end_offset == 0)
         {
             come_home_soon.run_once([=]() { come_home(); });
