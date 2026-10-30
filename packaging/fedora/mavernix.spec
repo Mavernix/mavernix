@@ -3,7 +3,7 @@
 %global wayfire_version 0.11.0
 
 Name:           mavernix
-Version:        0.5.3
+Version:        0.5.4
 Release:        1%{?dist}
 Summary:        A lightweight Wayland desktop session with a classic look
 

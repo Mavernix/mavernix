@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.4 (2026-10-30)
+
+- An app can have its title bar run on into its toolbar, as the App Store's does, by adding `X-Mavernix-JoinedToolBar=true` to its desktop entry.
+
 ## 0.5.3 (2026-10-30)
 
 - Dock & Menu Bar has a Show seconds box for the clock.
