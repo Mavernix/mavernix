@@ -158,6 +158,17 @@ PanelWindow {
     // The PanelTitle whose menu is open, or null.
     property var openTitle: null
 
+    // The title whose menu is showing: the open one, or the last one while
+    // its menu fades out. It stays lit until then, as the menu bar's titles
+    // do on a Mac.
+    property var shownTitle: null
+    onOpenTitleChanged: {
+        if (openTitle !== null) {
+            shownTitle = openTitle
+        }
+    }
+    readonly property bool menuShowing: titleMenu.visible
+
     // A menu belongs to the window active when it opened; close it when that changes.
     Connections {
         target: ToplevelManager
@@ -223,13 +234,14 @@ PanelWindow {
     }
 
     MenuOverlay {
+        id: titleMenu
         screen: panel.screen
         settings: panel.settings
-        visible: panel.openTitle !== null
-        items: panel.openTitle?.menuItems ?? []
+        open: panel.openTitle !== null
+        items: panel.shownTitle?.menuItems ?? []
 
         // Hangs from the panel's inner edge, aligned with the title's box.
-        menuX: panel.openTitle ? panel.openTitle.mapToItem(null, 0, 0).x - panel.openTitle.boxOverhang : 0
+        menuX: panel.shownTitle ? panel.shownTitle.mapToItem(null, 0, 0).x - panel.shownTitle.boxOverhang : 0
         menuY: panel.atBottom ? screen.height - panel.height - menuHeight : panel.height
         squareTop: !panel.atBottom
 

@@ -72,7 +72,7 @@ PanelWindow {
             draggedEntry = null
             dragGivenUp()
         }
-        programMenu.visible = false
+        programMenu.open = false
         open = false
     }
 
@@ -549,17 +549,16 @@ PanelWindow {
                          separator: false, checkable: true, checked: dock.keeps(entry.id), shortcut: [], children: [] })
         }
         programMenu.items = items
-        programMenu.visible = true
+        programMenu.open = true
     }
 
     MenuOverlay {
         id: programMenu
         screen: grid.screen
         settings: grid.settings
-        visible: false
-        onDismissed: visible = false
+        onDismissed: open = false
         onChosen: id => {
-            visible = false
+            open = false
             const entry = grid.menuEntry
             if (entry === null) {
                 return

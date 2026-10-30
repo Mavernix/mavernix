@@ -209,3 +209,12 @@ back_forward_separator = { color = "#1e1e1e" }
 back_forward_separator_width = 1
 back_forward_separator_inset = [1, 1]
 search_field = { color = "#2b2b2b", radius = 11, border = { color = "#1e1e1e", width = 1 } }
+
+[[update]]
+revision = 5
+
+# Menus blink the chosen item and fade out as they close.
+[update.settings."animation.menu_close"]
+kind = "fade"
+duration_ms = 130
+blink_ms = 60

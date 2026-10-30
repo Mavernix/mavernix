@@ -1,15 +1,23 @@
 // The full-screen, transparent window open menus live in; a press outside
 // the menu closes it. One rectangle (`passX` and so on, the panel) is left
 // out, so the panel's titles can still switch menus while one is open.
+//
+// A menu opens at once and goes away as [animation.menu_close] says: a
+// chosen item blinks, then the menu fades. Whoever sets `open` keeps the
+// menu's items and place until it has faded (`visible` turns false then).
+// While it fades, the pointer and keys already reach what is underneath.
 
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
+import "ThemeValues.js" as ThemeValues
 
 PanelWindow {
     id: overlay
 
     required property var settings
+
+    property bool open: false
 
     property var items: []
     property real menuX: 0
@@ -40,6 +48,62 @@ PanelWindow {
     // Arrow keys past the menu's ends ask for its neighbour (-1 or 1).
     signal neighbourWanted(int direction)
 
+    // --- Going away ---------------------------------------------------------------
+
+    // { kind: "fade" | "none", duration_ms, curve, blink_ms }
+    readonly property var closeMotion: (settings.theme.animation ?? ({})).menu_close ?? ({ kind: "none" })
+    readonly property bool fades: closeMotion.kind === "fade"
+
+    // Set between a choice and the menu's closing, so the closing blinks.
+    property bool justChosen: false
+    // The menu whose chosen item is blinking.
+    property var blinkingMenu: null
+
+    visible: open || goingAway.running
+
+    onOpenChanged: {
+        goingAway.stop()
+        if (open) {
+            box.opacity = 1
+            keys.forceActiveFocus()
+        } else if (fades) {
+            if (justChosen && (closeMotion.blink_ms ?? 0) > 0) {
+                blinkingMenu = box.innermost()
+                blinkingMenu.blinking = true
+            }
+            goingAway.start()
+        }
+        justChosen = false
+    }
+
+    SequentialAnimation {
+        id: goingAway
+        // Without a blinking menu the pause is skipped.
+        PauseAnimation {
+            duration: overlay.blinkingMenu !== null ? overlay.closeMotion.blink_ms : 0
+        }
+        ScriptAction {
+            script: overlay.stopBlinking()
+        }
+        NumberAnimation {
+            target: box
+            property: "opacity"
+            to: 0
+            duration: overlay.closeMotion.duration_ms ?? 150
+            easing.type: ThemeValues.easing(overlay.closeMotion.curve ?? "linear")
+        }
+        // Stopped early, by opening again or by going away, it must not
+        // leave a blink behind.
+        onStopped: overlay.stopBlinking()
+    }
+
+    function stopBlinking() {
+        if (blinkingMenu !== null) {
+            blinkingMenu.blinking = false
+            blinkingMenu = null
+        }
+    }
+
     anchors {
         left: true
         right: true
@@ -49,11 +113,12 @@ PanelWindow {
     // Cover panels too, so that window positions are screen positions.
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.keyboardFocus: visible ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+    WlrLayershell.keyboardFocus: open ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     color: "transparent"
 
+    // Nothing while the menu fades, so a press goes straight through.
     mask: Region {
-        item: everything
+        item: overlay.open ? everything : null
 
         Region {
             x: overlay.passX
@@ -111,12 +176,6 @@ PanelWindow {
             onTriggered: keys.typed = ""
         }
     }
-    onVisibleChanged: {
-        if (visible) {
-            keys.forceActiveFocus()
-        }
-    }
-
     MenuBox {
         id: box
         settings: overlay.settings
@@ -125,11 +184,17 @@ PanelWindow {
         items: overlay.items
         x: Math.max(0, Math.min(overlay.menuX, overlay.width - width))
         y: overlay.menuY
+        still: !overlay.open
         squareTopLeft: overlay.squareTop
         squareTopRight: overlay.squareTop
         mostHeight: overlay.mostMenuHeight
         startsAtEnd: overlay.startsAtEnd
-        onChosen: id => overlay.chosen(id)
+        onChosen: id => {
+            overlay.justChosen = true
+            overlay.chosen(id)
+            // Not closed by the choice after all (a checkable item, say).
+            overlay.justChosen = false
+        }
         onSubmenuWanted: id => overlay.submenuWanted(id)
         onSlid: (id, value) => overlay.slid(id, value)
     }

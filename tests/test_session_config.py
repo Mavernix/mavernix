@@ -309,10 +309,11 @@ class TestRefreshDesktops(SessionTestCase):
         self.assertEqual(refresh_desktops.refresh(looks, configs), [])
 
 
-class TestSeaLionAppStoreUpdates(unittest.TestCase):
-    """Sea Lion's updates.toml carries the App Store's table to themes imported
-    before it existed. It's a copy of what an import writes, so it must stay
-    the same as make_theme's, and Sea Lion Dark's must have the same keys."""
+class TestSeaLionUpdates(unittest.TestCase):
+    """Sea Lion's updates.toml carries tables to themes imported before they
+    existed: the App Store's and the menus' fade. Each is a copy of what an
+    import writes, so it must stay the same as make_theme's, and Sea Lion
+    Dark's App Store table must have the same keys."""
 
     def setUp(self):
         sys.path.insert(0, str(LOOKS_DIR.parent))
@@ -331,6 +332,11 @@ class TestSeaLionAppStoreUpdates(unittest.TestCase):
         self.assertEqual(self.updates[3]["themes"], ["sea-lion-dark"])
         self.assertEqual(self.updates[3]["settings"]["app_store"].keys(), self.updates[2]["settings"]["app_store"].keys())
         self.assertEqual(self.updates[3]["settings"]["fonts"], self.updates[2]["settings"]["fonts"])
+
+    def test_older_themes_get_the_imports_menu_fade(self):
+        made = tomllib.loads(self.make_theme.MENU_CLOSE_TABLE)
+        self.assertNotIn("themes", self.updates[5])
+        self.assertEqual(self.updates[5]["settings"]["animation.menu_close"], made["animation"]["menu_close"])
 
 
 class TestThemeUpdates(unittest.TestCase):

@@ -147,6 +147,15 @@ back_forward_separator_width = 1
 back_forward_separator_inset = [1, 1]
 search_field = { color = "#ffffff", radius = 11, border = { color = "#9a9a9a", width = 1 } }
 """
+
+# How menus go away, measured on 10.9: a chosen item blinks once, then the
+# menu fades; a menu closed by a press elsewhere or by Escape just fades.
+# updates.toml carries it to themes imported before menus faded.
+MENU_CLOSE_TABLE = """[animation.menu_close]
+kind = "fade"
+duration_ms = 130
+blink_ms = 60
+"""
 TITLE_FONT_SIZE = 13
 
 
@@ -1373,6 +1382,7 @@ Right = "\u2192"
 Down = "\u2193"
 Backspace = "\u232b"
 
+{MENU_CLOSE_TABLE}
 [dock]
 icon_size = {DOCK_ICON_SIZE}
 compact_icon_size = {DOCK_COMPACT_ICON_SIZE}

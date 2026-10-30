@@ -274,6 +274,11 @@ kind = "rise"
 duration_ms = 200
 close_duration_ms = 150
 
+[animation.menu_close]        # menus-and-dialogs.md: "fade" or "none"
+kind = "fade"
+duration_ms = 130
+blink_ms = 60
+
 [animation.notification_list] # overlays.md: "slide" or "none"
 kind = "slide"
 duration_ms = 250

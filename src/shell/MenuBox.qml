@@ -51,6 +51,12 @@ Item {
     property int hoveredIndex: -1
     property int submenuIndex: -1
 
+    // While the menu goes away (MenuOverlay.qml), it stays as it was: the
+    // pointer no longer moves the mark, and `blinking` turns the marked
+    // item's highlight off for the blink of a chosen item.
+    property bool still: false
+    property bool blinking: false
+
     onItemsChanged: {
         hoveredIndex = -1
         submenuIndex = -1
@@ -263,7 +269,7 @@ Item {
                     readonly property bool isSeparator: modelData.separator
                     readonly property bool hasSubmenu: modelData.children.length > 0
                     readonly property bool selected:
-                        !isSeparator && modelData.enabled
+                        !isSeparator && modelData.enabled && !menu.blinking
                         && (menu.hoveredIndex === index || menu.submenuIndex === index)
 
                     // The text inset, the label, and a shortcut or submenu arrow after a gap.
@@ -432,7 +438,7 @@ Item {
                         // Follows pointer movement, not presence, so a menu opening under a
                         // resting pointer does not light an item.
                         onPositionChanged: {
-                            if (menu.hoveredIndex === row.index) {
+                            if (menu.still || menu.hoveredIndex === row.index) {
                                 return
                             }
                             menu.hoveredIndex = row.index
@@ -444,7 +450,7 @@ Item {
                             }
                         }
                         onExited: {
-                            if (menu.hoveredIndex === row.index) {
+                            if (!menu.still && menu.hoveredIndex === row.index) {
                                 menu.hoveredIndex = -1
                             }
                         }
@@ -593,6 +599,7 @@ Item {
                 : Math.min(rowsClip.y + rows.y + submenu.row.y - menu.looks.padding, submenu.lowestY()))
             item.squareTopLeft = Qt.binding(() => submenu.fitsAfter)
             item.squareTopRight = Qt.binding(() => !submenu.fitsAfter)
+            item.still = Qt.binding(() => menu.still)
             item.chosen.connect(menu.chosen)
             item.submenuWanted.connect(menu.submenuWanted)
             item.slid.connect(menu.slid)

@@ -55,6 +55,18 @@ Super = "⌘"
 Right = "→"
 ```
 
+A menu opens at once. How it goes away is up to `[animation.menu_close]`:
+
+```toml
+[animation.menu_close]
+kind = "fade"             # "fade" or "none"
+duration_ms = 130
+curve = "linear"          # optional
+blink_ms = 60             # optional: a chosen item's highlight goes out this long before the fade
+```
+
+A menu closed by a choice blinks first, if `blink_ms` is given. A menu closed any other way (a press elsewhere, Escape) just fades. While it fades, its title in the panel stays lit, and presses and keys already reach whatever is underneath. Without the table, a menu disappears at once.
+
 The panel's table has a few more fields for how a title looks while its menu is open:
 
 ```toml

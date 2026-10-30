@@ -648,6 +648,13 @@ Item {
 
     property string menuKind: ""
     property point menuAt: Qt.point(0, 0)
+    // The kind of the menu showing, kept while it fades out after closing.
+    property string shownMenuKind: ""
+    onMenuKindChanged: {
+        if (menuKind !== "") {
+            shownMenuKind = menuKind
+        }
+    }
 
     function openMenu(kind, x, y) {
         menuAt = Qt.point(x, y)
@@ -677,7 +684,7 @@ Item {
         const entry = (id, label, checked) =>
             ({ id: id, label: label, separator: false, enabled: true,
                checkable: checked !== undefined, checked: checked ?? false, shortcut: [], children: [] })
-        if (menuKind === "file") {
+        if (shownMenuKind === "file") {
             const items = [entry(idOpen, words.open ?? "Open")]
             items.push(separator)
             if (pickedPaths.length === 1 && (wishes.rename_command ?? []).length > 0) {
@@ -733,7 +740,7 @@ Item {
     MenuOverlay {
         screen: icons.screen
         settings: icons.settings
-        visible: icons.menuKind !== ""
+        open: icons.menuKind !== ""
         items: icons.menuItems
         menuX: Math.max(0, Math.min(icons.menuAt.x, icons.width - menuWidth))
         menuY: Math.max(0, Math.min(icons.menuAt.y, icons.height - menuHeight))

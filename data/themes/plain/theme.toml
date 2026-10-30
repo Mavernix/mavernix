@@ -562,6 +562,11 @@ Shift = "Shift+"
 Alt = "Alt+"
 Super = "Super+"
 
+[animation.menu_close]
+# How a menu goes away: a short fade, without a blink.
+kind = "fade"
+duration_ms = 100
+
 [dock]
 icon_size = 40
 tile_margin = 6

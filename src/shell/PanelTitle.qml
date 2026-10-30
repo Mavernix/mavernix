@@ -41,7 +41,8 @@ Item {
     readonly property bool open: panel.openTitle === title
     // Set by a title that opened something other than a menu.
     property bool held: false
-    readonly property bool lit: open || held
+    // Its menu, open or still fading out, or something else it opened.
+    readonly property bool lit: (panel.shownTitle === title && panel.menuShowing) || held
 
     // Each box reaches half a spacing beyond the title, so neighbours touch.
     property real boxOverhang: itemRow.spacing / 2

@@ -1285,14 +1285,23 @@ PanelWindow {
         screen: dock.screen
         settings: dock.settings
         looks: dock.menuLooks
-        visible: dock.menuIndex >= 0
+        open: dock.menuIndex >= 0
         items: dock.menuItems
 
+        // The place it belongs to, kept while it fades out after closing.
+        property int place: -1
+        readonly property int openPlace: dock.menuIndex
+        onOpenPlaceChanged: {
+            if (openPlace >= 0) {
+                place = openPlace
+            }
+        }
+
         // Above its place, centred, its pointer ending just above the icon.
-        readonly property var tile: dock.menuIndex >= 0 ? tiles.itemAt(dock.menuIndex) : null
+        readonly property var tile: place >= 0 ? tiles.itemAt(place) : null
         readonly property real placeMiddle: tile ? tile.x + tile.width / 2 : 0
         readonly property real placeHeight:
-            tile && !(dock.places[dock.menuIndex]?.isSeparator ?? false) ? tile.width : dock.tileSize
+            tile && !(dock.places[place]?.isSeparator ?? false) ? tile.width : dock.tileSize
         readonly property real iconTopAboveBottom: dock.base + placeHeight - dock.tileMargin
         readonly property real pointerLength: dock.menuLooks.pointer?.height ?? 0
 
