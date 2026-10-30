@@ -1264,6 +1264,11 @@ stripe_alternate = "#e5e5e5"
 line_colors = ["#d4d4d4", "#cdcdcd"]
 light_line_colors = ["#efefef", "#f4f4f4"]
 
+# AppKit's own timing for a window resizing: 0.2 s for 150 points.
+[animation.settings_page]
+kind = "resize"
+duration_ms = 200
+
 [program_switcher]
 background = {{ color = "#00000059", radius = 22 }}
 icon_size = 128

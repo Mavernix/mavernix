@@ -28,6 +28,16 @@ light_line_colors = ["#fafafa", "#fafafa"]
 
 If your theme leaves the table out, it gets these numbers. All the text in the window uses `[fonts] interface`.
 
+How the window goes from one page to the next is up to `[animation.settings_page]`:
+
+```toml
+[animation.settings_page]
+kind = "resize"     # "resize" or "none"
+duration_ms = 200   # for a change of 150 points in height
+```
+
+With "resize", the window grows or shrinks to the new page's height while the page it leaves fades out over it. The time grows with the change in height, as AppKit times a window's resizing: `duration_ms` for every 150 points. Without the table, the window takes the new page's height at once.
+
 ## Theme Installer
 
 The Theme Installer's window (`src/apps/theme-installer/`) has a column of steps on the left and the current step's page on the right. Go Back and Continue sit along the bottom and are drawn from `[dialog]`. Its fonts are `[fonts].theme_installer_heading` (each page's heading) and `theme_installer_text` (everything else).

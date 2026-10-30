@@ -279,6 +279,10 @@ kind = "fade"
 duration_ms = 130
 blink_ms = 60
 
+[animation.settings_page]     # programs.md: "resize" or "none"
+kind = "resize"
+duration_ms = 200
+
 [animation.notification_list] # overlays.md: "slide", "push" or "none"
 kind = "slide"
 duration_ms = 250

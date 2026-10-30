@@ -15,6 +15,8 @@ class Choices;
 class Overview;
 class QAction;
 class QLineEdit;
+class QPixmap;
+class QVariantAnimation;
 class QStackedWidget;
 class QToolButton;
 
@@ -34,8 +36,11 @@ class SettingsWindow : public QMainWindow
     bool eventFilter(QObject* watched, QEvent* event) override;
 
   private:
-    // The window takes the shown page's height.
-    void fitHeight();
+    // The window takes the shown page's height. With [animation.settings_page]
+    // "resize", a change of page grows or shrinks it there, as a Mac's System
+    // Preferences does, while the page left behind fades out.
+    void fitHeight(bool animated = false);
+    void fadeOut(const QPixmap& leftPage);
     // Null for a name this program does not know.
     QWidget* makePane(const QString& name);
     QWidget* makeKeyboardPane();
@@ -43,6 +48,9 @@ class SettingsWindow : public QMainWindow
 
     Choices& choices;
     QString program_name;
+    // [animation.settings_page]: { kind: "resize" | "none", duration_ms }.
+    QVariantMap page_motion;
+    QVariantAnimation* resizing = nullptr;
     QStackedWidget* pages = nullptr;
     QMap<QString, int> pane_pages;
     QMap<QString, QString> pane_titles;

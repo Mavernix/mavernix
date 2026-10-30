@@ -248,6 +248,12 @@ key = "kind"
 was = "fade"
 now = "zoom"
 
+# System Preferences grows or shrinks to the pane it switches to, as on
+# OS X, while the pane left behind fades.
+[update.settings."animation.settings_page"]
+kind = "resize"
+duration_ms = 200
+
 # The list of notifications opens as Notification Center does: the desktop
 # slides aside and uncovers it.
 [[update.corrections]]

@@ -3,11 +3,14 @@
 #include <QIcon>
 #include <QLineEdit>
 #include <QEvent>
+#include <QGraphicsOpacityEffect>
+#include <QLabel>
 #include <QMenu>
 #include <QMenuBar>
 #include <QPainter>
 #include <QPixmap>
 #include <QStackedWidget>
+#include <QPropertyAnimation>
 #include <QTimer>
 #include <QTabWidget>
 #include <QToolBar>
@@ -16,6 +19,7 @@
 
 #include <algorithm>
 #include <cstdio>
+#include <cstdlib>
 
 #include "bluetooth-pane.hpp"
 #include "choices.hpp"
@@ -96,6 +100,12 @@ SettingsWindow::SettingsWindow(Choices& choices) : choices(choices)
     const QVariantMap wishes = choices.configTable(QStringLiteral("settings"));
     const QVariantMap words = wishes.value(QStringLiteral("words")).toMap();
     program_name = wishes.value(QStringLiteral("name"), QStringLiteral("Settings")).toString();
+
+    page_motion = choices.themeTable(QStringLiteral("animation")).value(QStringLiteral("settings_page")).toMap();
+    resizing = new QVariantAnimation(this);
+    resizing->setEasingCurve(QEasingCurve::InOutQuad);
+    connect(resizing, &QVariantAnimation::valueChanged, this,
+        [this](const QVariant& height) { setFixedHeight(height.toInt()); });
 
     auto* tool_bar = addToolBar(QStringLiteral("navigation"));
     tool_bar->setMovable(false);
@@ -432,6 +442,10 @@ void SettingsWindow::showPlace()
 {
     const QString name = history.value(history_place);
     const bool is_overview = name.isEmpty();
+    const bool animated =
+        isVisible() && page_motion.value(QStringLiteral("kind")).toString() == QLatin1String("resize");
+    const QPixmap left_page = animated ? pages->grab() : QPixmap();
+
     pages->setCurrentIndex(is_overview ? 0 : pane_pages.value(name));
     setWindowTitle(is_overview ? program_name : pane_titles.value(name));
     // Not while searching: the field keeps the keyboard.
@@ -452,14 +466,61 @@ void SettingsWindow::showPlace()
         pages->widget(index)->setSizePolicy(
             QSizePolicy::Preferred, shown ? QSizePolicy::Preferred : QSizePolicy::Ignored);
     }
-    fitHeight();
+    fitHeight(animated);
+    if (animated)
+    {
+        fadeOut(left_page);
+    }
 }
 
-void SettingsWindow::fitHeight()
+void SettingsWindow::fitHeight(bool animated)
 {
     // Only the height follows the page: the width is the overview's, fixed.
     pages->updateGeometry();
-    setFixedHeight(sizeHint().height());
+    const int wanted = sizeHint().height();
+    if (resizing->state() == QAbstractAnimation::Running && !animated)
+    {
+        // The page changed its mind on the way; the motion goes on there.
+        resizing->setEndValue(wanted);
+        return;
+    }
+    resizing->stop();
+    if (!animated || wanted == height())
+    {
+        setFixedHeight(wanted);
+        return;
+    }
+
+    // Timed as AppKit times a window's resizing: duration_ms for a change of
+    // 150 points, a larger one taking longer in proportion.
+    const int points_per_duration = 150;
+    const int duration_ms = page_motion.value(QStringLiteral("duration_ms"), 200).toInt();
+    resizing->setDuration(std::abs(wanted - height()) * duration_ms / points_per_duration);
+    resizing->setStartValue(height());
+    resizing->setEndValue(wanted);
+    resizing->start();
+}
+
+void SettingsWindow::fadeOut(const QPixmap& leftPage)
+{
+    // A picture of the page left, laid over the new one, fading away.
+    auto* picture = new QLabel(pages);
+    picture->setPixmap(leftPage);
+    picture->setGeometry(QRect(QPoint(0, 0), leftPage.deviceIndependentSize().toSize()));
+    picture->setAttribute(Qt::WA_TransparentForMouseEvents);
+    auto* opacity = new QGraphicsOpacityEffect(picture);
+    picture->setGraphicsEffect(opacity);
+    picture->show();
+
+    // Along with the resizing, and never quicker than half the time for 150 points.
+    const int least_ms = page_motion.value(QStringLiteral("duration_ms"), 200).toInt() / 2;
+    auto* fading = new QPropertyAnimation(opacity, "opacity", picture);
+    const bool resizes = resizing->state() == QAbstractAnimation::Running;
+    fading->setDuration(std::max(least_ms, resizes ? resizing->duration() : 0));
+    fading->setStartValue(1.0);
+    fading->setEndValue(0.0);
+    connect(fading, &QAbstractAnimation::finished, picture, &QObject::deleteLater);
+    fading->start();
 }
 
 bool SettingsWindow::eventFilter(QObject* watched, QEvent* event)
@@ -467,7 +528,7 @@ bool SettingsWindow::eventFilter(QObject* watched, QEvent* event)
     if (event->type() == QEvent::LayoutRequest && watched == pages->currentWidget())
     {
         // After the page has laid itself out anew.
-        QTimer::singleShot(0, this, &SettingsWindow::fitHeight);
+        QTimer::singleShot(0, this, [this]() { fitHeight(); });
     }
     return QMainWindow::eventFilter(watched, event);
 }
