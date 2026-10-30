@@ -7,6 +7,7 @@
 
 #include <QMainWindow>
 #include <QMap>
+#include <QPointer>
 #include <QString>
 #include <QStringList>
 #include <QVariantMap>
@@ -16,6 +17,7 @@ class Overview;
 class QAction;
 class QLineEdit;
 class QPixmap;
+class QPropertyAnimation;
 class QVariantAnimation;
 class QStackedWidget;
 class QToolButton;
@@ -36,11 +38,13 @@ class SettingsWindow : public QMainWindow
     bool eventFilter(QObject* watched, QEvent* event) override;
 
   private:
-    // The window takes the shown page's height. With [animation.settings_page]
-    // "resize", a change of page grows or shrinks it there, as a Mac's System
-    // Preferences does, while the page left behind fades out.
-    void fitHeight(bool animated = false);
-    void fadeOut(const QPixmap& leftPage);
+    // The window takes the shown page's height.
+    void fitHeight();
+    // With [animation.settings_page] "resize", a change of page grows or
+    // shrinks the window to the new page, as a Mac's System Preferences
+    // does, while the page left behind fades out over it.
+    void changePage(const QPixmap& leftPage, int leftHeight);
+    void endTransition();
     // Null for a name this program does not know.
     QWidget* makePane(const QString& name);
     QWidget* makeKeyboardPane();
@@ -51,6 +55,9 @@ class SettingsWindow : public QMainWindow
     // [animation.settings_page]: { kind: "resize" | "none", duration_ms }.
     QVariantMap page_motion;
     QVariantAnimation* resizing = nullptr;
+    // While pages change: pictures of both over the real pages, and the fade.
+    QPointer<QWidget> transition;
+    QPointer<QPropertyAnimation> fading;
     QStackedWidget* pages = nullptr;
     QMap<QString, int> pane_pages;
     QMap<QString, QString> pane_titles;
