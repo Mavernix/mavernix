@@ -18,6 +18,9 @@ QtObject {
     // is empty.
     property bool magnificationWanted: false
     property bool trashIsEmpty: true
+    // Folders the dock's own menu offers to add ([{ label, kept }], see
+    // Dock.qml, addableFolders); one already kept is greyed.
+    property var addableFolders: []
 
     // --- Ids ------------------------------------------------------------------------
 
@@ -37,6 +40,7 @@ QtObject {
     readonly property int orderBaseId: 200
     readonly property int viewBaseId: 300
     readonly property int actionBaseId: 400
+    readonly property int addFolderBaseId: 500
     readonly property int fileBaseId: 10000
 
     function entry(id, label, enabled, children) {
@@ -86,6 +90,12 @@ QtObject {
         const items = [entry(magnificationId, magnificationWanted
             ? (words.magnification_off ?? "Turn magnification off")
             : (words.magnification_on ?? "Turn magnification on"))]
+        if (addableFolders.length > 0) {
+            items.push(separator())
+            items.push(entry(-1, words.add_to_dock ?? "Add to Dock", false))
+            addableFolders.forEach((folder, number) =>
+                items.push(entry(addFolderBaseId + number, folder.label, !folder.kept)))
+        }
         if (config.settings_command !== undefined) {
             items.push(separator())
             items.push(entry(settingsId, words.settings ?? "Dock settings…"))

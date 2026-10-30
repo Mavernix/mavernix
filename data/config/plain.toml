@@ -354,6 +354,9 @@ more_in_file_manager = "%1 more"
 # The folder of all programs: its name when dragged in, and its last entry.
 programs_folder = "Programs"
 open_app_grid = "Open app grid"
+# The dock's own menu (on the divider): folders it offers to add.
+add_to_dock = "Add to Dock"
+home_folder = "Home"
 
 [desktop_files]
 # Files of a folder shown as icons on the desktop.

@@ -5,6 +5,7 @@
 // DockLayout.js counts up from the screen's bottom; `fromBottom()` gives QML's y.
 
 import QtQuick
+import QtCore
 import Quickshell
 import Quickshell.Wayland
 import Shell.Native
@@ -402,6 +403,59 @@ PanelWindow {
 
     FileKind {
         id: fileKinds
+    }
+
+    // The folders the dock's own menu (on the divider) offers to add: the
+    // folder of all programs, then the home folder and its usual folders,
+    // where the user's folder settings (user-dirs) put them and named as
+    // they are there. Each with whether the dock already keeps it.
+    readonly property var addableFolders: {
+        const kept = [].concat(...keptGroups)
+        const choices = [{ label: words.programs_folder ?? "Programs",
+                           place: { name: words.programs_folder ?? "Programs", icon: "folder-applications",
+                                    programs: true, view: "grid" } }]
+        const home = Quickshell.env("HOME")
+        const usual = [
+            [StandardPaths.HomeLocation, "user-home"],
+            [StandardPaths.DesktopLocation, "user-desktop"],
+            [StandardPaths.DocumentsLocation, "folder-documents"],
+            [StandardPaths.DownloadLocation, "folder-download"],
+            [StandardPaths.PicturesLocation, "folder-pictures"],
+            [StandardPaths.MusicLocation, "folder-music"],
+        ]
+        for (const [location, icon] of usual) {
+            const path = decodeURIComponent(StandardPaths.writableLocation(location).toString().replace("file://", ""))
+            // Left out: a folder that is not there, and one the user-dirs
+            // leave at the home folder (not one of its own).
+            if (path === "" || !fileKinds.isFolder(path)
+                || (location !== StandardPaths.HomeLocation && path === home)) {
+                continue
+            }
+            const place = droppedEntry(path)
+            place.icon = icon
+            if (location === StandardPaths.HomeLocation) {
+                place.name = words.home_folder ?? "Home"
+                place.folder = "~"
+            }
+            choices.push({ label: place.name, place: place })
+        }
+        for (const choice of choices) {
+            choice.kept = kept.some(entry => typeof entry === "object"
+                && (choice.place.programs ? folders.isProgramFolder(entry)
+                                          : entry.folder !== undefined && entry.folder === choice.place.folder))
+        }
+        return choices
+    }
+
+    // Puts a folder among the folders, beside the trash: into the last group,
+    // which a dock of one group gets as a new one.
+    function addFolder(place) {
+        const groups = keptGroups.map(group => group.slice())
+        if (groups.length < 2) {
+            groups.push([])
+        }
+        groups[groups.length - 1].push(place)
+        choices.set("dock", "groups", groups)
     }
 
     function droppedEntry(path) {
@@ -1300,6 +1354,7 @@ PanelWindow {
         dockFolders: folders
         magnificationWanted: dock.magnificationWanted
         trashIsEmpty: dock.trashIsEmpty
+        addableFolders: dock.addableFolders
     }
 
     function openMenu(index) {
@@ -1359,6 +1414,8 @@ PanelWindow {
             folders.openEntry(place.custom, listedFiles[id - menus.fileBaseId].path)
         } else if (id === menus.openFolderId) {
             folders.openWhole(place.custom)
+        } else if (id >= menus.addFolderBaseId) {
+            addFolder(addableFolders[id - menus.addFolderBaseId].place)
         } else if (id >= menus.actionBaseId) {
             tile.runAction(tile.entry.actions[id - menus.actionBaseId])
         } else if (id >= menus.viewBaseId) {
