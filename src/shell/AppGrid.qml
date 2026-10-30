@@ -359,7 +359,8 @@ PanelWindow {
                             height: cell.iconSize
                             sourceSize: Qt.size(width, height)
                             // Off the main thread: there is one for every program.
-                            asynchronous: true
+                            // (Not Quickshell's stand-ins; see FolderGridCell.)
+                            asynchronous: !source.toString().startsWith("image://icon/")
                             source: grid.iconFor(cell.modelData)
                             opacity: press.dragging ? 0.3 : (press.pressed ? 0.6 : 1)
                         }

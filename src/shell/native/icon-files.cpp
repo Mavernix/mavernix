@@ -3,10 +3,12 @@
 #include <QFileInfo>
 #include <QIcon>
 #include <QImage>
+#include <QMutex>
 #include <QPainter>
 #include <QtGui/private/qiconloader_p.h>
 
 #include <cstring>
+#include <optional>
 
 // GLib uses `signals` as a member name, which Qt's keyword macro breaks.
 #undef signals
@@ -58,6 +60,84 @@ static QImage draw_with_librsvg(const QString& file, int side)
     g_object_unref(drawing);
     return drawn;
 }
+
+// --- The files of each icon ------------------------------------------------------
+//
+// Found by IconFiles::sourceFor on the main thread, and read by the
+// providers on whichever thread Qt runs them. Shared by every IconFiles, so
+// never emptied (another one's address may still need an entry): a lookup
+// after a change of theme or of the icon folders replaces the entry.
+
+namespace
+{
+struct IconFile
+{
+    QString path;
+    // The side it is drawn at, in pixels; 0 for a drawing, good at any size.
+    int side = 0;
+};
+
+QMutex files_lock;
+QHash<QString, QList<IconFile>> files_by_name;
+
+void remember_files(const QString& name, const QThemeIconInfo& info)
+{
+    QList<IconFile> files;
+    for (const auto& entry : info.entries)
+    {
+        const bool scalable = entry->dir.type == QIconDirInfo::Scalable || is_drawing(entry->filename);
+        files.append({entry->filename, scalable ? 0 : entry->dir.size * entry->dir.scale});
+    }
+    const QMutexLocker locker(&files_lock);
+    files_by_name.insert(name, files);
+}
+
+// The file to draw at `side`: one of exactly that size, else a drawing, else
+// the smallest one larger (shrinking keeps it sharp), else the largest. Null
+// if the icon was never looked up.
+std::optional<IconFile> best_file(const QString& name, int side)
+{
+    QList<IconFile> files;
+    {
+        const QMutexLocker locker(&files_lock);
+        files = files_by_name.value(name);
+    }
+    std::optional<IconFile> drawing, larger, largest;
+    for (const IconFile& file : files)
+    {
+        if (file.side == side)
+        {
+            return file;
+        }
+        if (file.side == 0)
+        {
+            drawing = file;
+        }
+        else if (file.side > side && (!larger || file.side < larger->side))
+        {
+            larger = file;
+        }
+        else if (!largest || file.side > largest->side)
+        {
+            largest = file;
+        }
+    }
+    return drawing ? drawing : (larger ? larger : largest);
+}
+
+// A picture file at `wanted` size, keeping its proportions. QImage, not
+// QPixmap: QPixmap::load goes through QPixmapCache, which is for the main
+// thread only.
+QImage read_scaled(const QString& path, const QSize& wanted)
+{
+    const QImage read(path);
+    if (read.isNull() || read.size() == wanted)
+    {
+        return read;
+    }
+    return read.scaled(wanted, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+}
+} // namespace
 
 static const int settle_ms = 1500;
 
@@ -137,6 +217,7 @@ QString IconFiles::sourceFor(const QString& name, int revision)
     {
         const QThemeIconInfo info = QIconLoader::instance()->loadIcon(name);
         has_icon = !info.entries.empty();
+        remember_files(name, info);
         for (const auto& entry : info.entries)
         {
             if (!is_drawing(entry->filename))
@@ -179,9 +260,9 @@ bool IconFiles::isThemeOwn(const QString& name, int)
     return !info.entries.empty();
 }
 
-ThemeIconProvider::ThemeIconProvider() : QQuickImageProvider(QQuickImageProvider::Pixmap) {}
+ThemeIconProvider::ThemeIconProvider() : QQuickImageProvider(QQuickImageProvider::Image) {}
 
-QPixmap ThemeIconProvider::requestPixmap(const QString& address, QSize* size, const QSize& requested_size)
+QImage ThemeIconProvider::requestImage(const QString& address, QSize* size, const QSize& requested_size)
 {
     // "<revision>/<name>"; a name may be a file's path, with slashes.
     const QString name = address.section(QLatin1Char('/'), 1);
@@ -189,7 +270,7 @@ QPixmap ThemeIconProvider::requestPixmap(const QString& address, QSize* size, co
     const QSize wanted = (requested_size.width() > 0 && requested_size.height() > 0)
                              ? requested_size
                              : QSize(default_side, default_side);
-    const QPixmap drawn = picture(name, wanted);
+    const QImage drawn = picture(name, wanted);
     if (size != nullptr)
     {
         *size = drawn.size();
@@ -197,41 +278,21 @@ QPixmap ThemeIconProvider::requestPixmap(const QString& address, QSize* size, co
     return drawn;
 }
 
-QPixmap ThemeIconProvider::picture(const QString& name, const QSize& wanted)
+QImage ThemeIconProvider::picture(const QString& name, const QSize& wanted)
 {
+    const int side = qMax(wanted.width(), wanted.height());
+    QString path = name;
     if (!name.startsWith(QLatin1Char('/')))
     {
-        return themePicture(name, wanted);
+        const std::optional<IconFile> file = best_file(name, side);
+        if (!file)
+        {
+            return QImage();
+        }
+        path = file->path;
     }
-    if (is_drawing(name))
-    {
-        return QPixmap::fromImage(draw_with_librsvg(name, qMax(wanted.width(), wanted.height())));
-    }
-    return QIcon(name).pixmap(wanted);
-}
-
-QPixmap ThemeIconProvider::themePicture(const QString& name, const QSize& wanted)
-{
-    // Not QIcon::pixmap: it multiplies the size (already in device pixels)
-    // by the screen scale, picks another file, and draws SVGs with Qt's
-    // reader, which ignores clip paths.
-    const QThemeIconInfo info = QIconLoader::instance()->loadIcon(name);
-    const QIconLoaderEngineEntry* entry = QIconLoaderEngine::entryForSize(info, wanted, 1);
-    if (entry == nullptr)
-    {
-        // E.g. an icon only a platform theme knows.
-        return QIcon::fromTheme(name).pixmap(wanted);
-    }
-    if (is_drawing(entry->filename))
-    {
-        return QPixmap::fromImage(draw_with_librsvg(entry->filename, qMax(wanted.width(), wanted.height())));
-    }
-    const QPixmap picture(entry->filename);
-    if (picture.isNull() || picture.size() == wanted)
-    {
-        return picture;
-    }
-    return picture.scaled(wanted, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    // Not Qt's SVG reader, which ignores clip paths.
+    return is_drawing(path) ? draw_with_librsvg(path, side) : read_scaled(path, wanted);
 }
 
 SvgIconProvider::SvgIconProvider() : QQuickImageProvider(QQuickImageProvider::Image) {}
@@ -282,9 +343,8 @@ QImage FittedIconProvider::requestImage(const QString& address, QSize* size, con
     const int side = qMax(requested_size.width(), requested_size.height()) > 0
                          ? qMax(requested_size.width(), requested_size.height())
                          : default_side;
-    QImage drawn = ThemeIconProvider::picture(name, QSize(side, side))
-                       .toImage()
-                       .convertToFormat(QImage::Format_ARGB32_Premultiplied);
+    QImage drawn =
+        ThemeIconProvider::picture(name, QSize(side, side)).convertToFormat(QImage::Format_ARGB32_Premultiplied);
 
     const int shape = shape_side(drawn);
     const int square = qMax(drawn.width(), drawn.height());

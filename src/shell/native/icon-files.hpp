@@ -1,6 +1,8 @@
 // Theme icons drawn with librsvg. Qt's SVG reader lacks masks, filters and
-// clip paths, which many application icons use. Which file Qt's lookup would
-// pick is asked of QIconLoader, a private Qt class.
+// clip paths, which many application icons use. Which files an icon has is
+// asked of QIconLoader, a private Qt class, on the main thread only: it is
+// not thread-safe, and Qt runs the image providers below on threads of its
+// own for images loaded asynchronously.
 //
 // Qt reads the icon folders only once, so they are watched here: on a change
 // Qt rereads them and `revision` counts up.
@@ -53,17 +55,15 @@ class IconFiles : public QObject
 };
 
 // "image://theme-icon/<revision>/<name>", for themes that also ship PNGs.
+// Only for names IconFiles::sourceFor has looked up.
 class ThemeIconProvider : public QQuickImageProvider
 {
   public:
     ThemeIconProvider();
-    QPixmap requestPixmap(const QString& address, QSize* size, const QSize& requested_size) override;
+    QImage requestImage(const QString& address, QSize* size, const QSize& requested_size) override;
 
     // The theme's icon, or the file if `name` is a path.
-    static QPixmap picture(const QString& name, const QSize& wanted);
-
-  private:
-    static QPixmap themePicture(const QString& name, const QSize& wanted);
+    static QImage picture(const QString& name, const QSize& wanted);
 };
 
 // "image://fitted-icon/<fill>/<revision>/<name>": the icon, shrunk around its

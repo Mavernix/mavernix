@@ -41,8 +41,9 @@ Item {
         sourceSize: Qt.size(width, height)
         // Decoded off the shell's main thread: a folder of a hundred programs
         // would otherwise hold the shell still for the best part of a second
-        // before it could open.
-        asynchronous: true
+        // before it could open. Not Quickshell's stand-in icons
+        // ("image://icon/"), whose loader is not known to be thread-safe.
+        asynchronous: !source.toString().startsWith("image://icon/")
         source: {
             if (cell.hasOwnPicture) {
                 return "file://" + cell.folderGrid.themeDirectory + "/" + cell.looks.open_image
