@@ -61,6 +61,8 @@ PanelWindow {
     signal dragEnded()
     signal dragGivenUp()
     property var draggedEntry: null
+    readonly property int draggedPage:
+        draggedEntry !== null ? Math.floor(applications.indexOf(draggedEntry) / perPage) : -1
 
     function toggle() {
         if (open) {
@@ -363,7 +365,9 @@ PanelWindow {
                         x: index * content.width
                         width: content.width
                         height: content.height
-                        active: grid.awake && distance < 2
+                        // Also the page of an icon being dragged out, whose press
+                        // must last until it is let go.
+                        active: grid.awake && (distance < 2 || index === grid.draggedPage)
                         // The page shown at once; its neighbours a little at a
                         // time, so they do not hold up the first frame.
                         asynchronous: distance >= 0.5
@@ -374,112 +378,113 @@ PanelWindow {
                                 model: grid.applications.slice(page.index * grid.perPage,
                                                                (page.index + 1) * grid.perPage)
 
-                            Item {
-                                id: cell
+                                Item {
+                                    id: cell
 
-                                required property var modelData
-                                required property int index
+                                    required property var modelData
+                                    required property int index
 
-                                readonly property int column: index % grid.columns
-                                readonly property int row: Math.floor(index / grid.columns)
-                                readonly property real iconSize: grid.looks.icon_size ?? 64
+                                    readonly property int column: index % grid.columns
+                                    readonly property int row: Math.floor(index / grid.columns)
+                                    readonly property real iconSize: grid.looks.icon_size ?? 64
 
-                                // Columns are spread evenly about the page's middle.
-                                width: grid.looks.column_pitch ?? 160
-                                height: grid.looks.row_pitch ?? 120
-                                x: Math.round(content.width / 2 + (column - grid.columns / 2) * width)
-                                   + (grid.looks.columns_shift ?? 0)
-                                y: (grid.looks.first_row_top ?? 80) + row * height
+                                    // Columns are spread evenly about the page's middle.
+                                    width: grid.looks.column_pitch ?? 160
+                                    height: grid.looks.row_pitch ?? 120
+                                    x: Math.round(content.width / 2 + (column - grid.columns / 2) * width)
+                                       + (grid.looks.columns_shift ?? 0)
+                                    y: (grid.looks.first_row_top ?? 80) + row * height
 
-                                Image {
-                                    id: icon
-                                    anchors.horizontalCenter: parent.horizontalCenter
-                                    width: cell.iconSize
-                                    height: cell.iconSize
-                                    sourceSize: Qt.size(width, height)
-                                    // Off the main thread: there is one for every program.
-                                    // (Not Quickshell's stand-ins; see FolderGridCell.)
-                                    asynchronous: !source.toString().startsWith("image://icon/")
-                                    source: grid.iconFor(cell.modelData)
-                                    opacity: press.dragging ? 0.3 : (press.pressed ? 0.6 : 1)
-                                }
+                                    Image {
+                                        id: icon
+                                        anchors.horizontalCenter: parent.horizontalCenter
+                                        width: cell.iconSize
+                                        height: cell.iconSize
+                                        sourceSize: Qt.size(width, height)
+                                        // Off the main thread: there is one for every program.
+                                        // (Not Quickshell's stand-ins; see FolderGridCell.)
+                                        asynchronous: !source.toString().startsWith("image://icon/")
+                                        source: grid.iconFor(cell.modelData)
+                                        opacity: press.dragging ? 0.3 : (press.pressed ? 0.6 : 1)
+                                    }
 
-                                Text {
-                                    anchors.horizontalCenter: parent.horizontalCenter
-                                    width: parent.width - 8
-                                    horizontalAlignment: Text.AlignHCenter
-                                    elide: Text.ElideRight
-                                    // Placed by its baseline.
-                                    y: (grid.looks.label_baseline ?? (cell.iconSize + 18)) - baselineOffset
-                                    text: cell.modelData.name
-                                    color: ThemeValues.color(grid.looks.label_color ?? "#ffffff")
-                                    font.family: grid.theme.fonts.app_grid_label.family
-                                    font.pixelSize: grid.theme.fonts.app_grid_label.size
-                                    font.bold: grid.theme.fonts.app_grid_label.bold ?? false
-                                    style: grid.looks.label_shadow_color !== undefined ? Text.Raised : Text.Normal
-                                    styleColor: ThemeValues.color(grid.looks.label_shadow_color ?? "#00000000")
-                                }
+                                    Text {
+                                        anchors.horizontalCenter: parent.horizontalCenter
+                                        width: parent.width - 8
+                                        horizontalAlignment: Text.AlignHCenter
+                                        elide: Text.ElideRight
+                                        // Placed by its baseline.
+                                        y: (grid.looks.label_baseline ?? (cell.iconSize + 18)) - baselineOffset
+                                        text: cell.modelData.name
+                                        color: ThemeValues.color(grid.looks.label_color ?? "#ffffff")
+                                        font.family: grid.theme.fonts.app_grid_label.family
+                                        font.pixelSize: grid.theme.fonts.app_grid_label.size
+                                        font.bold: grid.theme.fonts.app_grid_label.bold ?? false
+                                        style: grid.looks.label_shadow_color !== undefined ? Text.Raised : Text.Normal
+                                        styleColor: ThemeValues.color(grid.looks.label_shadow_color ?? "#00000000")
+                                    }
 
-                                MouseArea {
-                                    id: press
-                                    // The icon and its name, not the whole cell: between
-                                    // icons a press means "close".
-                                    acceptedButtons: Qt.LeftButton | Qt.RightButton
-                                    anchors.horizontalCenter: parent.horizontalCenter
-                                    width: cell.iconSize + 24
-                                    height: (grid.looks.label_baseline ?? (cell.iconSize + 18)) + 6
+                                    MouseArea {
+                                        id: press
+                                        // The icon and its name, not the whole cell: between
+                                        // icons a press means "close".
+                                        acceptedButtons: Qt.LeftButton | Qt.RightButton
+                                        anchors.horizontalCenter: parent.horizontalCenter
+                                        width: cell.iconSize + 24
+                                        height: (grid.looks.label_baseline ?? (cell.iconSize + 18)) + 6
 
-                                    readonly property real dragStartDistance: 8
-                                    property real pressedX: 0
-                                    property real pressedY: 0
-                                    readonly property bool dragging: grid.draggedEntry === cell.modelData
-                                    // The press that ended a drag is not a click.
-                                    property bool wasDragged: false
+                                        readonly property real dragStartDistance: 8
+                                        property real pressedX: 0
+                                        property real pressedY: 0
+                                        readonly property bool dragging: grid.draggedEntry === cell.modelData
+                                        // The press that ended a drag is not a click.
+                                        property bool wasDragged: false
 
-                                    onPressed: mouse => {
-                                        pressedX = mouse.x
-                                        pressedY = mouse.y
-                                        wasDragged = false
-                                        if (mouse.button === Qt.RightButton) {
+                                        onPressed: mouse => {
+                                            pressedX = mouse.x
+                                            pressedY = mouse.y
+                                            wasDragged = false
+                                            if (mouse.button === Qt.RightButton) {
+                                                const point = mapToItem(null, mouse.x, mouse.y)
+                                                grid.openMenu(cell.modelData, point.x, point.y)
+                                            }
+                                        }
+                                        onPositionChanged: mouse => {
+                                            if (!pressed) {
+                                                return
+                                            }
+                                            if (!dragging
+                                            && Math.hypot(mouse.x - pressedX, mouse.y - pressedY) < dragStartDistance) {
+                                                return
+                                            }
+                                            grid.draggedEntry = cell.modelData
+                                            wasDragged = true
+                                            // The grid's window covers the screen, so a
+                                            // place in it is a place on the screen.
                                             const point = mapToItem(null, mouse.x, mouse.y)
-                                            grid.openMenu(cell.modelData, point.x, point.y)
+                                            grid.dragMoved(cell.modelData, icon.source, point.x, point.y)
                                         }
-                                    }
-                                    onPositionChanged: mouse => {
-                                        if (!pressed) {
-                                            return
+                                        onReleased: {
+                                            if (dragging) {
+                                                grid.draggedEntry = null
+                                                grid.dragEnded()
+                                            }
                                         }
-                                        if (!dragging && Math.hypot(mouse.x - pressedX, mouse.y - pressedY) < dragStartDistance) {
-                                            return
+                                        onCanceled: {
+                                            if (dragging) {
+                                                grid.draggedEntry = null
+                                                grid.dragGivenUp()
+                                            }
                                         }
-                                        grid.draggedEntry = cell.modelData
-                                        wasDragged = true
-                                        // The grid's window covers the screen, so a
-                                        // place in it is a place on the screen.
-                                        const point = mapToItem(null, mouse.x, mouse.y)
-                                        grid.dragMoved(cell.modelData, icon.source, point.x, point.y)
-                                    }
-                                    onReleased: {
-                                        if (dragging) {
-                                            grid.draggedEntry = null
-                                            grid.dragEnded()
+                                        onClicked: mouse => {
+                                            if (wasDragged || mouse.button === Qt.RightButton) {
+                                                return
+                                            }
+                                            cell.modelData.execute()
+                                            grid.close()
                                         }
-                                    }
-                                    onCanceled: {
-                                        if (dragging) {
-                                            grid.draggedEntry = null
-                                            grid.dragGivenUp()
-                                        }
-                                    }
-                                    onClicked: mouse => {
-                                        if (wasDragged || mouse.button === Qt.RightButton) {
-                                            return
-                                        }
-                                        cell.modelData.execute()
-                                        grid.close()
                                     }
                                 }
-                            }
                             }
                         }
                     }
