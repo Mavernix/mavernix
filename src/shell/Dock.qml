@@ -1318,20 +1318,27 @@ PanelWindow {
         open: dock.menuIndex >= 0
         items: dock.menuItems
 
-        // The place it belongs to, kept while it fades out after closing.
-        property int place: -1
-        readonly property int openPlace: dock.menuIndex
-        onOpenPlaceChanged: {
-            if (openPlace >= 0) {
-                place = openPlace
-            }
-        }
-
         // Above its place, centred, its pointer ending just above the icon.
-        readonly property var tile: place >= 0 ? tiles.itemAt(place) : null
-        readonly property real placeMiddle: tile ? tile.x + tile.width / 2 : 0
-        readonly property real placeHeight:
-            tile && !(dock.places[place]?.isSeparator ?? false) ? tile.width : dock.tileSize
+        // Its tile is looked up on every opening (tiles are made anew when
+        // the dock's places change), and measured while the menu is open; as
+        // it fades out after closing, it stays where it was, though the tile
+        // may be gone by then (taken out of the dock, say).
+        readonly property var openTile: dock.menuIndex >= 0 ? tiles.itemAt(dock.menuIndex) : null
+        property real placeMiddle: 0
+        property real placeHeight: dock.tileSize
+        function measurePlace() {
+            if (openTile === null) {
+                return
+            }
+            placeMiddle = openTile.x + openTile.width / 2
+            placeHeight = (dock.places[dock.menuIndex]?.isSeparator ?? false) ? dock.tileSize : openTile.width
+        }
+        onOpenTileChanged: measurePlace()
+        Connections {
+            target: placeMenu.openTile
+            function onXChanged() { placeMenu.measurePlace() }
+            function onWidthChanged() { placeMenu.measurePlace() }
+        }
         readonly property real iconTopAboveBottom: dock.base + placeHeight - dock.tileMargin
         readonly property real pointerLength: dock.menuLooks.pointer?.height ?? 0
 
