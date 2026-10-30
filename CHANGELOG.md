@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.2 (2026-10-30)
+
+- An icon dragged along the dock lands where you let it go, also when the dock lists programs that aren't installed. Holding a press until the menu opens, then sliding along the dock, still moves the icon.
+- A panel clock that shows seconds ticks every second.
+- Disk images (.dmg) open in the Theme Installer from search and dock folders too, instead of in the web browser. Log out and back in once after updating.
+- The app grid opened by a key or gesture fades in with its icons and backdrop in place.
+- A dock folder's waiting window no longer sits over fullscreen videos and games, and a folder such as Downloads is no longer read again in the background after you've looked at it.
+
 ## 0.5.1 (2026-10-30)
 
 - The dock's magnification no longer stutters when the pointer passes over Launchpad or a folder.
