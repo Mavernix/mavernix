@@ -115,6 +115,19 @@ PanelWindow {
         onTriggered: grid.keptAwake = false
     }
 
+    // Opened asleep (by a key, say), the grid holds its fade-in until its
+    // backdrop and the shown page's icons are read, for at most
+    // holdLongestMs, rather than fading in empty and filling in after.
+    readonly property int holdLongestMs: 150
+    property int iconsWaiting: 0
+    readonly property bool contentReady: (backdrop.item?.ready ?? false) && iconsWaiting <= 0
+    property bool holdingBack: false
+    Timer {
+        id: holdLimit
+        interval: grid.holdLongestMs
+        onTriggered: grid.holdingBack = false
+    }
+
     anchors {
         left: true
         right: true
@@ -276,12 +289,13 @@ PanelWindow {
     Item {
         id: content
         anchors.fill: parent
-        opacity: grid.open ? 1 : 0
+        opacity: grid.open && (grid.contentReady || !grid.holdingBack) ? 1 : 0
         Behavior on opacity {
             NumberAnimation { duration: grid.open ? grid.openDuration : grid.closeDuration }
         }
 
         Loader {
+            id: backdrop
             anchors.fill: parent
             active: grid.awake
             sourceComponent: Fill {
@@ -418,6 +432,20 @@ PanelWindow {
                                         asynchronous: !source.toString().startsWith("image://icon/")
                                         source: grid.iconFor(cell.modelData)
                                         opacity: press.dragging ? 0.3 : (press.pressed ? 0.6 : 1)
+
+                                        // Counted in grid.iconsWaiting while on the page shown.
+                                        readonly property bool waiting: page.distance < 0.5 && status === Image.Loading
+                                        onWaitingChanged: grid.iconsWaiting += waiting ? 1 : -1
+                                        Component.onCompleted: {
+                                            if (waiting) {
+                                                grid.iconsWaiting += 1
+                                            }
+                                        }
+                                        Component.onDestruction: {
+                                            if (waiting) {
+                                                grid.iconsWaiting -= 1
+                                            }
+                                        }
                                     }
 
                                     Text {
@@ -609,6 +637,8 @@ PanelWindow {
     onOpenChanged: {
         if (open) {
             searchField.forceActiveFocus()
+            holdingBack = true
+            holdLimit.restart()
         } else {
             warmUp()
         }

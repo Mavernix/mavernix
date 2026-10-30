@@ -82,6 +82,8 @@ Item {
     }
 
     readonly property bool failed: coverPicture.status === Image.Error
+    // Drawn as it will be: false only while a covering picture is still read.
+    readonly property bool ready: !coversArea || coverPicture.status === Image.Ready || failed
 
     Image {
         id: coverPicture
