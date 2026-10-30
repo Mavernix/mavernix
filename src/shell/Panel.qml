@@ -225,6 +225,52 @@ PanelWindow {
         openMenu(withMenus[(now + direction + withMenus.length) % withMenus.length])
     }
 
+    // A press on a title keeps the pointer until it is released, and may
+    // drag on, as on a Mac: across the titles it opens theirs, and in the
+    // open menu it marks the item under it, which the release chooses.
+    // Points are in the panel window's coordinates.
+    // (A press that closed a menu drags nothing.)
+    function dragTo(point) {
+        if (openTitle === null) {
+            return
+        }
+        const over = titleAt(point)
+        if (over !== undefined) {
+            if (over !== openTitle) {
+                openMenu(over)
+            }
+            return
+        }
+        const onScreen = screenPoint(point)
+        titleMenu.markAt(onScreen.x, onScreen.y)
+    }
+
+    function releaseAt(point) {
+        if (openTitle !== null) {
+            const onScreen = screenPoint(point)
+            titleMenu.chooseAt(onScreen.x, onScreen.y)
+        }
+    }
+
+    // The title with a menu whose box (as wide as its press area) holds the point.
+    function titleAt(point) {
+        if (point.y < 0 || point.y >= panel.height) {
+            return undefined
+        }
+        return titles.find(title => {
+            if (!title.visible || title.menuItems.length === 0) {
+                return false
+            }
+            const local = title.mapFromItem(null, point.x, point.y)
+            return local.x >= -title.boxOverhang && local.x < title.width + title.boxOverhang
+        })
+    }
+
+    // From the panel window to the screen, which the menu's window covers.
+    function screenPoint(point) {
+        return Qt.point(point.x, panel.atBottom ? point.y + screen.height - panel.height : point.y)
+    }
+
     function toggleMenu(title) {
         if (openTitle === title) {
             closeMenu()

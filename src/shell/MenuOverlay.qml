@@ -76,6 +76,31 @@ PanelWindow {
         justChosen = false
     }
 
+    // --- A press that drags into the menu ------------------------------------------
+    //
+    // A press on what opened the menu (a panel title) keeps the pointer until
+    // it is released, so its owner passes the drag on, as points in this
+    // window: the item under the pointer is marked, and on release chosen,
+    // as on a Mac.
+
+    function markAt(x, y) {
+        const hit = box.rowAt(x - box.x, y - box.y)
+        if (hit !== null && hit.index >= 0 && hit.menu.canBeMarked(hit.index)) {
+            hit.menu.markRow(hit.index)
+        }
+    }
+
+    // Whether there was an item to choose.
+    function chooseAt(x, y) {
+        const hit = box.rowAt(x - box.x, y - box.y)
+        if (hit === null || hit.index < 0 || !hit.menu.canBeMarked(hit.index)) {
+            return false
+        }
+        hit.menu.markRow(hit.index)
+        hit.menu.chooseMarked()
+        return true
+    }
+
     SequentialAnimation {
         id: goingAway
         // Without a blinking menu the pause is skipped.

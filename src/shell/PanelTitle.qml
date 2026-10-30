@@ -130,6 +130,13 @@ Item {
                 title.panel.openMenu(title)
             }
         }
+        // The pointer stays here while pressed, even over the menu.
+        onPositionChanged: mouse => {
+            if (pressed) {
+                title.panel.dragTo?.(mapToItem(null, mouse.x, mouse.y))
+            }
+        }
+        onReleased: mouse => title.panel.releaseAt?.(mapToItem(null, mouse.x, mouse.y))
         // One notch of an ordinary wheel is 120 of Qt's units.
         onWheel: wheel => title.scrolled(wheel.angleDelta.y / 120)
     }

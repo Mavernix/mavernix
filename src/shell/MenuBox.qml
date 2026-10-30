@@ -188,6 +188,40 @@ Item {
         }
     }
 
+    // --- Pressed elsewhere and dragged here ---------------------------------------
+    //
+    // A press on a panel title that drags down into its menu stays with the
+    // panel until the release (MenuOverlay.markAt and chooseAt pass it on).
+
+    // The innermost open menu under a point in this menu's coordinates, and
+    // its row there: { menu, index }, with index -1 between rows; null if
+    // no menu is there.
+    function rowAt(x, y) {
+        if (openSubmenu !== null) {
+            const inner = openSubmenu.rowAt(x - openSubmenu.x, y - openSubmenu.y)
+            if (inner !== null) {
+                return inner
+            }
+        }
+        if (x < 0 || y < 0 || x >= width || y >= height) {
+            return null
+        }
+        const inRows = rowsClip.mapFromItem(menu, x, y)
+        if (inRows.y >= 0 && inRows.y < rowsClip.height) {
+            for (let index = 0; index < rowItems.count; index++) {
+                const row = rowItems.itemAt(index)
+                if (row === null) {
+                    continue
+                }
+                const top = row.mapToItem(rowsClip, 0, 0).y
+                if (inRows.y >= top && inRows.y < top + row.height) {
+                    return { menu: menu, index: index }
+                }
+            }
+        }
+        return { menu: menu, index: -1 }
+    }
+
     // The pointer rested on a crossed item.
     Timer {
         id: restingOnCrossed
