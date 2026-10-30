@@ -87,12 +87,15 @@ PanelWindow {
 
     // --- A press that drags into the menu ------------------------------------------
     //
-    // A press on what opened the menu (a panel title) keeps the pointer until
-    // it is released, so its owner passes the drag on, as points in this
-    // window: the item under the pointer is marked, and on release chosen,
-    // as on a Mac.
+    // A press on what opened the menu (a panel title, a dock icon held down)
+    // keeps the pointer until it is released, so its owner passes the drag
+    // on, as points in this window: the item under the pointer is marked,
+    // and on release chosen, as on a Mac. Not once the menu has closed.
 
     function markAt(x, y) {
+        if (!open) {
+            return
+        }
         const hit = box.rowAt(x - box.x, y - box.y)
         if (hit !== null && hit.index >= 0 && hit.menu.canBeMarked(hit.index)) {
             hit.menu.markRow(hit.index)
@@ -106,6 +109,9 @@ PanelWindow {
 
     // Whether there was an item to choose.
     function chooseAt(x, y) {
+        if (!open) {
+            return false
+        }
         const hit = box.rowAt(x - box.x, y - box.y)
         if (hit === null || hit.index < 0 || !hit.menu.canBeMarked(hit.index)) {
             return false

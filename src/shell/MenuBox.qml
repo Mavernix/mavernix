@@ -60,6 +60,7 @@ Item {
     onItemsChanged: {
         hoveredIndex = -1
         submenuIndex = -1
+        forgetCrossing()
         Qt.callLater(scrollToStart)
     }
 
@@ -153,6 +154,15 @@ Item {
     property point lastPointer: Qt.point(-1, -1)
     // A crossed item to mark once the pointer rests, -1 for none.
     property int waitingIndex: -1
+    function forgetCrossing() {
+        restingOnCrossed.stop()
+        waitingIndex = -1
+    }
+    onStillChanged: {
+        if (still) {
+            forgetCrossing()
+        }
+    }
     onOpenSubmenuChanged: {
         if (openSubmenu === null) {
             lastPointer = Qt.point(-1, -1)
@@ -195,8 +205,9 @@ Item {
 
     // --- Pressed elsewhere and dragged here ---------------------------------------
     //
-    // A press on a panel title that drags down into its menu stays with the
-    // panel until the release (MenuOverlay.markAt and chooseAt pass it on).
+    // A press on what opened the menu (a panel title, a dock icon) that drags
+    // into it stays with its owner until the release (MenuOverlay.markAt and
+    // chooseAt pass it on).
 
     // The innermost open menu under a point in this menu's coordinates, and
     // its row there: { menu, index }, with index -1 between rows; null if
