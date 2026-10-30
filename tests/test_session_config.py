@@ -211,6 +211,25 @@ class TestWindowAnimations(SessionTestCase):
         self.assertIn(["[themed-open-close]", "pop_duration = 120ms circle"], sections)
 
 
+class TestUncoveredColour(SessionTestCase):
+    def test_pushed_desktop_uncovers_the_lists_colour(self):
+        sys.path[:0] = [self.folder.name, str(SESSION_SOURCE_DIR)]
+        try:
+            import make_wayfire_config
+        finally:
+            del sys.path[:2]
+        theme = {"animation": {"notification_list": {"kind": "push"}},
+                 "notifications": {"list": {"background": {"gradient": ["#000000", "#336699", "#ffffff"]}}}}
+        self.assertEqual(make_wayfire_config.uncovered_color_lines(theme),
+                         ["background_color = 0.200 0.400 0.600 1.000"])
+        theme["notifications"]["list"]["background"] = {"color": "#ff000080"}
+        self.assertEqual(make_wayfire_config.uncovered_color_lines(theme),
+                         ["background_color = 1.000 0.000 0.000 0.502"])
+        # A list that slides in over the desktop uncovers nothing.
+        theme["animation"]["notification_list"]["kind"] = "slide"
+        self.assertEqual(make_wayfire_config.uncovered_color_lines(theme), [])
+
+
 class TestScreenScale(SessionTestCase):
     def test_a_stretched_mode_is_less_dense(self):
         # A dense panel shown at half its width is drawn at once, not twice.

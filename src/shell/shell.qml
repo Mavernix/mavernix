@@ -289,6 +289,6 @@ ShellRoot {
         sounds: sounds
         confirmDialog: confirmDialog
         // In front of overlays that reach down behind it.
-        raised: appGrid.open || notificationList.visible || windowOverview.showing
+        raised: appGrid.open || notificationList.showing || windowOverview.showing
     }
 }

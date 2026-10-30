@@ -906,6 +906,21 @@ def desktop_sections(config, theme, key_lines):
     return core, sections, plugins
 
 
+def uncovered_color_lines(theme):
+    """[core] background_color, the colour where nothing is drawn: only seen
+    where Notification Center pushes the desktop aside (desktop-aside). There
+    it is the list's own colour, so that a frame the shell draws late shows
+    as the list rather than as a dark gap; under a translucent menu bar too.
+    Left out for other themes."""
+    if theme.get("animation", {}).get("notification_list", {}).get("kind") != "push":
+        return []
+    fill = theme.get("notifications", {}).get("list", {}).get("background", {})
+    stops = [fill["color"]] if "color" in fill else fill.get("gradient", [])
+    if not stops:
+        return []
+    return [f"background_color = {wayfire_color(stops[len(stops) // 2])}"]
+
+
 def wayfire_color(text):
     """ "#rrggbb" or "#rrggbbaa" as Wayfire's four 0..1 numbers."""
     digits = text.lstrip("#")
@@ -992,7 +1007,7 @@ def main():
     compositor_keys = compositor_key_sections(config)
     desktop_core, desktop_parts, desktop_plugins = desktop_sections(
         config, theme, compositor_keys.pop("vswitch", []))
-    compositor_keys.setdefault("core", []).extend(desktop_core)
+    compositor_keys.setdefault("core", []).extend(desktop_core + uncovered_color_lines(theme))
     sections += desktop_parts
     plugins += desktop_plugins
     grid_section = next(section for section in sections if section[0] == "[grid]")

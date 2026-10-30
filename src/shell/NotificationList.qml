@@ -62,7 +62,16 @@ PanelWindow {
             easing.type: ThemeValues.easing(list.motion.curve)
         }
     }
-    visible: shown > 0
+    readonly property bool showing: shown > 0
+    // Pushed aside, the desktop uncovers the list from the first frame of its
+    // slide, so the list's window is kept made, drawing nothing and letting
+    // the pointer through while the list is shut: made as the slide began,
+    // its first frame came a tenth of a second late, and the desktop
+    // uncovered the bare screen until then.
+    visible: showing || pushes
+    mask: Region {
+        item: shownPart
+    }
 
     // Ignores reserved room (or it would end above the dock); shell.qml keeps
     // the dock in front of it while it shows.
