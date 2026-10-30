@@ -15,14 +15,26 @@ Flickable {
     readonly property real informationWidth: looks.value("information_width")
     readonly property real middleWidth: width - leftWidth - informationWidth - 3 * margin
     readonly property string failure: store.failures[app.name] ?? ""
+    readonly property real textBottom: Math.max(left.y + left.height, middle.y + middle.height)
 
-    contentHeight: Math.max(middle.y + middle.height, information.y + information.height) + margin
+    contentHeight: Math.max(screenshots.height > 0 ? screenshots.y + screenshots.height : textBottom,
+                            information.y + information.height) + margin
     clip: true
     boundsBehavior: Flickable.StopAtBounds
 
     // "45.4 MB", the way OS X counts (1000, not 1024).
     function sizeText(bytes) {
         return bytes >= 1e9 ? (bytes / 1e9).toFixed(1) + " GB" : (bytes / 1e6).toFixed(1) + " MB"
+    }
+
+    // "Oct 30, 2026", as OS X shows it. The day comes as "2026-10-30" and is
+    // read as a day here: new Date("2026-10-30") would be midnight UTC, which
+    // west of Greenwich is still the day before.
+    function dateText(day) {
+        if (day === "")
+            return ""
+        const [year, month, date] = day.split("-")
+        return new Date(year, month - 1, date).toLocaleDateString(Qt.locale(), "MMM d, yyyy")
     }
 
     Column {
@@ -72,11 +84,10 @@ Flickable {
             text: page.app.title
         }
 
-        StoreText {
+        MarkdownText {
             width: parent.width
             looks: page.looks
             text: page.app.description || page.app.summary
-            wrapMode: Text.Wrap
         }
 
         StoreText {
@@ -88,24 +99,35 @@ Flickable {
             text: page.looks.word("whats_new", { version: page.app.version })
         }
 
-        StoreText {
+        MarkdownText {
             width: parent.width
             visible: page.app.whats_new !== ""
             looks: page.looks
             text: page.app.whats_new
-            textFormat: Text.MarkdownText
-            wrapMode: Text.Wrap
         }
+    }
+
+    // Under both the icon column and the middle one, like OS X's, so below
+    // whichever of them is longer.
+    Column {
+        id: screenshots
+        x: page.margin
+        y: page.textBottom + page.margin
+        width: page.leftWidth + page.margin + page.middleWidth
+        spacing: page.margin
 
         Repeater {
             model: page.app.screenshots
 
             Image {
                 required property string modelData
-                // Screenshots start under the icon column too, like OS X's.
-                x: -(page.leftWidth + page.margin)
-                width: page.leftWidth + page.margin + page.middleWidth
+                width: screenshots.width
                 height: Math.min(page.looks.value("screenshot_height"), width * implicitHeight / Math.max(1, implicitWidth))
+                // A screenshot is usually several times the size it is shown
+                // at. Decoding it at twice that and mipmapping it keeps its
+                // small text readable once shrunk.
+                sourceSize.height: page.looks.value("screenshot_height") * 2
+                mipmap: true
                 source: "file://" + modelData
                 fillMode: Image.PreserveAspectFit
                 horizontalAlignment: Image.AlignLeft
@@ -129,7 +151,7 @@ Flickable {
         Repeater {
             model: [
                 ["category", page.app.category],
-                ["released", page.app.released],
+                ["released", page.dateText(page.app.released)],
                 ["version", page.app.version],
                 ["size", page.sizeText(page.app.bundle_size)],
                 ["developer", page.app.developer],

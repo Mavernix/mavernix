@@ -63,7 +63,7 @@ Item {
             visible: text !== ""
             color: row.looks.color(row.failure !== "" ? "failure_text_color" : "secondary_text_color")
             // An update says what it brings; a failure says what went wrong.
-            text: row.failure !== "" ? row.failure : (row.app.installed_version !== row.app.version ? row.app.whats_new : "")
+            text: row.failure !== "" ? row.failure : (row.app.installed_version !== row.app.version ? store.plainText(row.app.whats_new) : "")
             maximumLineCount: 2
             wrapMode: Text.Wrap
         }

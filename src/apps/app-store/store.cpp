@@ -6,6 +6,7 @@
 #include <QFileInfo>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QTextDocument>
 
 // The back end, as installed (meson defines BACKEND_DIRECTORY).
 static const QString back_end = QStringLiteral(BACKEND_DIRECTORY "/app_store.py");
@@ -158,6 +159,13 @@ void Store::open(const QString& name)
             return;
         }
     }
+}
+
+QString Store::plainText(const QString& markdown) const
+{
+    QTextDocument document;
+    document.setMarkdown(markdown);
+    return document.toPlainText();
 }
 
 void Store::queue(const Job& job)

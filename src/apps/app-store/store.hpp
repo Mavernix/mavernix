@@ -53,6 +53,9 @@ class Store : public QObject
     Q_INVOKABLE void remove(const QString& name);
     // Starts the installed app.
     Q_INVOKABLE void open(const QString& name);
+    // Markdown, such as a release's notes, as plain text, for a line that has
+    // room only for the start of it.
+    Q_INVOKABLE QString plainText(const QString& markdown) const;
 
   signals:
     void appsChanged();

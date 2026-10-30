@@ -23,7 +23,7 @@ category = "Music"                             # optional
 developer = "Mavernix"                         # optional; the organisation if left out
 license = "GPL-3.0-or-later"                   # optional
 description = """
-Optional. A few paragraphs for the app's page.
+Optional. A few paragraphs for the app's page, in Markdown.
 """
 
 # Files attached to the release.
