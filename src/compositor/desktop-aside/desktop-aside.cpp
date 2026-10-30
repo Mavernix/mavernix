@@ -115,6 +115,7 @@ class screen_t : public wf::per_output_plugin_instance_t
             auto shift = std::make_shared<wf::scene::translation_node_t>();
             replace_child(layer_node, shift);
             shift->set_children_list({layer_node});
+            wf::scene::update(shift, wf::scene::update_flag::CHILDREN_LIST);
             shifts.push_back(shift);
         }
     }
