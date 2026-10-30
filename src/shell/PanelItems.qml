@@ -121,9 +121,14 @@ Row {
     }
     readonly property int firstOrdinaryMenu: ownMenu !== null ? 1 : 0
 
+    readonly property string clockFormat:
+        panel.choices?.value("panel", "clock_format") ?? panel.layout.clock_format ?? "hh:mm"
     SystemClock {
         id: clock
-        precision: SystemClock.Minutes
+        // Ticks each second only for a format that shows seconds ("ss",
+        // "s"; text in quotes aside).
+        precision: /s/.test(row.clockFormat.replace(/'[^']*'/g, "")) ? SystemClock.Seconds
+                                                                     : SystemClock.Minutes
     }
 
     Repeater {
@@ -286,8 +291,7 @@ Row {
                 panel: row.panel
                 itemRow: row
                 boxOverhang: row.statusSpacing / 2
-                text: Qt.formatDateTime(clock.date, row.panel.choices?.value("panel", "clock_format")
-                                                    ?? row.panel.layout.clock_format ?? "hh:mm")
+                text: Qt.formatDateTime(clock.date, row.clockFormat)
 
                 // A date line, if panel.clock_menu_date_format is set.
                 readonly property string dateFormat: row.panel.layout.clock_menu_date_format ?? ""
