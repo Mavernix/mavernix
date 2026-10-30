@@ -1182,12 +1182,16 @@ PanelWindow {
                              && dock.pointerX >= x && dock.pointerX < x + width)
 
             // The last tile pointed at keeps the label while it fades out.
-            // One that runs a shell action lets the shell get ready for it.
+            // One that runs a shell action lets the shell get ready for it,
+            // and a folder shown as a grid or fan gets its window made.
             onHoveredChanged: {
                 if (hovered) {
                     dock.labelledTile = this
                     if (shellAction !== "") {
                         dock.shell?.prepare(shellAction)
+                    }
+                    if (opensFolder && folders.viewOf(custom) !== "list") {
+                        folderOverlay.warmUp()
                     }
                 }
             }
@@ -1402,6 +1406,7 @@ PanelWindow {
     }
 
     FolderOverlay {
+        id: folderOverlay
         screen: dock.screen
         settings: dock.settings
         plainBoxLooks: dock.menuLooks

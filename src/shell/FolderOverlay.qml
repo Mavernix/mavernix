@@ -43,14 +43,32 @@ PanelWindow {
     onOpenChanged: {
         if (open) {
             grid.reset()
+        } else {
+            staysMade.restart()
         }
     }
     Behavior on shown {
         NumberAnimation { duration: overlay.open ? overlay.openDuration : overlay.closeDuration }
     }
 
-    // The window stays until the going-away motion is over.
-    visible: open || shown > 0
+    // The window stays until the going-away motion is over, and then for a
+    // minute, empty and letting the pointer through: made anew, it took
+    // most of the time a folder needed to open (on an NVIDIA card, a grid's
+    // first frame came 110 to 180 ms after the click, against 50 to 90 ms
+    // with the window already made). warmUp() makes it ahead of time, when
+    // the pointer comes to rest on a folder.
+    readonly property bool showing: open || shown > 0
+    visible: showing || staysMade.running
+    function warmUp() {
+        staysMade.restart()
+    }
+    Timer {
+        id: staysMade
+        interval: 60000
+    }
+    mask: Region {
+        item: overlay.showing ? pressesOutside : null
+    }
 
     anchors {
         left: true
@@ -67,6 +85,7 @@ PanelWindow {
     color: "transparent"
 
     MouseArea {
+        id: pressesOutside
         anchors.fill: parent
         acceptedButtons: Qt.AllButtons
         onPressed: overlay.dismissed()
