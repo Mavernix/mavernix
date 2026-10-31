@@ -17,6 +17,7 @@ static constexpr uint32_t DECORATION_AREA_MOVE_BIT = (1 << 18);
 /** Different types of areas around the decoration */
 enum decoration_area_type_t
 {
+    DECORATION_AREA_BUTTON_BOUNDING_RECT,
     DECORATION_AREA_MOVE          = DECORATION_AREA_MOVE_BIT,
     DECORATION_AREA_TITLE         =
         DECORATION_AREA_MOVE_BIT | DECORATION_AREA_RENDERABLE_BIT,
