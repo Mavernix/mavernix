@@ -2,6 +2,8 @@
 
 #include <QCheckBox>
 #include <QComboBox>
+#include <QFileInfo>
+#include <QFileSystemWatcher>
 #include <QFormLayout>
 #include <QGridLayout>
 #include <QGuiApplication>
@@ -9,6 +11,7 @@
 #include <QLabel>
 #include <QRegularExpression>
 #include <QScreen>
+#include <QSignalBlocker>
 #include <QSlider>
 #include <QVBoxLayout>
 
@@ -51,7 +54,7 @@ DockPane::DockPane(Choices& choices, QWidget* parent) : QWidget(parent), choices
         this->choices.set(QStringLiteral("dock"), QStringLiteral("magnification"), on);
     });
 
-    auto* hides = new QCheckBox(word("dock_autohide", "Hide the dock until the pointer is at the screen's edge"));
+    hides = new QCheckBox(word("dock_autohide", "Hide the dock until the pointer is at the screen's edge"));
     hides->setChecked(choices.value(QStringLiteral("dock"), QStringLiteral("autohide")).toBool());
     connect(hides, &QCheckBox::toggled, this,
         [this](bool on) { this->choices.set(QStringLiteral("dock"), QStringLiteral("autohide"), on); });
@@ -133,11 +136,46 @@ DockPane::DockPane(Choices& choices, QWidget* parent) : QWidget(parent), choices
         this->choices.set(QStringLiteral("panel"), QStringLiteral("clock_format"), changed);
     });
     form->addRow(QString(), seconds);
+
+    // The folder is watched too, for a choices file replaced whole or not
+    // there yet (as in the Extensions pane).
+    const QString choices_file = choices.userChoicesFile();
+    watcher = new QFileSystemWatcher(this);
+    watcher->addPath(QFileInfo(choices_file).absolutePath());
+    auto follow = [this, choices_file]() {
+        if (QFileInfo::exists(choices_file) && !watcher->files().contains(choices_file))
+        {
+            watcher->addPath(choices_file);
+        }
+        showCurrent();
+    };
+    follow();
+    connect(watcher, &QFileSystemWatcher::fileChanged, this, follow);
+    connect(watcher, &QFileSystemWatcher::directoryChanged, this, follow);
+}
+
+void DockPane::showCurrent()
+{
+    // Shown without being written back.
+    const QSignalBlocker size_blocker(size);
+    const QSignalBlocker magnification_blocker(magnification);
+    const QSignalBlocker magnified_size_blocker(magnified_size);
+    const QSignalBlocker hides_blocker(hides);
+
+    size->setValue(currentIconSize());
+    magnification->setChecked(choices.current(QStringLiteral("dock"), QStringLiteral("magnification")).toBool());
+    magnified_size->setEnabled(magnification->isChecked());
+    const QVariant chosen_largest = choices.current(QStringLiteral("dock"), QStringLiteral("largest_icon_size"));
+    if (chosen_largest.isValid())
+    {
+        magnified_size->setValue(chosen_largest.toInt());
+    }
+    hides->setChecked(choices.current(QStringLiteral("dock"), QStringLiteral("autohide")).toBool());
 }
 
 int DockPane::currentIconSize() const
 {
-    const QVariant chosen = choices.value(QStringLiteral("dock"), QStringLiteral("icon_size"));
+    const QVariant chosen = choices.current(QStringLiteral("dock"), QStringLiteral("icon_size"));
     if (chosen.isValid())
     {
         return chosen.toInt();

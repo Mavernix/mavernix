@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.5.6 (2026-11-01)
+
+### Added
+
+- Extensions from the App Store work right away, without logging out, and a new one is switched on when it's installed.
+- The App Store lists apps and extensions separately.
+- The menu bar and Dock can be translucent with a blur: Settings, Desktop, Translucent menu bar and Dock. It's off by default.
+- Extensions can open their own panel from the menu bar and use the theme's colours (docs/extensions.md).
+
+### Changed
+
+- The title bar buttons stay lit while the pointer is between them.
+
+### Fixed
+
+- The menu bar and dock come back after waking from sleep or replugging a screen.
+- A window's title bar no longer ends up under the menu bar, also after sleep.
+- Files dragged from Dolphin can be dropped on the Theme Installer, the dock and the desktop.
+- A newly minimized window sits next to the trash, where its genie lands.
+- A window can be dragged from the gaps between its title bar buttons again.
+- Dock & Menu Bar settings follow changes made from the dock.
+- In Sea Lion, the desktop no longer shows through a line under the menu bar.
+
+Log out and back in once after updating.
+
 ## 0.5.5 (2026-11-01)
 
 - The App Store also offers extensions, starting with AirPods (the charge of your AirPods, noise control and Conversation Awareness in the menu bar). After getting one, log out and back in once, then switch it on in Settings.

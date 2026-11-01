@@ -322,12 +322,23 @@ Row {
                 + row.statusGapAdjustment(parent.itemIndex) + leadAdjustment
             height: row.height
 
+            // An extension's item comes from a new folder when the extension is
+            // updated, and is then loaded again from the start. A removed
+            // extension's item is about to go, and is left as it is.
+            readonly property string ofExtension: row.panel.extensions?.folderOfItem(name) ?? ""
+            onFoldersChanged: {
+                if (ofExtension === "") {
+                    return
+                }
+                folderNumber = 0
+                usesConfig = false
+                tryFolder()
+            }
             readonly property var folders: {
                 const list = []
                 for (const folder of (row.panel.layout.item_folders ?? [])) {
                     list.push("file://" + folder)
                 }
-                const ofExtension = row.panel.extensions?.folderOfItem(name) ?? ""
                 if (ofExtension !== "") {
                     list.push("file://" + ofExtension)
                 }
@@ -337,8 +348,12 @@ Row {
             property int folderNumber: 0
 
             function tryFolder() {
-                fileLoader.setSource(folders[folderNumber] + "/" + name + ".qml",
-                                     { panel: row.panel, itemRow: row })
+                const file = folders[folderNumber] + "/" + name + ".qml"
+                // The folders may be told as the item is made, and again when done.
+                if (fileLoader.source.toString() === file) {
+                    return
+                }
+                fileLoader.setSource(file, { panel: row.panel, itemRow: row })
             }
 
             // An item may be defined in the config alone (StatusFromConfig.qml); a file

@@ -57,6 +57,12 @@ PanelWindow {
 
     color: "transparent"
 
+    visible: keepShown.canShow
+    KeepShown {
+        id: keepShown
+        target: panel
+    }
+
     // Hides the panel's contents and input but keeps its reserved strip, so
     // windows do not move (for full-screen overlays such as the app grid).
     property bool concealed: false
@@ -222,7 +228,7 @@ PanelWindow {
         // menus onto the status items.
         const withMenus = titles
             .filter(title => title.itemRow === openTitle.itemRow)
-            .filter(title => title.visible && title.width > 0 && title.menuItems.length > 0)
+            .filter(title => title.visible && title.width > 0 && title.opensMenu)
             .sort((first, second) => first.mapToItem(null, 0, 0).x - second.mapToItem(null, 0, 0).x)
         const now = withMenus.indexOf(openTitle)
         if (now < 0 || withMenus.length < 2) {
@@ -258,13 +264,13 @@ PanelWindow {
         }
     }
 
-    // The title with a menu whose box (as wide as its press area) holds the point.
+    // The title with a menu or panel whose box (as wide as its press area) holds the point.
     function titleAt(point) {
         if (point.y < 0 || point.y >= panel.height) {
             return undefined
         }
         return titles.find(title => {
-            if (!title.visible || title.menuItems.length === 0) {
+            if (!title.visible || !title.opensMenu) {
                 return false
             }
             const local = title.mapFromItem(null, point.x, point.y)
@@ -291,6 +297,8 @@ PanelWindow {
         settings: panel.settings
         open: panel.openTitle !== null
         items: panel.openTitle?.menuItems ?? []
+        // The shown title's, so that it stays while it fades.
+        popover: panel.shownTitle?.popover ?? null
 
         // Hangs from the panel's inner edge, aligned with the title's box.
         menuX: panel.shownTitle ? panel.shownTitle.mapToItem(null, 0, 0).x - panel.shownTitle.boxOverhang : 0

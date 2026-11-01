@@ -1,0 +1,9 @@
+#!/bin/sh
+# Finds the extensions again, so the shell and the settings window follow one
+# installed or removed without logging out; with --enable NAME, the shell then
+# switches NAME on. The App Store runs it.
+if [ -z "${DESKTOP_SHELL_SETTINGS:-}" ]; then
+    echo "mavernix-extensions-changed: DESKTOP_SHELL_SETTINGS is not set; run it inside the desktop session." >&2
+    exit 1
+fi
+exec python3 "$(dirname "$(readlink -f "$0")")/../refresh_extensions.py" "$DESKTOP_SHELL_SETTINGS" "$@"

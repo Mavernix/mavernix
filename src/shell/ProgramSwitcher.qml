@@ -172,7 +172,11 @@ PanelWindow {
 
     // --- The window -------------------------------------------------------------
 
-    visible: open
+    visible: open && keepShown.canShow
+    KeepShown {
+        id: keepShown
+        target: switcher
+    }
     anchors {
         left: true
         right: true

@@ -68,7 +68,11 @@ PanelWindow {
     // the pointer through while the list is shut: made as the slide began,
     // its first frame came a tenth of a second late, and the desktop
     // uncovered the bare screen until then.
-    visible: showing || pushes
+    visible: (showing || pushes) && keepShown.canShow
+    KeepShown {
+        id: keepShown
+        target: list
+    }
     mask: Region {
         item: shownPart
     }

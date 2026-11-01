@@ -9,6 +9,7 @@
 
 class Choices;
 class QCheckBox;
+class QFileSystemWatcher;
 class QLabel;
 class QListWidget;
 class QVBoxLayout;
@@ -26,6 +27,13 @@ class ExtensionsPane : public QWidget
     QWidget* buildDetail();
     QWidget* buildFolderButton();
 
+    void watchFiles();
+    // Which are on, as the user's choices file holds it now.
+    QStringList enabledInFile() const;
+    // Reads the extensions and which are on again, and shows them if they changed.
+    void reload();
+    // The extensions found, or that there are none.
+    void showFound();
     void fillList(const QString& chosen_name);
     void showExtension(const QString& name);
     bool isEnabled(const QString& name) const;
@@ -40,7 +48,13 @@ class ExtensionsPane : public QWidget
     Choices& choices;
     QVariantMap words;
     QVariantMap found;
+    // The names of those switched on.
+    QStringList enabled;
 
+    QFileSystemWatcher* watcher = nullptr;
+    QLabel* none = nullptr;
+    // The list and the chosen one's details, while there are any.
+    QWidget* some = nullptr;
     QListWidget* list = nullptr;
     QLabel* detail_icon = nullptr;
     QLabel* detail_title = nullptr;

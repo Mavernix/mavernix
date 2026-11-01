@@ -19,14 +19,16 @@ An extension is just its folder, put in ~/.config/mavernix/extensions/NAME/,
 where the desktop looks for the user's own. The store leaves a file in it,
 .app-store.json (the same record as an app's installed.json), and its icon;
 a folder without that file is the user's and is never replaced or removed.
-The desktop reads its extensions when it starts, so a new one shows up after
-the next login. It is switched on in the settings window, as any other.
+Once it is in place, the store tells a running desktop
+(mavernix-extensions-changed), which takes it up at once: a new extension is
+switched on, an updated one stays on or off as it was.
 """
 
 import json
 import os
 import shlex
 import shutil
+import subprocess
 import sys
 import tarfile
 import tomllib
@@ -35,6 +37,10 @@ from pathlib import Path
 import web
 
 STORE_KEY = "X-Mavernix-App-Store"
+# Run with the desktop session's PATH; outside a session there is none.
+DESKTOP_COMMAND = "mavernix-extensions-changed"
+# Long enough for a busy desktop; the extension is in place whatever happens.
+DESKTOP_TIMEOUT_SECONDS = 20
 
 
 def data_folder():
@@ -168,6 +174,7 @@ def _refuse_users_own_extension(app):
 def _install_extension(app, download):
     name = app["name"]
     folder = extensions_folder() / name
+    is_new = not folder.exists()
 
     # The extension's files are unpacked in a folder of a folder, so the
     # desktop doesn't take the half-done one for an extension.
@@ -183,6 +190,25 @@ def _install_extension(app, download):
         _swap_in(new_folder, folder)
     finally:
         shutil.rmtree(staging, ignore_errors=True)
+    _tell_desktop(enable=name if is_new else None)
+
+
+def _tell_desktop(enable=None):
+    """Has a running desktop look for its extensions again, and switch `enable`
+    on. The extension is in place either way; without a session, or if this
+    fails, the desktop finds it at the next login."""
+    command = shutil.which(DESKTOP_COMMAND)
+    if command is None or not os.environ.get("DESKTOP_SHELL_SETTINGS"):
+        print(f"{DESKTOP_COMMAND} can't be run here; the desktop finds the extension at the next login.", file=sys.stderr)
+        return
+    arguments = [command] + (["--enable", enable] if enable else [])
+    try:
+        result = subprocess.run(arguments, capture_output=True, text=True, timeout=DESKTOP_TIMEOUT_SECONDS)
+    except (OSError, subprocess.TimeoutExpired) as error:
+        print(f"{DESKTOP_COMMAND} failed: {error}", file=sys.stderr)
+        return
+    if result.returncode != 0:
+        print(f"{DESKTOP_COMMAND} failed: {result.stderr.strip()}", file=sys.stderr)
 
 
 def _check_manifest(app, manifest_file):
@@ -203,6 +229,7 @@ def remove(name):
         _remove_app(name, app)
     elif name in installed_extensions():
         shutil.rmtree(extensions_folder() / name)
+        _tell_desktop()
     else:
         # An extension folder without the store's record is the user's own,
         # and isn't found as installed, so it is never removed.

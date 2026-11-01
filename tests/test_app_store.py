@@ -20,6 +20,7 @@ import tarfile
 import tempfile
 import threading
 import unittest
+import unittest.mock
 from pathlib import Path
 
 BACKEND_DIR = Path(os.environ["APP_STORE_BACKEND_DIR"])
@@ -112,6 +113,15 @@ class AppStoreTestCase(unittest.TestCase):
         os.environ["XDG_CACHE_HOME"] = str(self.folder / "cache")
         os.environ["XDG_DATA_HOME"] = str(self.folder / "data")
         os.environ["XDG_CONFIG_HOME"] = str(self.folder / "config")
+        # A desktop of its own, which only notes what the store tells it.
+        desktop_bin = self.folder / "bin"
+        desktop_bin.mkdir()
+        self.told_desktop = self.folder / "told-desktop"
+        command = desktop_bin / bundles.DESKTOP_COMMAND
+        command.write_text(f'#!/bin/sh\necho "$*" >> {self.told_desktop}\n')
+        command.chmod(0o755)
+        os.environ["PATH"] = f"{desktop_bin}:{os.environ['PATH']}"
+        os.environ["DESKTOP_SHELL_SETTINGS"] = str(self.folder / "shell.json")
         self.repositories = []
 
     def tearDown(self):
@@ -463,6 +473,44 @@ icon = "echo.svg"
         with self.assertRaisesRegex(web.StoreProblem, "won't unpack"):
             self.install_extension()
         self.assertFalse((self.extension_folder().parent / "escaped").exists())
+
+    def told(self):
+        """What the desktop was told, one line for each time."""
+        return self.told_desktop.read_text().splitlines() if self.told_desktop.exists() else []
+
+    def test_the_desktop_switches_a_new_extension_on_and_keeps_an_updated_one_as_it_was(self):
+        self.publish_extensions()
+        self.install_extension()
+        self.assertEqual(self.told(), ["--enable echo"])
+        self.publish_extensions(version="0.4.0")
+        self.install_extension()
+        self.assertEqual(self.told(), ["--enable echo", ""])
+
+    def test_the_desktop_is_told_of_a_removal(self):
+        self.publish_extensions()
+        self.install_extension()
+        bundles.remove("echo")
+        self.assertEqual(self.told(), ["--enable echo", ""])
+
+    def test_without_a_desktop_the_extension_still_installs(self):
+        del os.environ["DESKTOP_SHELL_SETTINGS"]
+        self.publish_extensions()
+        self.install_extension()
+        self.assertTrue((self.extension_folder() / "extension.toml").is_file())
+        self.assertEqual(self.told(), [])
+
+    def test_a_desktop_that_fails_doesnt_fail_the_install(self):
+        (self.folder / "bin" / bundles.DESKTOP_COMMAND).write_text("#!/bin/sh\nexit 1\n")
+        self.publish_extensions()
+        self.install_extension()
+        self.assertEqual(bundles.installed_extensions()["echo"]["version"], "0.3.0")
+
+    def test_a_desktop_that_hangs_doesnt_hold_up_the_install(self):
+        (self.folder / "bin" / bundles.DESKTOP_COMMAND).write_text("#!/bin/sh\nsleep 5\n")
+        self.publish_extensions()
+        with unittest.mock.patch.object(bundles, "DESKTOP_TIMEOUT_SECONDS", 0.2):
+            self.install_extension()
+        self.assertEqual(bundles.installed_extensions()["echo"]["version"], "0.3.0")
 
     def test_remove_takes_the_folder_but_never_one_the_user_made(self):
         self.publish_extensions()

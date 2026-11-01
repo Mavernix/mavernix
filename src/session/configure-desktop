@@ -73,6 +73,9 @@ print('yes' if value else 'no')" "$shell_settings" "$1" "$2" "$3"
 
 write_shell_settings() {
     python3 "$session_dir/make_shell_config.py" "$config" "$shell_settings"
+    # The file the shell watches for extensions installed later; it must
+    # exist from the start, and hold this theme's looks after a switch.
+    python3 "$session_dir/refresh_extensions.py" "$shell_settings"
 }
 
 write_compositor_settings() {

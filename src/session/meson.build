@@ -30,6 +30,7 @@ install_data(
     'make_wayfire_config.py',
     'pick_desktop.py',
     'refresh_desktops.py',
+    'refresh_extensions.py',
     'refresh_themes.py',
     'themes.py',
     'toml_text.py',
@@ -39,7 +40,7 @@ install_data(
     install_dir: session_dir,
 )
 install_data('bin/mavernix-switch', 'bin/mavernix-reconfigure', 'bin/mavernix-file-action',
-    'bin/mavernix-check-theme',
+    'bin/mavernix-check-theme', 'bin/mavernix-extensions-changed',
     install_dir: session_dir / 'bin', install_mode: 'rwxr-xr-x')
 install_data('notice/shell.qml', install_dir: session_dir / 'notice')
 install_data('portals/wayfire-portals.conf', install_dir: session_dir / 'portals')

@@ -22,9 +22,14 @@ Flickable {
     clip: true
     boundsBehavior: Flickable.StopAtBounds
 
-    // "45.4 MB", the way OS X counts (1000, not 1024).
+    // "45.4 MB" or "12 KB", the way OS X counts (1000, not 1024). A size that
+    // would round to 1000 of one unit is shown in the next: "1.0 MB", not "1000 KB".
     function sizeText(bytes) {
-        return bytes >= 1e9 ? (bytes / 1e9).toFixed(1) + " GB" : (bytes / 1e6).toFixed(1) + " MB"
+        if (bytes >= 999.95e6)
+            return (bytes / 1e9).toFixed(1) + " GB"
+        if (bytes >= 999.5e3)
+            return (bytes / 1e6).toFixed(1) + " MB"
+        return Math.max(1, Math.round(bytes / 1e3)) + " KB"
     }
 
     // "Oct 30, 2026", as OS X shows it. The day comes as "2026-10-30" and is
@@ -150,7 +155,8 @@ Flickable {
 
         Repeater {
             model: [
-                ["category", page.app.category],
+                // An extension without a category of its own is in "Extension".
+                ["category", page.app.category || (page.app.kind === "extension" ? page.looks.word("extension_category") : "")],
                 ["released", page.dateText(page.app.released)],
                 ["version", page.app.version],
                 ["size", page.sizeText(page.app.bundle_size)],

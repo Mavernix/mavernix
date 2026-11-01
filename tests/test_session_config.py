@@ -115,6 +115,107 @@ class TestWrittenSettings(SessionTestCase):
         self.assertEqual(list(json.loads(written.read_text())["extensions"]), ["echo"])
 
 
+class TestRefreshedExtensions(SessionTestCase):
+    """An extension installed while the desktop runs (refresh_extensions.py)."""
+
+    def setUp(self):
+        super().setUp()
+        self.settings_file = self.home / "state" / "shell.json"
+        self.run_script("make_shell_config.py", CONFIG_DIR / "plain.toml", self.settings_file)
+        self.settings = json.loads(self.settings_file.read_text())
+
+        # A shell of its own, which notes what it is asked and whether the
+        # list was written by then.
+        shell_bin = Path(self.folder.name) / "bin"
+        shell_bin.mkdir()
+        self.asked_shell = Path(self.folder.name) / "asked-shell"
+        shell = shell_bin / "qs"
+        shell.write_text(f"""#!/bin/sh
+listed=no; [ -f {self.settings["extensions_file"]} ] && listed=yes
+echo "$* (list written: $listed)" >> {self.asked_shell}
+""")
+        shell.chmod(0o755)
+        self.environment["PATH"] = f"{shell_bin}:{self.environment['PATH']}"
+
+    def add_extension(self, name):
+        folder = self.home / ".config" / "mavernix" / "extensions" / name
+        folder.mkdir(parents=True)
+        (folder / "extension.toml").write_text(f'title = "{name}"\n')
+
+    def found(self):
+        return list(json.loads(Path(self.settings["extensions_file"]).read_text())["extensions"])
+
+    def asked(self):
+        """What the shell was asked, one line for each time, without the shell's folder."""
+        if not self.asked_shell.exists():
+            return []
+        return [line.split(" ipc ", 1)[1] for line in self.asked_shell.read_text().splitlines()]
+
+    def test_the_list_beside_the_settings_follows_the_folder(self):
+        self.assertEqual(Path(self.settings["extensions_file"]), self.settings_file.with_name("extensions.json"))
+        self.run_script("refresh_extensions.py", self.settings_file)
+        self.assertEqual(self.found(), [])
+        self.add_extension("echo")
+        self.run_script("refresh_extensions.py", self.settings_file)
+        self.assertEqual(self.found(), ["echo"])
+        self.assertEqual(self.asked(), [])
+
+    def test_an_update_is_loaded_through_a_new_link(self):
+        # The shell keeps code by its path; an update must come by a new one.
+        def load_directory():
+            self.run_script("refresh_extensions.py", self.settings_file)
+            found = json.loads(Path(self.settings["extensions_file"]).read_text())["extensions"]
+            return Path(found["echo"]["load_directory"])
+
+        self.add_extension("echo")
+        folder = self.home / ".config" / "mavernix" / "extensions" / "echo"
+        first = load_directory()
+        self.assertEqual(first.resolve(), folder.resolve())
+        self.assertEqual(load_directory(), first)
+
+        # As the App Store updates it: a new folder swapped in.
+        staged = folder.with_name(".echo-new")
+        staged.mkdir()
+        (staged / "extension.toml").write_text('title = "echo"\nversion = "2"\n')
+        shutil.rmtree(folder)
+        staged.rename(folder)
+        second = load_directory()
+        self.assertNotEqual(second, first)
+        self.assertEqual(second.resolve(), folder.resolve())
+
+        # As someone working on it: a file changed in place.
+        manifest = folder / "extension.toml"
+        manifest.write_text(manifest.read_text() + 'description = "longer"\n')
+        os.utime(manifest, ns=(1, manifest.stat().st_mtime_ns + 1))
+        self.assertNotIn(load_directory(), (first, second))
+
+    def test_enable_asks_the_shell_once_the_list_is_written(self):
+        self.add_extension("echo")
+        self.run_script("refresh_extensions.py", self.settings_file, "--enable", "echo")
+        self.assertEqual(self.asked(), ["call extensions switchOn echo (list written: yes)"])
+
+    def test_the_users_choices_are_left_to_the_shell(self):
+        self.add_extension("echo")
+        self.run_script("refresh_extensions.py", self.settings_file, "--enable", "echo")
+        self.assertFalse(Path(self.settings["user_choices_file"]).exists())
+
+    def test_a_name_not_found_still_writes_the_list(self):
+        self.add_extension("echo")
+        result = self.run_script("refresh_extensions.py", self.settings_file, "--enable", "nothing", may_fail=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("no extension called nothing", result.stderr)
+        self.assertEqual(self.found(), ["echo"])
+        self.assertEqual(self.asked(), [])
+
+    def test_a_shell_that_fails_is_reported(self):
+        (Path(self.folder.name) / "bin" / "qs").write_text("#!/bin/sh\necho 'no shell running' >&2\nexit 1\n")
+        self.add_extension("echo")
+        result = self.run_script("refresh_extensions.py", self.settings_file, "--enable", "echo", may_fail=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("no shell running", result.stderr)
+        self.assertEqual(self.found(), ["echo"])
+
+
 class TestPickedDesktop(SessionTestCase):
     def picked(self):
         return self.run_script("pick_desktop.py").strip()
@@ -384,6 +485,12 @@ class TestSeaLionUpdates(unittest.TestCase):
         self.assertNotIn("themes", self.updates[5])
         self.assertEqual(self.updates[5]["settings"]["animation.menu_close"], made["animation"]["menu_close"])
 
+    def test_older_light_themes_get_the_imports_panel_edge(self):
+        self.assertEqual(self.updates[8]["themes"], ["sea-lion"])
+        [correction] = self.updates[8]["corrections"]
+        self.assertEqual((correction["table"], correction["key"]), ("panel", "separator"))
+        self.assertEqual(correction["now"], [self.make_theme.PANEL_EDGE])
+
 
 class TestSeaLionMusic(unittest.TestCase):
     """Bandstand's [music] table names pictures make_music_pictures cuts from
@@ -574,24 +681,28 @@ class TestShellBlur(SessionTestCase):
         finally:
             del sys.path[:2]
 
+    # The menu bar's translucency checkbox; the Dock stays independent.
+    SWITCHED_ON = {"panel": {"translucent_menu_bar": True}}
+
     def test_blur_is_opt_in_and_targets_only_selected_shell_surfaces(self):
         self.assertEqual(self.generator.blur_section({}, {}), ([], []))
         for enabled, expected in (({"panel": True}, ['desktop-panel']),
                                   ({"dock": True}, ['mavernix-dock']),
                                   ({"panel": True, "dock": True}, ['desktop-panel', 'mavernix-dock'])):
             with self.subTest(enabled=enabled):
-                section, plugins = self.generator.blur_section({"blur": enabled}, {})
+                section, plugins = self.generator.blur_section({"blur": enabled, **self.SWITCHED_ON}, {})
                 self.assertEqual(plugins, ["blur"])
                 matcher = next(line for line in section if line.startswith("blur_by_default"))
                 self.assertEqual(matcher, "blur_by_default = " + " | ".join(f'app_id is "{name}"' for name in expected))
                 self.assertNotIn("toplevel", matcher)
                 self.assertIn("toggle = none", section)
-        self.assertEqual(self.generator.blur_section({"blur": {"panel": False}}, {"blur": {"panel": True}}), ([], []))
+        self.assertEqual(self.generator.blur_section(
+            {"blur": {"panel": False}, **self.SWITCHED_ON}, {"blur": {"panel": True}}), ([], []))
 
-    def test_original_menu_bar_excludes_only_panel_from_blur(self):
-        section, plugins = self.generator.blur_section({
-            "blur": {"panel": True, "dock": True},
-            "panel": {"translucent_menu_bar": False}}, {})
+    def test_opaque_menu_bar_does_not_disable_dock_blur(self):
+        section, plugins = self.generator.blur_section(
+            {"blur": {"panel": True, "dock": True},
+             "panel": {"translucent_menu_bar": False}}, {})
         self.assertEqual(plugins, ["blur"])
         self.assertIn('blur_by_default = app_id is "mavernix-dock"', section)
         self.assertFalse(any('desktop-panel' in line for line in section))
@@ -612,7 +723,7 @@ class TestShellBlur(SessionTestCase):
         for key, value in (("method", "bad"), ("iterations", -1), ("iterations", 2.5),
                            ("degrade", 0), ("saturation", 4), ("offset", float("nan"))):
             with self.subTest(key=key, value=value), self.assertRaises(SystemExit):
-                self.generator.blur_section({"blur": {"panel": True, key: value}}, {})
+                self.generator.blur_section({"blur": {"panel": True, key: value}, **self.SWITCHED_ON}, {})
 
 
 class TestKdeColours(SessionTestCase):

@@ -10,6 +10,7 @@ import Quickshell
 import Quickshell.Wayland
 import Shell.Native
 import "DockLayout.js" as DockLayout
+import "DroppedFiles.js" as DroppedFiles
 import "ThemeValues.js" as ThemeValues
 
 PanelWindow {
@@ -29,6 +30,12 @@ PanelWindow {
     WlrLayershell.layer: raised ? WlrLayer.Overlay : WlrLayer.Top
     // Lets the compositor tell this surface from the shell's others.
     WlrLayershell.namespace: "mavernix-dock"
+
+    visible: keepShown.canShow
+    KeepShown {
+        id: keepShown
+        target: dock
+    }
 
     required property var choices
     property var confirmDialog: null
@@ -338,8 +345,22 @@ PanelWindow {
         (config.last_group_at_end ?? false) && keptGroups.length > 1
             ? keptGroups[keptGroups.length - 1].length : 0
 
-    readonly property var minimizedWindows:
-        ToplevelManager.toplevels.values.filter(window => window.minimized)
+    // Minimised windows in the order they were minimised, so that a new one
+    // comes last, before the trash, where the minimise effect takes it. Those
+    // already minimised when the shell starts keep the window list's order.
+    readonly property var minimizedWindows: {
+        const now = ToplevelManager.toplevels.values.filter(window => window.minimized)
+        return minimizeOrder.filter(window => now.includes(window))
+            .concat(now.filter(window => !minimizeOrder.includes(window)))
+    }
+    // The order so far. Changed in place, so that it does not compute the row
+    // again: the windows' own changes already do.
+    readonly property var minimizeOrder: []
+    function keepMinimizeOrder() {
+        minimizeOrder.splice(0, minimizeOrder.length, ...minimizedWindows)
+    }
+    onMinimizedWindowsChanged: keepMinimizeOrder()
+    Component.onCompleted: keepMinimizeOrder()
 
     // --- Minimised windows' pictures ---------------------------------------------
     // With dock.minimized.shows = "picture", a minimised window's tile shows a
@@ -495,17 +516,6 @@ PanelWindow {
         }
     }
 
-    function keepDropped(addresses) {
-        const paths = []
-        for (const address of addresses) {
-            const text = String(address)
-            if (text.startsWith("file://")) {
-                paths.push(decodeURIComponent(text.substring("file://".length)))
-            }
-        }
-        keepPaths(paths)
-    }
-
     // Keeps files and folders in the last group, skipping those already there.
     // Other programs ask for this through shell.qml ("dock").
     function keepPaths(paths) {
@@ -528,26 +538,6 @@ PanelWindow {
         }
     }
 
-    // The dropped files as "file://" addresses: from text/uri-list, else from
-    // plain-text paths. The uri-list can come back empty: Qt asks a desktop
-    // service for the files, and gets nothing where it is not running.
-    function droppedAddresses(drop) {
-        const lines = text => text.split(/\r?\n/).filter(line => line !== "" && !line.startsWith("#"))
-        const listed = lines(drop.getDataAsString("text/uri-list"))
-        if (listed.length > 0) {
-            return listed
-        }
-        const addresses = []
-        for (const line of lines(drop.getDataAsString("text/plain"))) {
-            if (line.startsWith("file://")) {
-                addresses.push(line)
-            } else if (line.startsWith("/")) {
-                addresses.push("file://" + encodeURI(line))
-            }
-        }
-        return addresses
-    }
-
     // Files held over the trash: its name shows, as under the pointer.
     property bool dropOverTrash: false
 
@@ -560,17 +550,15 @@ PanelWindow {
         // end of the last group, as before.
         function follow(drag) {
             dock.dropOverTrash = dock.overTrash(drag.x)
-            const addresses = dock.droppedAddresses(drag)
-            const single = addresses.length === 1 && String(addresses[0]).startsWith("file://")
-            if (dock.dropOverTrash || !single) {
+            const paths = DroppedFiles.paths(drag)
+            if (dock.dropOverTrash || paths.length !== 1) {
                 if (dock.dragged?.dropped ?? false) {
                     dock.giveUpDrag()
                 }
                 return
             }
             if (dock.dragged === null) {
-                const path = decodeURIComponent(String(addresses[0]).substring("file://".length))
-                dock.dragged = { listedAs: dock.droppedEntry(path), iconSource: "", fromOutside: true,
+                dock.dragged = { listedAs: dock.droppedEntry(paths[0]), iconSource: "", fromOutside: true,
                                  dropped: true }
             }
             if (dock.dragged.dropped ?? false) {
@@ -588,13 +576,13 @@ PanelWindow {
         }
         onDropped: drop => {
             dock.dropOverTrash = false
-            const addresses = dock.droppedAddresses(drop)
-            if (addresses.length === 0) {
+            const paths = DroppedFiles.paths(drop)
+            if (paths.length === 0) {
                 return
             }
             // Onto the trash, files go there; anywhere else they are kept.
             if (dock.overTrash(drop.x)) {
-                dock.trashDropped(addresses)
+                dock.trashDropped(paths)
                 drop.accept(Qt.MoveAction)
             } else if ((dock.dragged?.dropped ?? false) && !dock.draggedOut) {
                 dock.endDrag()
@@ -604,7 +592,7 @@ PanelWindow {
                 if (dock.dragged?.dropped ?? false) {
                     dock.giveUpDrag()
                 }
-                dock.keepDropped(addresses)
+                dock.keepPaths(paths)
                 drop.accept(Qt.LinkAction)
             }
         }
@@ -622,15 +610,8 @@ PanelWindow {
 
     // Moves dropped files to the trash with [dock] trash_drop_command, which
     // gets the paths appended; does nothing without it.
-    function trashDropped(addresses) {
+    function trashDropped(paths) {
         const command = config.trash_drop_command ?? []
-        const paths = []
-        for (const address of addresses) {
-            const text = String(address)
-            if (text.startsWith("file://")) {
-                paths.push(decodeURIComponent(text.substring("file://".length)))
-            }
-        }
         if (command.length > 0 && paths.length > 0) {
             Quickshell.execDetached(command.concat(paths))
         }
@@ -1033,6 +1014,7 @@ PanelWindow {
 
     Loader {
         id: shelf
+        // The shelf's finish is independent of the menu bar's translucency.
         opacity: (dock.choices.value("blur", "dock") ?? dock.settings.config.blur?.dock
                   ?? dock.settings.theme.blur?.dock ?? false)
                  ? Math.max(0, Math.min(1, dock.choices.value("blur", "dock_opacity")

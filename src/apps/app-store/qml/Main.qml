@@ -52,6 +52,10 @@ Window {
 
     function matchesSearch(app) {
         const wanted = searchText.toLowerCase()
+        // "ext" finds every extension, but "on", inside the word, doesn't.
+        if (app.kind === "extension" && looks.word("extension_category").toLowerCase().startsWith(wanted)) {
+            return true
+        }
         return [app.title, app.summary, app.category, app.developer].some(text => (text ?? "").toLowerCase().includes(wanted))
     }
 
@@ -127,6 +131,7 @@ Window {
             looks: window.looks
             apps: store.apps
             heading: window.looks.word("featured_heading")
+            extensionsHeading: window.looks.word("featured_extensions_heading")
             onAppChosen: name => window.show({ app: name })
         }
     }
@@ -138,6 +143,7 @@ Window {
             looks: window.looks
             apps: store.apps.filter(app => window.matchesSearch(app))
             heading: window.looks.word(apps.length > 0 ? "results" : "no_results", { text: window.searchText })
+            extensionsHeading: window.looks.word("extensions")
             onAppChosen: name => window.show({ app: name })
         }
     }
@@ -149,6 +155,7 @@ Window {
             looks: window.looks
             apps: window.installedApps
             heading: window.looks.word("installed")
+            extensionsHeading: window.looks.word("extensions")
             emptyText: window.looks.word("nothing_installed")
             removable: true
             onAppChosen: name => window.show({ app: name })
@@ -168,6 +175,7 @@ Window {
                 }
                 return count === 1 ? window.looks.word("one_update") : window.looks.word("updates_available", { count: count })
             }
+            extensionsHeading: window.looks.word("extensions")
             offersUpdateAll: true
             onAppChosen: name => window.show({ app: name })
         }

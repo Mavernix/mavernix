@@ -17,13 +17,17 @@ this resolves both and writes one JSON file:
       "default_desktop_file": "/full/path/of/the/user's/choice/of/desktop",
       "user": { "name": "me", "full_name": "My Name", "picture": "/home/me/.face" },
       "extensions": { "NAME": { "directory": "...", "manifest": { ... }, "looks": { ... }, "settings": { ... },
-                              "decimal_settings": [ ... ] } }
+                              "decimal_settings": [ ... ] } },
+      "extensions_file": "/full/path/of/extensions.json"
     }
 
 `config` includes the user's changes (user_choices.py); `shortcut_defaults`
 is without them, for "Restore Default". `extensions` lists every extension
 found, enabled or not (docs/extensions.md); each one's `decimal_settings` names the
 settings whose default has a decimal point, since a JSON reader takes 1.0 for 1.
+`extensions_file`, beside the output, holds the same list as found later
+(refresh_extensions.py), so a running session follows an extension installed
+or removed; `extensions` is the list as the session started.
 Nothing else is interpreted here.
 """
 
@@ -136,6 +140,7 @@ def main():
         "default_desktop_file": str(default_desktop_path()),
         "user": user_details(),
         "extensions": found_extensions(config, theme_dir.name),
+        "extensions_file": str(arguments.output.resolve().with_name("extensions.json")),
     }
     # The shell writes that file but does not make folders.
     choices_path(arguments.config).parent.mkdir(parents=True, exist_ok=True)

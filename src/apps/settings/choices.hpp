@@ -19,6 +19,9 @@ class Choices
 
     // Invalid if the desktop does not set it.
     QVariant value(const QString& table, const QString& key) const;
+    // As value(), but as the user's file holds it now: another program (the
+    // App Store, the shell) may have changed it since this one started.
+    QVariant current(const QString& table, const QString& key) const;
     // Returns what went wrong writing the user's file, else empty.
     QString set(const QString& table, const QString& key, const QVariant& value);
 
@@ -32,8 +35,13 @@ class Choices
     // The machine's keyboard, used until a layout is chosen:
     // { layout, variant, model, options }, each only if set.
     QVariantMap systemKeyboard() const;
-    // By name: each { directory, manifest, looks, settings }.
+    // By name: each { directory, manifest, looks, settings }, as the
+    // session finds them now.
     QVariantMap extensions() const;
+    // The file the session rewrites when the extensions change; watch it.
+    QString extensionsFile() const;
+    // Where the user's changes are kept, which the shell writes too.
+    QString userChoicesFile() const;
     QString themeDirectory() const;
 
     // defaultDesktopFile() holds which desktop starts when none is named.

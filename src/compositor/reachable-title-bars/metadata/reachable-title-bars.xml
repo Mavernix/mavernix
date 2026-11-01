@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="reachable-title-bars">
+		<_short>Reachable Title Bars</_short>
+		<_long>Keeps every window's title bar out from under the menu bar, where it could not be dragged.</_long>
+		<category>Window Management</category>
+	</plugin>
+</wayfire>
