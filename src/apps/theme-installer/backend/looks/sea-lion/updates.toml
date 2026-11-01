@@ -273,3 +273,15 @@ revision = 7
 import_brings = [
     "Bandstand, the music player, looks like iTunes 11: its toolbar, transport buttons, volume slider and LCD, in Sea Lion Dark those of the professional programs.",
 ]
+
+[[update]]
+revision = 8
+themes = ["sea-lion"]
+
+# The menu bar's last row is black, as on 10.9.5, instead of clear: the
+# desktop no longer shows through a line between the bar and the windows.
+[[update.corrections]]
+table = "panel"
+key = "separator"
+was = ["#00000000"]
+now = ["#000000"]

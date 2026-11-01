@@ -384,6 +384,12 @@ class TestSeaLionUpdates(unittest.TestCase):
         self.assertNotIn("themes", self.updates[5])
         self.assertEqual(self.updates[5]["settings"]["animation.menu_close"], made["animation"]["menu_close"])
 
+    def test_older_light_themes_get_the_imports_panel_edge(self):
+        self.assertEqual(self.updates[8]["themes"], ["sea-lion"])
+        [correction] = self.updates[8]["corrections"]
+        self.assertEqual((correction["table"], correction["key"]), ("panel", "separator"))
+        self.assertEqual(correction["now"], [self.make_theme.PANEL_EDGE])
+
 
 class TestSeaLionMusic(unittest.TestCase):
     """Bandstand's [music] table names pictures make_music_pictures cuts from
