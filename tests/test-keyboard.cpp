@@ -59,8 +59,8 @@ class TestKeyboard : public QObject
 
     void a_shortcut_may_have_alternatives()
     {
-        const QString two = QStringLiteral("KEY_F3 | <ctrl> KEY_UP");
-        QCOMPARE(round_trip(two), QStringLiteral("KEY_F3"));
+        const QString two = QStringLiteral("KEY_SCALE | <ctrl> KEY_UP");
+        QCOMPARE(round_trip(two), QStringLiteral("KEY_SCALE"));
         QCOMPARE(parse_alternatives(two).size(), 2);
         QVERIFY(has_alternative(two, parse_shortcut(QStringLiteral("<ctrl> KEY_UP"))));
         QVERIFY(!has_alternative(two, parse_shortcut(QStringLiteral("<alt> KEY_UP"))));
@@ -99,6 +99,7 @@ class TestKeyboard : public QObject
     {
         QVERIFY(is_typing_key(QStringLiteral("KEY_A")));
         QVERIFY(!is_typing_key(QStringLiteral("KEY_F11")));
+        QVERIFY(!is_typing_key(QStringLiteral("KEY_SCALE")));
 
         const auto common = [](const char* text) {
             return is_common_program_key(parse_shortcut(QString::fromLatin1(text)));
