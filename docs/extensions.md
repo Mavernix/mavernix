@@ -46,7 +46,7 @@ You can change a setting in the settings window (only the ones that have a label
 ## The rules the desktop's own parts follow hold here too
 
 - **Looks are not in the code.** Sizes, colours and timings go into `looks/`: one file per theme the extension knows, and `default.toml` for the rest. Under the `plain` theme, nothing from another theme's look may show.
-- **Reuse.** Use what the shell already has (`import qs`: `StatusItem`, `Fill`, `MenuBox`, `ThemeValues`) before drawing your own.
+- **Reuse.** Use what the shell already has (`import qs`: `StatusItem`, `Fill`, `MenuBox`, and `ThemeHelpers` for theme colours and easings) before drawing your own.
 
 ## The running part (`background`)
 
