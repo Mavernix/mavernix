@@ -644,6 +644,18 @@ class TestShellBlur(SessionTestCase):
         self.assertIn('blur_by_default = app_id is "mavernix-dock"', section)
         self.assertFalse(any('desktop-panel' in line for line in section))
 
+    def test_menu_bar_blur_is_independent_and_optional(self):
+        for translucent, blurred, expected in ((True, False, False), (True, True, True),
+                                                (False, True, False), (False, False, False)):
+            with self.subTest(translucent=translucent, blurred=blurred):
+                config = {"panel": {"translucent_menu_bar": translucent},
+                          "blur": {"panel": blurred, "dock": True}}
+                section, plugins = self.generator.blur_section(config, {})
+                self.assertEqual(plugins, ["blur"])
+                matcher = next(line for line in section if line.startswith("blur_by_default"))
+                self.assertEqual('desktop-panel' in matcher, expected)
+                self.assertIn('mavernix-dock', matcher)
+
     def test_strength_values_are_validated(self):
         for key, value in (("method", "bad"), ("iterations", -1), ("iterations", 2.5),
                            ("degrade", 0), ("saturation", 4), ("offset", float("nan"))):

@@ -422,9 +422,9 @@ computer = "Computer"
 update = "Software Update…"
 more = "More Info…"
 
-# The translucent shelf and menu bar use the compositor's background blur.
+# Keep the menu bar translucent without blur; its optional blur is a user choice.
 [blur]
-panel = true
+panel = false
 dock = true
 panel_opacity = 0.65
 dock_opacity = 1.0
