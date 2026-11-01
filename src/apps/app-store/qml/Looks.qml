@@ -87,6 +87,7 @@ QtObject {
         get: "GET",
         install: "INSTALL",
         open: "OPEN",
+        installed_extension: "INSTALLED",
         update: "UPDATE",
         update_all: "UPDATE ALL",
         remove: "Remove",

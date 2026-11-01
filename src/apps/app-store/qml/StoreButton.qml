@@ -5,7 +5,8 @@
 // The first press only asks for a second one, so nothing is installed by a
 // stray click. An installed app with a newer version on offer shows UPDATE.
 // While the app waits for another to finish, or is being removed, the button
-// says so and can't be pressed.
+// says so and can't be pressed. An extension has nothing to open: once
+// installed it says INSTALLED (it is switched on in the settings window).
 
 import QtQuick
 import "../../../shell" as Shell
@@ -21,6 +22,7 @@ Item {
     readonly property var job: store.jobs[app.name] ?? null
     readonly property bool installed: app.installed_version !== ""
     readonly property bool hasUpdate: installed && app.installed_version !== app.version
+    readonly property bool nothingToOpen: installed && !hasUpdate && app.kind === "extension"
     // Set by the first press on GET; the next press installs.
     property bool confirming: false
 
@@ -31,7 +33,7 @@ Item {
         if (!installed) {
             return looks.word(confirming ? "install" : "get")
         }
-        return looks.word(hasUpdate ? "update" : "open")
+        return looks.word(hasUpdate ? "update" : (nothingToOpen ? "installed_extension" : "open"))
     }
     readonly property bool showsProgress: job !== null && (job.state === "downloading" || job.state === "installing")
 
@@ -39,7 +41,7 @@ Item {
     implicitHeight: looks.value(small ? "small_button_height" : "button_height")
 
     function press() {
-        if (job !== null) {
+        if (job !== null || nothingToOpen) {
             return
         }
         if (!installed && !confirming) {

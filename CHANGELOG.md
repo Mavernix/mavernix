@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.5 (2026-11-01)
+
+- The App Store also offers extensions, starting with AirPods (the charge of your AirPods, noise control and Conversation Awareness in the menu bar). After getting one, log out and back in once, then switch it on in Settings.
+
 ## 0.5.4 (2026-10-30)
 
 - An app can have its title bar run on into its toolbar, as the App Store's does, by adding `X-Mavernix-JoinedToolBar=true` to its desktop entry.

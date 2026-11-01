@@ -105,6 +105,15 @@ class TestWrittenSettings(SessionTestCase):
                 self.assertEqual(Path(settings["theme_directory"]).name, desktop)
                 self.assertIn("window", settings["theme"])
 
+    def test_a_half_installed_extension_is_not_taken_for_one(self):
+        folder = self.home / ".config" / "mavernix" / "extensions"
+        for name in ("echo", ".echo-old"):
+            (folder / name).mkdir(parents=True)
+            (folder / name / "extension.toml").write_text('title = "Echo"\n')
+        written = self.home / "plain.json"
+        self.run_script("make_shell_config.py", CONFIG_DIR / "plain.toml", written)
+        self.assertEqual(list(json.loads(written.read_text())["extensions"]), ["echo"])
+
 
 class TestPickedDesktop(SessionTestCase):
     def picked(self):

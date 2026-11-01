@@ -430,6 +430,8 @@ more = "More…"
 name = "App Store"
 organisation = "Mavernix"
 topic = "mavernix-app"
+# The organisation's repository whose releases offer extensions; empty for none.
+extensions_repository = "mavernix-extensions"
 
 # A fact can be fixed here instead of asked of the machine:
 # [about.values]
