@@ -57,6 +57,12 @@ PanelWindow {
 
     color: "transparent"
 
+    visible: keepShown.canShow
+    KeepShown {
+        id: keepShown
+        target: panel
+    }
+
     // Hides the panel's contents and input but keeps its reserved strip, so
     // windows do not move (for full-screen overlays such as the app grid).
     property bool concealed: false

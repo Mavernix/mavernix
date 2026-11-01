@@ -45,7 +45,11 @@ PanelWindow {
         }
     }
 
-    visible: open
+    visible: open && keepShown.canShow
+    KeepShown {
+        id: keepShown
+        target: search
+    }
 
     // Full-screen and keyboard-grabbing; a press outside the box closes it.
     anchors {

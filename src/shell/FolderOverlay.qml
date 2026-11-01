@@ -58,7 +58,11 @@ PanelWindow {
     // with the window already made). warmUp() makes it ahead of time, when
     // the pointer comes to rest on a folder.
     readonly property bool showing: open || shown > 0
-    visible: showing || keptMade
+    visible: (showing || keptMade) && keepShown.canShow
+    KeepShown {
+        id: keepShown
+        target: overlay
+    }
     // Not the timer's `running`: restarting a running timer stops it first,
     // which took the window down and made it anew at every pass of the
     // pointer.

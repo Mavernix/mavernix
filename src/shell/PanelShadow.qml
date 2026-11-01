@@ -37,6 +37,12 @@ PanelWindow {
     color: "transparent"
     mask: Region {}
 
+    visible: keepShown.canShow
+    KeepShown {
+        id: keepShown
+        target: strip
+    }
+
     RectangularShadow {
         width: parent.width
         height: strip.forPanel.height

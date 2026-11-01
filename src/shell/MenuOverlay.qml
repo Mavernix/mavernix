@@ -67,7 +67,11 @@ PanelWindow {
     // The menu whose chosen item is blinking.
     property var blinkingMenu: null
 
-    visible: open || goingAway.running
+    visible: (open || goingAway.running) && keepShown.canShow
+    KeepShown {
+        id: keepShown
+        target: overlay
+    }
 
     onOpenChanged: {
         goingAway.stop()

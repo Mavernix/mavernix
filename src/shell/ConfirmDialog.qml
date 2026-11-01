@@ -84,7 +84,11 @@ PanelWindow {
         request = null
     }
 
-    visible: request !== null
+    visible: request !== null && keepShown.canShow
+    KeepShown {
+        id: keepShown
+        target: overlay
+    }
 
     anchors {
         left: true

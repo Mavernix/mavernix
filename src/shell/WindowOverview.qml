@@ -232,7 +232,11 @@ PanelWindow {
 
     // --- The window -------------------------------------------------------------
 
-    visible: showing
+    visible: showing && keepShown.canShow
+    KeepShown {
+        id: keepShown
+        target: overview
+    }
     anchors {
         left: true
         right: true

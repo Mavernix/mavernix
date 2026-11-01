@@ -31,6 +31,12 @@ PanelWindow {
     // Lets the compositor tell this surface from the shell's others.
     WlrLayershell.namespace: "mavernix-dock"
 
+    visible: keepShown.canShow
+    KeepShown {
+        id: keepShown
+        target: dock
+    }
+
     required property var choices
     property var confirmDialog: null
     property var sounds: null

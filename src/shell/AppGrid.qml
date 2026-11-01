@@ -87,7 +87,11 @@ PanelWindow {
     // grid is awake, empty and letting the pointer through: made anew, it
     // held the grid's first frame back by 40 to 60 ms (on an Intel laptop).
     readonly property bool showing: open || content.opacity > 0
-    visible: awake
+    visible: awake && keepShown.canShow
+    KeepShown {
+        id: keepShown
+        target: grid
+    }
     mask: Region {
         item: grid.showing ? content : null
     }
