@@ -421,3 +421,15 @@ graphics = "Graphics"
 computer = "Computer"
 update = "Software Update…"
 more = "More Info…"
+
+# The translucent shelf and menu bar use the compositor's background blur.
+[blur]
+panel = true
+dock = true
+panel_opacity = 0.65
+dock_opacity = 1.0
+method = "gaussian"
+iterations = 2
+degrade = 1
+offset = 1.5
+saturation = 1.0

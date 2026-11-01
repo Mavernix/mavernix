@@ -50,3 +50,28 @@ A status item asks for its icon by the name Linux desktops use for it (freedeskt
 Either way, only the picture's shape counts. It's painted in `text_color`, and in `title_highlight_text_color` while the item's menu is open. So make the pictures here one-colour drawings on a clear background. That way, a status item this table doesn't know about still fits your theme.
 
 The names the built-in items ask for: `audio-volume-muted`, `-low`, `-medium`, `-high`; `network-wired`, `network-offline`, `network-wireless-offline`, `network-wireless-signal-none`, `-weak`, `-ok`, `-good`, `-excellent`; `bluetooth-active`, `bluetooth-disabled`; `battery-level-0` to `battery-level-100` in tens, `battery-good-charging`, `battery-full-charged`, `battery-missing`.
+
+Background blur is configured by the desktop's `[blur]` table (see
+`docs/configuration.md`). A theme can provide the same optional defaults:
+
+```toml
+[blur]
+panel = false
+dock = false
+panel_opacity = 1.0
+dock_opacity = 1.0
+method = "kawase"
+iterations = 2
+degrade = 3
+offset = 1.7
+saturation = 1.0
+alpha_threshold = 0.5
+```
+
+User and desktop preferences take precedence. Opacity applies only to the
+panel background and Dock shelf; foreground text and icons keep their opacity.
+
+The Desktop pane exposes `panel.translucent_menu_bar` (default true). Turning
+it off restores the original theme material at its original opacity and excludes
+the menu bar from compositor blur. Existing transparency in the theme artwork
+is retained. The Dock and the stored blur strength are unaffected.

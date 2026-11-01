@@ -6,4 +6,13 @@ if [ -z "${DESKTOP_SHELL_SETTINGS:-}" ]; then
     echo "mavernix-reconfigure: DESKTOP_SHELL_SETTINGS is not set; run it inside the desktop session." >&2
     exit 1
 fi
-exec "$(dirname "$(readlink -f "$0")")/../configure-desktop" choices "$(dirname "$DESKTOP_SHELL_SETTINGS")"
+"$(dirname "$(readlink -f "$0")")/../configure-desktop" choices "$(dirname "$DESKTOP_SHELL_SETTINGS")" || exit $?
+# Blur matches are applied when surfaces map, so changing them remaps the shell.
+if [ "${1:-}" = "--restart-shell" ]; then
+    state_dir=$(dirname "$DESKTOP_SHELL_SETTINGS")
+    shell_pid=$(cat "$state_dir/shell.pid") || exit $?
+    case "$shell_pid" in ''|*[!0-9]*) exit 1;; esac
+    if [ "$(cat "/proc/$shell_pid/comm")" = "qs" ]; then
+        kill -HUP "$shell_pid"
+    fi
+fi

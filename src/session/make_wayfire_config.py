@@ -28,8 +28,7 @@ BASE_PLUGINS = [
     "move", "resize", "place", "grid", "wm-actions", "window-rules",
     # Ours (src/compositor/).
     "themed-decoration",
-    # Not "blur": its default rule blurs behind every window, a render pass
-    # per frame for nothing.
+    # Blur is opt-in below, with a matcher limited to selected shell surfaces.
     "animate", "scale", "expo", "vswitch",
     "foreign-toplevel", "gtk-shell", "kde-appmenu", "session-lock",
     "autostart", "command",
@@ -47,6 +46,34 @@ BASE_PLUGINS = [
     "desktop-aside",
     "window-attention",
 ]
+
+
+def blur_section(config, theme):
+    """Opt-in background blur for named shell surfaces, never normal windows."""
+    looks = {**theme.get("blur", {}), **config.get("blur", {})}
+    surfaces = [name for key, name in (("panel", "desktop-panel"), ("dock", "mavernix-dock"))
+                if looks.get(key, False)
+                and (key != "panel" or config.get("panel", {}).get("translucent_menu_bar", True))]
+    if not surfaces:
+        return [], []
+    matcher = " | ".join(f'app_id is "{name}"' for name in surfaces)
+    method = looks.get("method", "kawase")
+    if method not in ("kawase", "gaussian", "box", "bokeh"):
+        fail("blur.method must be kawase, gaussian, box or bokeh")
+    ranges = {"iterations": (0, 10, 2), "degrade": (1, 10, 3), "offset": (0, 25, 1.7),
+              "saturation": (0, 3, 1.0), "alpha_threshold": (0.01, 1, 0.5)}
+    values = {}
+    for key, (smallest, largest, fallback) in ranges.items():
+        value = looks.get(key, fallback)
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not smallest <= value <= largest:
+            fail(f"blur.{key} must be between {smallest} and {largest}")
+        if key in ("iterations", "degrade") and not isinstance(value, int):
+            fail(f"blur.{key} must be a whole number")
+        values[key] = value
+    return ["[blur]", f"blur_by_default = {matcher}", "toggle = none", f"method = {method}",
+            f"{method}_iterations = {values['iterations']}", f"{method}_degrade = {values['degrade']}",
+            f"{method}_offset = {values['offset']}", f"saturation = {values['saturation']}",
+            f"alpha_threshold = {values['alpha_threshold']}"], ["blur"]
 
 
 def fail(message):
@@ -985,6 +1012,10 @@ def main():
 
     plugins = list(BASE_PLUGINS)
     sections = [decoration_section(config, theme_dir)]
+    blur, blur_plugins = blur_section(config, theme)
+    if blur:
+        sections.append(blur)
+    plugins += blur_plugins
 
     animations, animation_plugins = animation_sections(theme)
     quick_open_close_ms = config.get("window", {}).get("quick_open_close_ms")

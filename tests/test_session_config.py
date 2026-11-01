@@ -671,6 +671,45 @@ class TestPointerSettings(SessionTestCase):
             make_wayfire_config.input_section({"input": {"mouse_speed": 2}}, {})
 
 
+class TestShellBlur(SessionTestCase):
+    def setUp(self):
+        super().setUp()
+        sys.path[:0] = [self.folder.name, str(SESSION_SOURCE_DIR)]
+        try:
+            import make_wayfire_config
+            self.generator = make_wayfire_config
+        finally:
+            del sys.path[:2]
+
+    def test_blur_is_opt_in_and_targets_only_selected_shell_surfaces(self):
+        self.assertEqual(self.generator.blur_section({}, {}), ([], []))
+        for enabled, expected in (({"panel": True}, ['desktop-panel']),
+                                  ({"dock": True}, ['mavernix-dock']),
+                                  ({"panel": True, "dock": True}, ['desktop-panel', 'mavernix-dock'])):
+            with self.subTest(enabled=enabled):
+                section, plugins = self.generator.blur_section({"blur": enabled}, {})
+                self.assertEqual(plugins, ["blur"])
+                matcher = next(line for line in section if line.startswith("blur_by_default"))
+                self.assertEqual(matcher, "blur_by_default = " + " | ".join(f'app_id is "{name}"' for name in expected))
+                self.assertNotIn("toplevel", matcher)
+                self.assertIn("toggle = none", section)
+        self.assertEqual(self.generator.blur_section({"blur": {"panel": False}}, {"blur": {"panel": True}}), ([], []))
+
+    def test_original_menu_bar_excludes_only_panel_from_blur(self):
+        section, plugins = self.generator.blur_section({
+            "blur": {"panel": True, "dock": True},
+            "panel": {"translucent_menu_bar": False}}, {})
+        self.assertEqual(plugins, ["blur"])
+        self.assertIn('blur_by_default = app_id is "mavernix-dock"', section)
+        self.assertFalse(any('desktop-panel' in line for line in section))
+
+    def test_strength_values_are_validated(self):
+        for key, value in (("method", "bad"), ("iterations", -1), ("iterations", 2.5),
+                           ("degrade", 0), ("saturation", 4), ("offset", float("nan"))):
+            with self.subTest(key=key, value=value), self.assertRaises(SystemExit):
+                self.generator.blur_section({"blur": {"panel": True, key: value}}, {})
+
+
 class TestKdeColours(SessionTestCase):
     def test_default_scheme_is_the_themes(self):
         # A KDE program set to "Default" takes Breeze's scheme by its file

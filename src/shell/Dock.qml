@@ -1014,6 +1014,10 @@ PanelWindow {
 
     Loader {
         id: shelf
+        opacity: (dock.choices.value("blur", "dock") ?? dock.settings.config.blur?.dock
+                  ?? dock.settings.theme.blur?.dock ?? false)
+                 ? Math.max(0, Math.min(1, dock.choices.value("blur", "dock_opacity")
+                    ?? dock.settings.config.blur?.dock_opacity ?? dock.settings.theme.blur?.dock_opacity ?? 1)) : 1
         x: dock.shelfEdges.left
         width: dock.shelfEdges.right - dock.shelfEdges.left
         height: dock.shelfHeight

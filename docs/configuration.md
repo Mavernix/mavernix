@@ -232,3 +232,36 @@ Some settings are stored per user rather than per desktop. Without some care, an
 - **KDE's wallet**: when the login screen started the wallet, the session hands it your login, so it doesn't ask for your password.
 
 Services that start on demand learn about all of this at login. When the session ends, a small service takes it all back out, so a Plasma session you start next doesn't inherit any of it.
+
+## Background blur for the menu bar and Dock
+
+The Desktop pane has a single **Translucent menu bar** checkbox. It controls
+the menu bar's additional transparency and background blur together. Turning
+it off restores the original material. The Dock retains background blur in
+the Sea Lion configurations, independently of this checkbox, without a
+separate user-facing blur switch.
+It uses Wayfire's `blur` plugin with an explicit matcher for `desktop-panel`
+and/or `mavernix-dock`; ordinary windows are excluded.
+
+```toml
+[blur]
+panel = true
+dock = true
+panel_opacity = 0.65 # opacity of the menu bar's background, not its contents
+# The 3D shelf already has translucent colours; keep its original finish.
+dock_opacity = 1.0
+method = "gaussian" # kawase, gaussian, box or bokeh
+iterations = 2 # whole number, 0..10
+degrade = 1 # whole number, 1..10
+offset = 1.5 # 0..25
+saturation = 1.0 # 0..3
+alpha_threshold = 0.5 # 0.01..1
+```
+
+An opaque background needs reduced opacity for the blur to show through.
+Only the shelf/background opacity changes; text, icons, highlights and the
+shelf geometry remain sharp. The compositor uses surface alpha to blend the
+blurred background, including the shaped shelf's edges. Blur requires Wayfire's
+GLES renderer and its matching `blur` plugin. It adds GPU work; switching it off
+for both surfaces unloads the plugin. Changing a blur preference briefly restarts
+the desktop shell to remap the surfaces with the new matcher.

@@ -72,9 +72,16 @@ PanelWindow {
     }
     mask: concealed ? nothing : null
 
+    readonly property bool translucentMenuBar:
+        choices?.value("panel", "translucent_menu_bar") ?? layout.translucent_menu_bar ?? true
+
     Fill {
         id: background
         fill: panel.looks.background
+        opacity: panel.translucentMenuBar && (panel.choices?.value("blur", "panel") ?? panel.settings.config.blur?.panel
+                  ?? panel.settings.theme.blur?.panel ?? false)
+                 ? Math.max(0, Math.min(1, panel.choices?.value("blur", "panel_opacity")
+                    ?? panel.settings.config.blur?.panel_opacity ?? panel.settings.theme.blur?.panel_opacity ?? 1)) : 1
         themeDirectory: panel.themeDirectory
         anchors {
             left: parent.left

@@ -25,6 +25,14 @@ DesktopPane::DesktopPane(Choices& choices, QWidget* parent) : QWidget(parent)
     form->addRow(new QLabel(words.value(QStringLiteral("desktop_picture"), QStringLiteral("Picture:")).toString()));
     form->addRow(new PictureChooser(choices));
 
+    auto* translucent = new QCheckBox(
+        words.value(QStringLiteral("translucent_menu_bar"), QStringLiteral("Translucent menu bar")).toString());
+    const QVariant translucency = choices.value(QStringLiteral("panel"), QStringLiteral("translucent_menu_bar"));
+    translucent->setChecked(!translucency.isValid() || translucency.toBool());
+    connect(translucent, &QCheckBox::toggled, this,
+        [&choices](bool on) { choices.set(QStringLiteral("panel"), QStringLiteral("translucent_menu_bar"), on); });
+    form->addRow(QString(), translucent);
+
     // The files of the Desktop folder as icons; the shell follows at once.
     auto* files = new QCheckBox(
         words.value(QStringLiteral("desktop_show_files"), QStringLiteral("Show the files of the Desktop folder"))

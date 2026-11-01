@@ -75,7 +75,7 @@ Item {
     // user's file changes in one of them.
 
     readonly property var compositorTables:
-        ["input", "idle", "commands", "shortcuts", "gestures", "display", "window", "desktops"]
+        ["input", "idle", "commands", "shortcuts", "gestures", "display", "window", "desktops", "blur"]
     // These tables as last given to the compositor, as JSON text; unset until
     // the file has been read once.
     property var givenToCompositor: undefined
@@ -94,9 +94,14 @@ Item {
                 part[table] = held[table]
             }
         }
+        part.panel_translucency = held.panel?.translucent_menu_bar ?? true
         const text = JSON.stringify(part)
         if (givenToCompositor !== undefined && text !== givenToCompositor) {
-            Quickshell.execDetached(["mavernix-reconfigure"])
+            const before = JSON.parse(givenToCompositor)
+            const blurChanged = JSON.stringify(before.blur ?? ({})) !== JSON.stringify(part.blur ?? ({}))
+                || before.panel_translucency !== part.panel_translucency
+            Quickshell.execDetached(blurChanged
+                ? ["mavernix-reconfigure", "--restart-shell"] : ["mavernix-reconfigure"])
         }
         givenToCompositor = text
     }
