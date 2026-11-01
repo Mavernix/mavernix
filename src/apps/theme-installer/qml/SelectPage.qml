@@ -4,6 +4,7 @@
 import QtQuick
 import Qt.labs.platform as Platform
 import "../../../shell" as Shell
+import "../../../shell/DroppedFiles.js" as DroppedFiles
 import "../../../shell/ThemeValues.js" as ThemeValues
 
 Item {
@@ -11,26 +12,6 @@ Item {
     readonly property var chosen: window.installer !== "" ? job.describe(window.installer) : ({})
     // Whether the chosen file is still being read to see which look it makes.
     readonly property bool reading: job.identifying && job.identifiedPath === window.installer
-
-    // The first local path among dropped addresses, or "".
-    function droppedPath(drop) {
-        const lines = text => text.split(/\r?\n/).filter(line => line !== "" && !line.startsWith("#"))
-        let addresses = lines(drop.getDataAsString("text/uri-list"))
-        // Without a desktop service the address list can come back empty,
-        // with the paths in the plain text beside it.
-        if (addresses.length === 0) {
-            addresses = lines(drop.getDataAsString("text/plain"))
-        }
-        for (const address of addresses) {
-            if (address.startsWith("file://")) {
-                return decodeURIComponent(address.substring("file://".length))
-            }
-            if (address.startsWith("/")) {
-                return address
-            }
-        }
-        return ""
-    }
 
     Shell.Fill {
         id: well
@@ -44,9 +25,9 @@ Item {
             id: dropArea
             anchors.fill: parent
             onDropped: drop => {
-                const path = droppedPath(drop)
-                if (path !== "") {
-                    window.installer = path
+                const paths = DroppedFiles.paths(drop)
+                if (paths.length > 0) {
+                    window.installer = paths[0]
                     drop.accept(Qt.CopyAction)
                 }
             }

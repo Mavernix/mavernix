@@ -12,6 +12,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 import Shell.Native
+import "DroppedFiles.js" as DroppedFiles
 import "ThemeValues.js" as ThemeValues
 
 Item {
@@ -333,31 +334,12 @@ Item {
         onReleased: icons.banding = false
     }
 
-    function droppedPaths(drop) {
-        const lines = text => text.split(/\r?\n/).filter(line => line !== "" && !line.startsWith("#"))
-        let addresses = lines(drop.getDataAsString("text/uri-list"))
-        // Where no desktop service runs, the address list comes back empty
-        // and the plain text has the paths (as in Dock.qml, droppedAddresses).
-        if (addresses.length === 0) {
-            addresses = lines(drop.getDataAsString("text/plain"))
-        }
-        const paths = []
-        for (const address of addresses) {
-            if (address.startsWith("file://")) {
-                paths.push(decodeURIComponent(address.substring("file://".length)))
-            } else if (address.startsWith("/")) {
-                paths.push(address)
-            }
-        }
-        return paths
-    }
-
     property string carriedPath: ""
 
     DropArea {
         anchors.fill: parent
         onDropped: drop => {
-            const paths = icons.droppedPaths(drop)
+            const paths = DroppedFiles.paths(drop)
             if (paths.length === 0) {
                 return
             }
@@ -495,7 +477,7 @@ Item {
                 enabled: fileItem.modelData.isLauncher
                 anchors.fill: parent
                 onDropped: drop => {
-                    const paths = icons.droppedPaths(drop)
+                    const paths = DroppedFiles.paths(drop)
                         .filter(path => path !== fileItem.modelData.path)
                     if (paths.length > 0) {
                         icons.launch(fileItem.modelData.path, paths)
