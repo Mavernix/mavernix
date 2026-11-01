@@ -7,6 +7,7 @@
 
 class Choices;
 class QCheckBox;
+class QFileSystemWatcher;
 class QSlider;
 
 class DockPane : public QWidget
@@ -19,9 +20,14 @@ class DockPane : public QWidget
   private:
     // The user's or the config's, else the theme's for this screen.
     int currentIconSize() const;
+    // The dock's settings as the user's file holds them now: the dock's own
+    // menu and divider change them too, while this window is open.
+    void showCurrent();
 
     Choices& choices;
     QSlider* size = nullptr;
     QCheckBox* magnification = nullptr;
     QSlider* magnified_size = nullptr;
+    QCheckBox* hides = nullptr;
+    QFileSystemWatcher* watcher = nullptr;
 };
