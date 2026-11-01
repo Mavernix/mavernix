@@ -681,33 +681,35 @@ class TestShellBlur(SessionTestCase):
         finally:
             del sys.path[:2]
 
+    # The Desktop pane's checkbox, which the menu bar's and Dock's blur wait for.
+    SWITCHED_ON = {"panel": {"translucent_menu_bar": True}}
+
     def test_blur_is_opt_in_and_targets_only_selected_shell_surfaces(self):
         self.assertEqual(self.generator.blur_section({}, {}), ([], []))
         for enabled, expected in (({"panel": True}, ['desktop-panel']),
                                   ({"dock": True}, ['mavernix-dock']),
                                   ({"panel": True, "dock": True}, ['desktop-panel', 'mavernix-dock'])):
             with self.subTest(enabled=enabled):
-                section, plugins = self.generator.blur_section({"blur": enabled}, {})
+                section, plugins = self.generator.blur_section({"blur": enabled, **self.SWITCHED_ON}, {})
                 self.assertEqual(plugins, ["blur"])
                 matcher = next(line for line in section if line.startswith("blur_by_default"))
                 self.assertEqual(matcher, "blur_by_default = " + " | ".join(f'app_id is "{name}"' for name in expected))
                 self.assertNotIn("toplevel", matcher)
                 self.assertIn("toggle = none", section)
-        self.assertEqual(self.generator.blur_section({"blur": {"panel": False}}, {"blur": {"panel": True}}), ([], []))
+        self.assertEqual(self.generator.blur_section(
+            {"blur": {"panel": False}, **self.SWITCHED_ON}, {"blur": {"panel": True}}), ([], []))
 
-    def test_original_menu_bar_excludes_only_panel_from_blur(self):
-        section, plugins = self.generator.blur_section({
-            "blur": {"panel": True, "dock": True},
-            "panel": {"translucent_menu_bar": False}}, {})
-        self.assertEqual(plugins, ["blur"])
-        self.assertIn('blur_by_default = app_id is "mavernix-dock"', section)
-        self.assertFalse(any('desktop-panel' in line for line in section))
+    def test_nothing_blurs_until_the_checkbox_is_on(self):
+        for panel in ({}, {"translucent_menu_bar": False}):
+            with self.subTest(panel=panel):
+                self.assertEqual(self.generator.blur_section(
+                    {"blur": {"panel": True, "dock": True}, "panel": panel}, {}), ([], []))
 
     def test_strength_values_are_validated(self):
         for key, value in (("method", "bad"), ("iterations", -1), ("iterations", 2.5),
                            ("degrade", 0), ("saturation", 4), ("offset", float("nan"))):
             with self.subTest(key=key, value=value), self.assertRaises(SystemExit):
-                self.generator.blur_section({"blur": {"panel": True, key: value}}, {})
+                self.generator.blur_section({"blur": {"panel": True, key: value}, **self.SWITCHED_ON}, {})
 
 
 class TestKdeColours(SessionTestCase):

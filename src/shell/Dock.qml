@@ -1014,7 +1014,10 @@ PanelWindow {
 
     Loader {
         id: shelf
-        opacity: (dock.choices.value("blur", "dock") ?? dock.settings.config.blur?.dock
+        // Translucent with the Desktop pane's checkbox, as the menu bar is.
+        opacity: (dock.choices.value("panel", "translucent_menu_bar")
+                  ?? dock.settings.config.panel?.translucent_menu_bar ?? false)
+                 && (dock.choices.value("blur", "dock") ?? dock.settings.config.blur?.dock
                   ?? dock.settings.theme.blur?.dock ?? false)
                  ? Math.max(0, Math.min(1, dock.choices.value("blur", "dock_opacity")
                     ?? dock.settings.config.blur?.dock_opacity ?? dock.settings.theme.blur?.dock_opacity ?? 1)) : 1

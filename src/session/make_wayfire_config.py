@@ -51,9 +51,11 @@ BASE_PLUGINS = [
 def blur_section(config, theme):
     """Opt-in background blur for named shell surfaces, never normal windows."""
     looks = {**theme.get("blur", {}), **config.get("blur", {})}
+    # Both wait for the Desktop pane's checkbox, off at first.
+    if not config.get("panel", {}).get("translucent_menu_bar", False):
+        return [], []
     surfaces = [name for key, name in (("panel", "desktop-panel"), ("dock", "mavernix-dock"))
-                if looks.get(key, False)
-                and (key != "panel" or config.get("panel", {}).get("translucent_menu_bar", True))]
+                if looks.get(key, False)]
     if not surfaces:
         return [], []
     matcher = " | ".join(f'app_id is "{name}"' for name in surfaces)

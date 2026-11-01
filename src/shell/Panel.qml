@@ -73,7 +73,7 @@ PanelWindow {
     mask: concealed ? nothing : null
 
     readonly property bool translucentMenuBar:
-        choices?.value("panel", "translucent_menu_bar") ?? layout.translucent_menu_bar ?? true
+        choices?.value("panel", "translucent_menu_bar") ?? layout.translucent_menu_bar ?? false
 
     Fill {
         id: background
