@@ -10,6 +10,7 @@ import hashlib
 import http.client
 import json
 import os
+import re
 import time
 import urllib.error
 import urllib.parse
@@ -34,6 +35,12 @@ def api_base():
     # MAVERNIX_APP_STORE_API points the store at another copy of GitHub's API,
     # such as the tests' local server.
     return os.environ.get("MAVERNIX_APP_STORE_API", "https://api.github.com").rstrip("/")
+
+
+def safe_file_name(text):
+    """`text` (a release's tag, say) as one file name: nothing but letters,
+    digits, . - and _, and no dot first."""
+    return re.sub(r"[^A-Za-z0-9_.-]|^\.", "_", text)
 
 
 def cache_folder():
@@ -83,7 +90,7 @@ def get_json(path):
         # Only a 304 gets here: nothing changed since the kept answer.
         if error.code == 304 and kept is not None:
             return kept["answer"]
-        raise StoreProblem(f"GitHub answered {url} with {error.code} {error.reason}.", error.code) from error
+        raise StoreProblem(f"GitHub answered {url} with {error.code} {error.reason}.") from error
 
     kept_file.parent.mkdir(parents=True, exist_ok=True)
     kept_file.write_text(json.dumps({"etag": etag, "answer": answer}))

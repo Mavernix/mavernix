@@ -60,7 +60,7 @@ def user_details():
 
 def extension_folders():
     """Where extensions are looked for: the user's own first, then bundled ones."""
-    own = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config")) / "mavernix" / "extensions"
+    own = Path(os.environ.get("XDG_CONFIG_HOME") or Path.home() / ".config") / "mavernix" / "extensions"
     return [own, EXTENSIONS_DIR]
 
 

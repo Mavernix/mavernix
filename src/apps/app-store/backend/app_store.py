@@ -47,25 +47,28 @@ def find_everything(organisation, topic, extensions_repository=""):
         extensions = catalog.find_extensions(organisation, extensions_repository)
     # The apps still show when the extensions can't be read.
     except web.StoreProblem as problem:
-        return offered, f"The extensions couldn't be read. {problem}"
+        return offered, f"The extensions couldn't be read: {problem}"
     taken = {app["name"] for app in offered}
     return offered + [extension for extension in extensions if extension["name"] not in taken], ""
 
 
 def apps_with_installed_versions(apps):
     """`apps` (from the catalog), with what is installed added to them."""
-    installed = {**bundles.installed_extensions(), **bundles.installed_apps()}
-    # An installed app that is no longer offered still shows, as its listing
-    # was when it was installed, so it can be opened and removed.
+    installed = {"app": bundles.installed_apps(), "extension": bundles.installed_extensions()}
+    # An installed app or extension that is no longer offered still shows, as
+    # its listing was when it was installed, so it can be opened and removed.
+    # Names are shared by both kinds: an extension whose name an offered app
+    # has taken stays hidden (and installed) rather than show up twice.
     offered = {app["name"] for app in apps}
-    apps += [{**record["listing"], "icon": str(bundles.installed_icon(record["listing"]))}
-             for name, record in installed.items() if name not in offered]
+    for kind, records in installed.items():
+        apps += [{**record["listing"], "icon": str(bundles.installed_icon(record["listing"]))}
+                 for name, record in records.items() if name not in offered]
+        offered |= set(records)
     apps.sort(key=lambda app: app["title"].lower())
     for app in apps:
-        record = installed.get(app["name"])
+        record = installed[app["kind"]].get(app["name"])
         app["installed_version"] = record["version"] if record else ""
-        app["installed_command"] = (bundles.installed_command(app["name"], record)
-                                    if record and app["kind"] == "app" else "")
+        app["installed_command"] = bundles.installed_command(app["name"], record) if record and app["kind"] == "app" else ""
     return apps
 
 

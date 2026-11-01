@@ -119,16 +119,21 @@ def find_extensions(organisation, repository_name):
     try:
         release = web.get_json(f"repos/{repository}/releases/latest")
     except web.StoreProblem as problem:
-        if problem.status == 404:
-            return []
-        raise
+        if problem.status != 404:
+            raise
+        # A 404 also answers for a repository that isn't there (a misspelt
+        # name, or a private one), which the store shouldn't pass over quietly.
+        listed = web.get_json(f"orgs/{organisation}/repos?per_page=100")
+        if repository_name not in {listed_repository["name"] for listed_repository in listed}:
+            raise web.StoreProblem(f"{organisation} has no repository called {repository_name}.") from problem
+        return []
     tag = release.get("tag_name")
     if not tag:
         raise web.StoreProblem(f"The latest release of {repository_name} has no tag.")
     assets = {asset["name"]: asset for asset in release.get("assets", [])}
 
     # The list and the pictures are kept per release: a new release fetches them anew.
-    files = web.cache_folder() / "extensions" / tag
+    files = web.cache_folder() / "extensions" / web.safe_file_name(tag)
     index_file = fetch_release_file(assets, tag, files, EXTENSION_INDEX_FILE)
     index = read_extension_index(index_file.read_text(), f"{repository_name}'s {EXTENSION_INDEX_FILE}")
 
@@ -182,7 +187,7 @@ def fetch_release_file(assets, tag, folder, file_name):
     """The file `file_name` of a release (`assets` by name, `tag` for the words
     of a problem), kept in `folder`; fetched if it isn't there yet."""
     if file_name not in assets:
-        raise web.StoreProblem(f"its release {tag} has no {file_name}")
+        raise web.StoreProblem(f"release {tag} has no {file_name}")
     kept = folder / file_name
     if not kept.is_file():
         web.download(assets[file_name]["browser_download_url"], kept)
@@ -214,7 +219,7 @@ def describe_app(repository):
     version = tag.removeprefix("v")
 
     # The listing and its pictures are kept per version: a new release fetches them anew.
-    files = web.cache_folder() / "apps" / name / version
+    files = web.cache_folder() / "apps" / name / web.safe_file_name(version)
 
     def release_file(file_name):
         return fetch_release_file(assets, tag, files, file_name)

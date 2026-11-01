@@ -25,6 +25,7 @@ from pathlib import Path
 BACKEND_DIR = Path(os.environ["APP_STORE_BACKEND_DIR"])
 sys.path.insert(0, str(BACKEND_DIR))
 
+import app_store  # noqa: E402
 import bundles  # noqa: E402
 import catalog  # noqa: E402
 import web  # noqa: E402
@@ -88,7 +89,7 @@ class QuietHandler(http.server.SimpleHTTPRequestHandler):
         super().__init__(request, client_address, server, directory=server.folder)
 
     def log_message(self, *arguments):
-        pass
+        self.server.requests.append(self.requestline)
 
 
 class AppStoreTestCase(unittest.TestCase):
@@ -102,6 +103,7 @@ class AppStoreTestCase(unittest.TestCase):
 
         self.server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), QuietHandler)
         self.server.folder = str(self.site)
+        self.requests = self.server.requests = []
         threading.Thread(target=self.server.serve_forever, daemon=True).start()
         self.address = f"http://127.0.0.1:{self.server.server_address[1]}"
 
@@ -167,9 +169,19 @@ class AppStoreTestCase(unittest.TestCase):
             "assets": assets,
         }))
 
+    def list_extensions_repository(self):
+        """Makes the extensions repository one of the organisation's, with no release."""
+        self.repositories = [r for r in self.repositories if r["name"] != EXTENSIONS]
+        self.repositories.append({
+            "name": EXTENSIONS, "full_name": f"{ORGANISATION}/{EXTENSIONS}", "topics": [], "archived": False,
+            "html_url": f"https://github.com/{ORGANISATION}/{EXTENSIONS}", "owner": {"login": ORGANISATION},
+        })
+        self.put(f"api/orgs/{ORGANISATION}/repos", json.dumps(self.repositories))
+
     def publish_extensions(self, index=EXTENSION_INDEX, version="0.3.0", bundle=None, checksum=None):
         """Gives the organisation an extensions repository whose release lists `index`
         and brings the extension "echo". `checksum` overrides the bundle's."""
+        self.list_extensions_repository()
         bundle = bundle if bundle is not None else make_bundle(
             {"extension.toml": 'title = "Echo"\nversion = "0.3.0"\n', "Background.qml": "Scope {}"}, top_folder="echo")
         files = {catalog.EXTENSION_INDEX_FILE: index, "echo.svg": "<svg/>", "echo.tar.gz": bundle}
@@ -188,6 +200,11 @@ class AppStoreTestCase(unittest.TestCase):
         self.put(f"api/repos/{ORGANISATION}/{EXTENSIONS}/releases/latest", json.dumps({
             "tag_name": f"v{version}", "published_at": "2026-10-30T12:00:00Z", "body": "More echo.", "assets": assets,
         }))
+
+    def downloads(self):
+        """What is in the cache's folder of downloads."""
+        folder = Path(os.environ["XDG_CACHE_HOME"]) / "mavernix" / "app-store" / "downloads"
+        return list(folder.iterdir()) if folder.is_dir() else []
 
     def find_extension(self, name="echo"):
         return {item["name"]: item for item in catalog.find_extensions(ORGANISATION, EXTENSIONS)}[name]
@@ -394,13 +411,20 @@ icon = "echo.svg"
     def test_the_download_is_not_kept(self):
         self.publish_extensions()
         self.install_extension()
-        self.assertEqual(list((Path(os.environ["XDG_CACHE_HOME"]) / "mavernix" / "app-store" / "downloads").iterdir()), [])
+        self.assertEqual(self.downloads(), [])
+
+    def test_a_tag_with_a_slash_stays_one_folder_in_the_cache(self):
+        self.publish_extensions(version="rel/1")
+        self.find_extension()
+        cached = Path(os.environ["XDG_CACHE_HOME"]) / "mavernix" / "app-store" / "extensions"
+        self.assertEqual([folder.name for folder in cached.iterdir()], ["vrel_1"])
 
     def test_a_manifest_that_is_not_toml_installs_nothing(self):
         self.publish_extensions(bundle=make_bundle({"extension.toml": "title = = broken"}, top_folder="echo"))
         with self.assertRaisesRegex(web.StoreProblem, "extension.toml isn't valid"):
             self.install_extension()
         self.assertEqual(list(self.extension_folder().parent.iterdir()), [])
+        self.assertEqual(self.downloads(), [])
 
     def test_an_update_replaces_the_folder(self):
         self.publish_extensions()
@@ -418,6 +442,8 @@ icon = "echo.svg"
         with self.assertRaisesRegex(web.StoreProblem, "of your own"):
             self.install_extension()
         self.assertEqual((own / "extension.toml").read_text(), "title = 'Mine'\n")
+        self.assertEqual(self.downloads(), [])
+        self.assertFalse([request for request in self.requests if "echo.tar.gz" in request])
         self.assertEqual(bundles.installed_extensions(), {})
 
     def test_a_download_without_extension_toml_installs_nothing(self):
@@ -450,6 +476,26 @@ icon = "echo.svg"
         with self.assertRaises(web.StoreProblem):
             bundles.remove("mine")
         self.assertTrue(own.is_dir())
+
+
+class TestWhatIsKept(AppStoreTestCase):
+    def test_a_record_that_cant_be_read_is_left_out_not_fatal(self):
+        self.publish_extensions()
+        bundles.install(self.find_extension(), lambda step, fraction: None)
+        (self.extension_folder() / bundles.EXTENSION_RECORD).write_text("{ cut off")
+        self.assertEqual(bundles.installed_extensions(), {})
+
+    def test_an_app_and_an_extension_of_one_name_dont_borrow_each_others_records(self):
+        self.publish_extensions()
+        bundles.install(self.find_extension(), lambda step, fraction: None)
+        self.publish(name="echo", listing=LISTING.replace("Tuner", "Echo app"))
+        offered, problem = app_store.find_everything(ORGANISATION, TOPIC, EXTENSIONS)
+        echoes = [app for app in app_store.apps_with_installed_versions(offered) if app["name"] == "echo"]
+        self.assertEqual([(app["kind"], app["installed_version"]) for app in echoes], [("app", "")])
+
+    def test_a_file_name_made_of_a_tag_stays_one_name(self):
+        self.assertEqual(web.safe_file_name("v1.2/../3"), "v1.2_.._3")
+        self.assertEqual(web.safe_file_name(".."), "_.")
 
 
 class TestCommandLine(AppStoreTestCase):
@@ -502,8 +548,16 @@ class TestCommandLine(AppStoreTestCase):
         self.assertEqual(code, 1)
         self.assertIn("The extensions couldn't be read", events[-1]["message"])
 
+    def test_a_repository_that_is_not_there_is_a_problem_but_the_apps_show(self):
+        self.publish()
+        code, events = self.run_back_end("catalog", ORGANISATION, TOPIC, EXTENSIONS)
+        self.assertEqual(code, 0)
+        self.assertIn(f"has no repository called {EXTENSIONS}", events[0]["problem"])
+        self.assertEqual([app["name"] for app in events[0]["apps"]], ["tuner"])
+
     def test_the_apps_show_when_the_extensions_repository_has_no_release(self):
         self.publish()
+        self.list_extensions_repository()
         code, events = self.run_back_end("catalog", ORGANISATION, TOPIC, EXTENSIONS)
         self.assertEqual((code, events[0]["problem"], [app["name"] for app in events[0]["apps"]]), (0, "", ["tuner"]))
 
