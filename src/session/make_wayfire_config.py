@@ -40,6 +40,7 @@ BASE_PLUGINS = [
     "window-pictures",
     "snap-keys",
     "shared-edges",
+    "reachable-title-bars",
     "shortcut-capture",
     "screen-modes",
     "desktop-focus",
