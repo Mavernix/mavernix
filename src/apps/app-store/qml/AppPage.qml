@@ -49,12 +49,10 @@ Flickable {
         width: page.looks.value("page_icon_size")
         spacing: 16
 
-        Image {
+        AppIcon {
             width: parent.width
             height: width
-            sourceSize: Qt.size(width * 2, height * 2)
-            source: "file://" + page.app.icon
-            fillMode: Image.PreserveAspectFit
+            app: page.app
         }
 
         StoreButton {

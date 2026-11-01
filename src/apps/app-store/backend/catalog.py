@@ -31,13 +31,14 @@ import web
 
 LISTING_FILE = "mavernix-app.toml"
 
-# What a listing must say, and what it may.
-REQUIRED_KEYS = ("title", "summary", "icon", "command", "desktop_entry")
-OPTIONAL_TEXT_KEYS = ("description", "category", "developer", "license")
+# What a listing must say, and what it may. Without an icon, the store shows
+# the icon theme's plain program.
+REQUIRED_KEYS = ("title", "summary", "command", "desktop_entry")
+OPTIONAL_TEXT_KEYS = ("description", "category", "developer", "license", "icon")
 
 
 EXTENSION_INDEX_FILE = "extensions.toml"
-EXTENSION_REQUIRED_KEYS = ("title", "summary", "version", "icon")
+EXTENSION_REQUIRED_KEYS = ("title", "summary", "version")
 # An extension's name and version end up in file names, so they can't hold a
 # slash or start with a dot.
 SAFE_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]*")
@@ -152,7 +153,7 @@ def find_extensions(organisation, repository_name):
                 "category": entry.get("category", ""),
                 "developer": entry.get("developer", organisation),
                 "license": entry.get("license", ""),
-                "icon": str(fetch_release_file(assets, tag, files, entry["icon"])),
+                "icon": fetch_icon(assets, tag, files, entry.get("icon", ""), f"the extension {name}"),
                 "screenshots": [str(fetch_release_file(assets, tag, files, file_name))
                                 for file_name in entry.get("screenshots", [])],
                 "command": "",
@@ -192,6 +193,19 @@ def fetch_release_file(assets, tag, folder, file_name):
     if not kept.is_file():
         web.download(assets[file_name]["browser_download_url"], kept)
     return kept
+
+
+def fetch_icon(assets, tag, folder, file_name, source):
+    """Like fetch_release_file(), for an icon the store can do without: "" if
+    `file_name` is empty or can't be fetched (the reason on standard error,
+    naming `source`), and the store shows a plain one."""
+    if not file_name:
+        return ""
+    try:
+        return str(fetch_release_file(assets, tag, folder, file_name))
+    except (web.StoreProblem, OSError) as problem:
+        print(f"app-store: {source} gets a plain icon: {problem}", file=sys.stderr)
+        return ""
 
 
 def release_details(release, bundle):
@@ -238,7 +252,7 @@ def describe_app(repository):
         "category": listing.get("category", ""),
         "developer": listing.get("developer", repository["owner"]["login"]),
         "license": listing.get("license", ""),
-        "icon": str(release_file(listing["icon"])),
+        "icon": fetch_icon(assets, tag, files, listing.get("icon", ""), name),
         "screenshots": [str(release_file(file_name)) for file_name in listing.get("screenshots", [])],
         "command": listing["command"],
         "desktop_entry": listing["desktop_entry"],

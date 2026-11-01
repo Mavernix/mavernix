@@ -100,15 +100,21 @@ def installed_command(name, record=None):
 
 
 def icon_file_name(app):
-    """The name its folder gives the icon of `app` (a listing) once it is installed."""
+    """The name its folder gives the icon of `app` (a listing) once it is
+    installed; "" if the listing has none."""
+    if not app.get("icon"):
+        return ""
     suffix = Path(app["icon"]).suffix
     return ".app-store-icon" + suffix if app["kind"] == "extension" else "icon" + suffix
 
 
 def installed_icon(app):
-    """Where the icon of `app` (a listing) is kept once it is installed."""
+    """Where the icon of `app` (a listing) is kept once it is installed; "" if
+    the listing has none."""
+    if not app.get("icon"):
+        return ""
     folder = extensions_folder() if app["kind"] == "extension" else apps_folder()
-    return folder / app["name"] / icon_file_name(app)
+    return str(folder / app["name"] / icon_file_name(app))
 
 
 def install(app, on_progress):
@@ -153,7 +159,8 @@ def _install_app(app, download):
         for key in ("command", "desktop_entry"):
             if not (bundle / app[key]).is_file():
                 raise web.StoreProblem(f"{app['title']}'s download has no {app[key]}, which its listing promises.")
-        shutil.copyfile(app["icon"], new_folder / icon_file_name(app))
+        if app["icon"]:
+            shutil.copyfile(app["icon"], new_folder / icon_file_name(app))
         record = {"version": app["version"], "listing": app}
         (new_folder / "installed.json").write_text(json.dumps(record, indent=2))
     except BaseException:
@@ -185,7 +192,8 @@ def _install_extension(app, download):
         _unpack(download, staging, name)
         new_folder = staging / name
         _check_manifest(app, new_folder / "extension.toml")
-        shutil.copyfile(app["icon"], new_folder / icon_file_name(app))
+        if app["icon"]:
+            shutil.copyfile(app["icon"], new_folder / icon_file_name(app))
         (new_folder / EXTENSION_RECORD).write_text(json.dumps({"version": app["version"], "listing": app}, indent=2))
         _swap_in(new_folder, folder)
     finally:
@@ -278,7 +286,7 @@ def _write_desktop_entry(app):
     """Copies the bundle's desktop entry, pointing Exec and Icon at the installed app."""
     folder = apps_folder() / app["name"]
     command = str(folder / "bundle" / app["command"])
-    icon = str(installed_icon(app))
+    icon = installed_icon(app)
     entry = _entry_path(app)
     # An entry by that name that the store didn't write is the user's own: it
     # stays, as remove() leaves it. Its Exec still works, as the installed
@@ -295,7 +303,8 @@ def _write_desktop_entry(app):
             # Keep the arguments (%U and the like); only the program changes.
             arguments = shlex.split(line.removeprefix("Exec="))[1:]
             line = "Exec=" + " ".join(_exec_quote(argument) for argument in [command, *arguments])
-        elif in_main_group and line.startswith("Icon="):
+        elif in_main_group and line.startswith("Icon=") and icon:
+            # Without an icon in the listing, the entry keeps its own.
             line = f"Icon={icon}"
         elif in_main_group and line.startswith("TryExec="):
             continue

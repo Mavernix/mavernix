@@ -14,13 +14,11 @@ Item {
     width: looks.value("tile_width")
     height: looks.value("tile_height")
 
-    Image {
+    AppIcon {
         id: icon
         width: tile.looks.value("tile_icon_size")
         height: width
-        sourceSize: Qt.size(width * 2, height * 2)
-        source: "file://" + tile.app.icon
-        fillMode: Image.PreserveAspectFit
+        app: tile.app
 
         MouseArea {
             anchors.fill: parent

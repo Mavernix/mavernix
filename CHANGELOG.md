@@ -12,6 +12,7 @@
 ### Changed
 
 - Screenshots are also copied to the clipboard, so you can paste them right away. They're still saved to the desktop.
+- Apps and extensions without an icon of their own show a plain one in the App Store, instead of being left out.
 
 ### Fixed
 

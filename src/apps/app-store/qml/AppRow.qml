@@ -17,14 +17,12 @@ Item {
 
     height: looks.value("row_height")
 
-    Image {
+    AppIcon {
         id: icon
         anchors.verticalCenter: parent.verticalCenter
         width: row.looks.value("row_icon_size")
         height: width
-        sourceSize: Qt.size(width * 2, height * 2)
-        source: "file://" + row.app.icon
-        fillMode: Image.PreserveAspectFit
+        app: row.app
 
         MouseArea {
             anchors.fill: parent
