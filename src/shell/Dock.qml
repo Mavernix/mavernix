@@ -339,8 +339,22 @@ PanelWindow {
         (config.last_group_at_end ?? false) && keptGroups.length > 1
             ? keptGroups[keptGroups.length - 1].length : 0
 
-    readonly property var minimizedWindows:
-        ToplevelManager.toplevels.values.filter(window => window.minimized)
+    // Minimised windows in the order they were minimised, so that a new one
+    // comes last, before the trash, where the minimise effect takes it. Those
+    // already minimised when the shell starts keep the window list's order.
+    readonly property var minimizedWindows: {
+        const now = ToplevelManager.toplevels.values.filter(window => window.minimized)
+        return minimizeOrder.filter(window => now.includes(window))
+            .concat(now.filter(window => !minimizeOrder.includes(window)))
+    }
+    // The order so far. Changed in place, so that it does not compute the row
+    // again: the windows' own changes already do.
+    readonly property var minimizeOrder: []
+    function keepMinimizeOrder() {
+        minimizeOrder.splice(0, minimizeOrder.length, ...minimizedWindows)
+    }
+    onMinimizedWindowsChanged: keepMinimizeOrder()
+    Component.onCompleted: keepMinimizeOrder()
 
     // --- Minimised windows' pictures ---------------------------------------------
     // With dock.minimized.shows = "picture", a minimised window's tile shows a
