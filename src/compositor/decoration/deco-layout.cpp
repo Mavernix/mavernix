@@ -94,6 +94,9 @@ wf::geometry_t decoration_layout_t::create_buttons(int width, int)
     const int button_y = (titlebar_size - looks.button_height) / 2;
     int button_x = on_left ? looks.button_edge_inset : strip_x;
 
+    int button_bounding_x_start = button_x;
+    int button_bounding_x_end = button_x;
+
     for (auto type : buttons)
     {
         wf::geometry_t button_geometry = {
@@ -109,7 +112,18 @@ wf::geometry_t decoration_layout_t::create_buttons(int width, int)
         this->layout_areas.back()->as_button().set_enabled(!disabled);
 
         button_x += looks.button_width + looks.button_spacing;
+        button_bounding_x_end = button_x;
     }
+
+    button_bounding_x_end -= looks.button_spacing;
+
+    wf::geometry_t button_bounding_geometry = {
+        (double)button_bounding_x_start, (double)button_y,
+        (double)button_bounding_x_end, (double)looks.button_height,
+    };
+
+    this->layout_areas.push_back(std::make_unique<decoration_area_t>(
+        DECORATION_AREA_BUTTON_BOUNDING_RECT, button_bounding_geometry));
 
     return {
         (double)strip_x, 0.0,
@@ -259,9 +273,10 @@ decoration_layout_t::action_response_t decoration_layout_t::handle_motion(
 
     if (previous_area != current_area)
     {
+        const bool on_button_bounding_rect = current_area && (current_area->get_type() == DECORATION_AREA_BUTTON_BOUNDING_RECT);
         const bool on_button = current_area && (current_area->get_type() == DECORATION_AREA_BUTTON);
         unset_hover(current_input);
-        if (on_button && theme.get_buttons_hover_together())
+        if (theme.get_buttons_hover_together() && (on_button || on_button_bounding_rect))
         {
             set_all_buttons_hovered(true);
         } else if (on_button)
