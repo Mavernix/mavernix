@@ -26,7 +26,8 @@ DesktopPane::DesktopPane(Choices& choices, QWidget* parent) : QWidget(parent)
     form->addRow(new PictureChooser(choices));
 
     auto* translucent = new QCheckBox(
-        words.value(QStringLiteral("translucent_menu_bar"), QStringLiteral("Translucent menu bar and Dock")).toString());
+        words.value(QStringLiteral("translucent_menu_bar"), QStringLiteral("Translucent menu bar and Dock"))
+            .toString());
     const QVariant translucency = choices.value(QStringLiteral("panel"), QStringLiteral("translucent_menu_bar"));
     translucent->setChecked(translucency.toBool());
     connect(translucent, &QCheckBox::toggled, this,
