@@ -70,6 +70,7 @@ What an item can set:
 | `text` | a short text before the icon (or on its own, with no `iconName`) |
 | `shown` | `false` while there's nothing to show |
 | `menuItems` | a menu that opens when it's clicked. Each entry is `{ id, label, enabled, separator, checkable, checked, shortcut: [], children: [] }`. An entry with `slider: VALUE` (0 to 1, and `enabled: false`) is drawn as a slider. Don't change the items while the slider is being dragged (see `src/shell/status/volume.qml`) |
+| `popover` | instead of a menu, a panel of its own in the menu's place: a component whose item sets its `implicitWidth` and `implicitHeight` ([extensions](extensions.md#a-panel-item)) |
 
 What it can react to:
 

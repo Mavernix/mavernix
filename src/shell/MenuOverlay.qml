@@ -7,6 +7,10 @@
 // menu's place until it has faded (`visible` turns false then); the items
 // it shows stay as they were when it closed, whatever the choice changes.
 // While it fades, the pointer and keys already reach what is underneath.
+//
+// A `popover` (a component; PanelTitle.qml) is shown instead of the items:
+// made in the same box, kept while the same one is shown, and gone
+// with the menu the same way.
 
 import QtQuick
 import Quickshell
@@ -28,6 +32,8 @@ PanelWindow {
             shownItems = items
         }
     }
+    property Component popover: null
+
     property real menuX: 0
     property real menuY: 0
     // Whether the menu hangs from something along its whole top edge.
@@ -46,8 +52,8 @@ PanelWindow {
     property real passWidth: 0
     property real passHeight: 0
 
-    readonly property real menuHeight: box.height
-    readonly property real menuWidth: box.width
+    readonly property real menuHeight: popover !== null ? popoverBox.height : box.height
+    readonly property real menuWidth: popover !== null ? popoverBox.width : box.width
 
     signal chosen(int id)
     signal submenuWanted(int id)
@@ -77,7 +83,7 @@ PanelWindow {
         goingAway.stop()
         if (open) {
             shownItems = items
-            box.opacity = 1
+            shown.opacity = 1
             keys.forceActiveFocus()
         } else if (fades) {
             if (justChosen && (closeMotion.blink_ms ?? 0) > 0) {
@@ -135,7 +141,7 @@ PanelWindow {
             script: overlay.stopBlinking()
         }
         NumberAnimation {
-            target: box
+            target: shown
             property: "opacity"
             to: 0
             duration: overlay.closeMotion.duration_ms ?? 150
@@ -225,26 +231,57 @@ PanelWindow {
             onTriggered: keys.typed = ""
         }
     }
-    MenuBox {
-        id: box
-        settings: overlay.settings
-        looks: overlay.looks
-        pointerX: overlay.pointerScreenX >= 0 ? overlay.pointerScreenX - x : -1
-        items: overlay.shownItems
-        x: Math.max(0, Math.min(overlay.menuX, overlay.width - width))
-        y: overlay.menuY
-        still: !overlay.open
-        squareTopLeft: overlay.squareTop
-        squareTopRight: overlay.squareTop
-        mostHeight: overlay.mostMenuHeight
-        startsAtEnd: overlay.startsAtEnd
-        onChosen: id => {
-            overlay.justChosen = true
-            overlay.chosen(id)
-            // Not closed by the choice after all (a checkable item, say).
-            overlay.justChosen = false
+    // What fades: the menu, or a popover in its box.
+    Item {
+        id: shown
+        anchors.fill: parent
+
+        MenuBox {
+            id: box
+            visible: overlay.popover === null
+            settings: overlay.settings
+            looks: overlay.looks
+            pointerX: overlay.pointerScreenX >= 0 ? overlay.pointerScreenX - x : -1
+            items: overlay.shownItems
+            x: Math.max(0, Math.min(overlay.menuX, overlay.width - width))
+            y: overlay.menuY
+            still: !overlay.open
+            squareTopLeft: overlay.squareTop
+            squareTopRight: overlay.squareTop
+            mostHeight: overlay.mostMenuHeight
+            startsAtEnd: overlay.startsAtEnd
+            onChosen: id => {
+                overlay.justChosen = true
+                overlay.chosen(id)
+                // Not closed by the choice after all (a checkable item, say).
+                overlay.justChosen = false
+            }
+            onSubmenuWanted: id => overlay.submenuWanted(id)
+            onSlid: (id, value) => overlay.slid(id, value)
         }
-        onSubmenuWanted: id => overlay.submenuWanted(id)
-        onSlid: (id, value) => overlay.slid(id, value)
+
+        Item {
+            id: popoverBox
+            visible: overlay.popover !== null
+            width: popoverContents.item?.implicitWidth ?? 0
+            height: popoverContents.item?.implicitHeight ?? 0
+            x: Math.max(0, Math.min(overlay.menuX, overlay.width - width))
+            y: overlay.menuY
+
+            BoxFrame {
+                looks: overlay.looks
+                squareTopLeft: overlay.squareTop
+                squareTopRight: overlay.squareTop
+            }
+            // A press on the box, outside what the popover takes, must not close it.
+            MouseArea {
+                anchors.fill: parent
+                acceptedButtons: Qt.AllButtons
+            }
+            Loader {
+                id: popoverContents
+                sourceComponent: overlay.popover
+            }
+        }
     }
 }

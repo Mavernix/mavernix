@@ -29,6 +29,11 @@ Item {
 
     // The menu's items, in the form MenuBox.qml describes.
     property var menuItems: []
+    // Or a panel of its own, shown where the menu would be, in the menu's
+    // box: an item that sets its implicitWidth and implicitHeight. It opens,
+    // closes and is switched to by hovering like a menu (docs/extensions.md).
+    property Component popover: null
+    readonly property bool opensMenu: menuItems.length > 0 || popover !== null
     signal opening()
     signal chosen(int id)
     // Value from 0 to 1.
@@ -119,14 +124,14 @@ Item {
         hoverEnabled: true
 
         onPressed: {
-            if (title.menuItems.length > 0) {
+            if (title.opensMenu) {
                 title.panel.toggleMenu(title)
             } else {
                 title.activated()
             }
         }
         onEntered: {
-            if (title.panel.openTitle !== null && !title.open && title.menuItems.length > 0) {
+            if (title.panel.openTitle !== null && !title.open && title.opensMenu) {
                 title.panel.openMenu(title)
             }
         }

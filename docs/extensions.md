@@ -73,6 +73,23 @@ readonly property var running: panel.extensions.running("NAME")     // the runni
 
 An item can show its own picture instead of one from an icon theme: `pictureSource: "file://" + extension.directory + "/images/mine.svg"` and `pictureHeight: statusLooks.icon_size`. It's painted in the panel's colour, like every other item.
 
+An item can open a panel of its own instead of a menu: `popover` is a component whose item sets its `implicitWidth` and `implicitHeight`. The desktop shows it where the menu would be, in the menu's box (the theme's `[menu]`), and treats it like a menu: pressing the item opens and closes it, hovering another item while it's open switches to that item's menu (and back), and Escape or a press outside closes it, with the theme's fade. Its item is made the first time it opens and kept while the same item's panel is shown, and the item's `open` tells whether it's open. It draws its own contents; the box's padding is up to it.
+
+```qml
+StatusItem {
+    iconName: "media-playback-start"
+    popover: Component {
+        Item {
+            implicitWidth: 300
+            implicitHeight: 80
+            // …
+        }
+    }
+}
+```
+
+Older desktops don't have `popover`, and an item that sets it fails to load there. An item that should work on both can check for it (`"popover" in item`) and set it from `Component.onCompleted`.
+
 ## Trying one
 
 Switch it on in the desktop config (`[extensions] enabled = ["NAME"]`) or in the settings window. Then check the shell's log (`$XDG_RUNTIME_DIR/mavernix/login.log`) for "extensions:" and for QML errors. If an extension has an error in a file, it's left out with a message and the desktop carries on. `dev/run-in-container` is a safe place to try one.
