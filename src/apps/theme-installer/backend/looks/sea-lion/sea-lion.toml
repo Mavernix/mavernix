@@ -69,9 +69,11 @@ entries = [
 ]
 
 [shortcuts]
-app_grid = "KEY_F4"
-window_overview = "KEY_F3 | <ctrl> KEY_UP"
-show_desktop = "KEY_F11"
+# F3, F4 and F11 as on the original, and the Mission Control and Launchpad
+# keys of an Apple keyboard. Games get the function keys (src/compositor/game-keys).
+app_grid = "KEY_F4 | KEY_ALL_APPLICATIONS"
+window_overview = "KEY_F3 | KEY_SCALE | <ctrl> KEY_UP"
+show_desktop = "KEY_F11 | <super> KEY_SCALE"
 close_window = "<super> KEY_Q"
 switch_window = "<super> KEY_GRAVE"
 minimize_window = "<super> KEY_M"
@@ -239,6 +241,8 @@ shortcut_key_KEY_PAGEUP = "⇞"
 shortcut_key_KEY_PAGEDOWN = "⇟"
 shortcut_key_KEY_HOME = "↖"
 shortcut_key_KEY_END = "↘"
+shortcut_key_KEY_SCALE = "Mission Control"
+shortcut_key_KEY_ALL_APPLICATIONS = "Launchpad"
 command_terminal = "Open Terminal"
 command_end_session = "End Session"
 command_brightness_up = "Brighter"

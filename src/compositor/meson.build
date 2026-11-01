@@ -8,6 +8,7 @@ wayfire_metadata_dir = mavernix_datadir / 'wayfire'
 subdir('decoration')
 subdir('desktop-aside')
 subdir('desktop-focus')
+subdir('game-keys')
 subdir('minimize')
 subdir('open-close')
 subdir('reachable-title-bars')

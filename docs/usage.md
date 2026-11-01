@@ -23,9 +23,9 @@ The keys aren't the same on every desktop, so the table below has one column for
 | | `plain` | `sea-lion` |
 |---|---|---|
 | search | Super+Space | Super+Space |
-| all programs | Super+A | F4 |
-| all windows | Super+W | F3, or Ctrl+Up |
-| show the desktop | Super+D | F11 |
+| all programs | Super+A | F4, or the Launchpad key |
+| all windows | Super+W | F3, the Mission Control key, or Ctrl+Up |
+| show the desktop | Super+D | F11, or Super+Mission Control key |
 | program switcher | Super+Tab | Super+Tab |
 | next window | Alt+Tab | Super+` |
 | close the window | Alt+F4 | Super+Q |
@@ -37,6 +37,8 @@ The keys aren't the same on every desktop, so the table below has one column for
 | lock | Super+L | Ctrl+Super+L |
 | a terminal | Super+Enter | Super+Enter |
 | end the session right away | Ctrl+Alt+Backspace | Ctrl+Alt+Backspace |
+
+In a game, F3, F4 and F11 are the game's. Sea Lion's function keys go to the window in front when it's full screen or an X11 program (Minecraft, Wine and Steam games); Ctrl+Up still opens all windows there.
 
 The screenshot keys need `grim`, `slurp` and `wl-clipboard`. If pressing them does nothing, one of those is probably missing.
 
