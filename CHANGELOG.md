@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Sea Lion's F3, F4 and F11 go to games: an X11 program such as Minecraft, or any full screen window, gets them instead of the desktop. Ctrl+Up still opens all windows there.
+- The Mission Control and Launchpad keys of an Apple keyboard open all windows and the app grid in Sea Lion; Settings can record them.
+- Files can be dropped onto a folder on the desktop to move them into it.
+
 ## 0.5.6 (2026-11-01)
 
 ### Added
