@@ -60,7 +60,7 @@ def apps_with_installed_versions(apps):
     # Names are shared by both kinds: an extension whose name an offered app
     # has taken stays hidden (and installed) rather than show up twice.
     offered = {app["name"] for app in apps}
-    for kind, records in installed.items():
+    for records in installed.values():
         apps += [{**record["listing"], "icon": str(bundles.installed_icon(record["listing"]))}
                  for name, record in records.items() if name not in offered]
         offered |= set(records)
