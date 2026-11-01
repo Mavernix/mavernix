@@ -37,8 +37,8 @@ static QList<QVariantMap> take_reports(QByteArray& unread)
     return reports;
 }
 
-Store::Store(const QString& organisation, const QString& topic, QObject* parent)
-    : QObject(parent), organisation(organisation), topic(topic)
+Store::Store(const QString& organisation, const QString& topic, const QString& extensions_repository, QObject* parent)
+    : QObject(parent), organisation(organisation), topic(topic), extensions_repository(extensions_repository)
 {
     refresh();
 }
@@ -99,7 +99,7 @@ void Store::refresh()
         refresh_again = true;
         return;
     }
-    catalog_process = startBackEnd({QStringLiteral("catalog"), organisation, topic});
+    catalog_process = startBackEnd({QStringLiteral("catalog"), organisation, topic, extensions_repository});
     emit loadingChanged();
 
     QProcess* process = catalog_process;
@@ -194,9 +194,10 @@ void Store::startNextJob()
         running_job.action == QLatin1String("remove") ? QStringLiteral("removing") : QStringLiteral("downloading"));
     log(QStringLiteral("%1 %2").arg(running_job.action, running_job.name));
 
-    const QStringList arguments = running_job.action == QLatin1String("install")
-                                      ? QStringList{QStringLiteral("install"), organisation, topic, running_job.name}
-                                      : QStringList{QStringLiteral("remove"), running_job.name};
+    const QStringList arguments =
+        running_job.action == QLatin1String("install")
+            ? QStringList{QStringLiteral("install"), organisation, topic, running_job.name, extensions_repository}
+            : QStringList{QStringLiteral("remove"), running_job.name};
     job_process = startBackEnd(arguments);
     connect(job_process, &QProcess::readyReadStandardOutput, this, [this]() {
         unread_report += job_process->readAllStandardOutput();

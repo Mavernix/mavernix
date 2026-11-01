@@ -10,6 +10,7 @@ import hashlib
 import http.client
 import json
 import os
+import re
 import time
 import urllib.error
 import urllib.parse
@@ -22,13 +23,24 @@ CHUNK_BYTES = 64 * 1024
 
 
 class StoreProblem(Exception):
-    """Something went wrong that the user should read about, in words they understand."""
+    """Something went wrong that the user should read about, in words they understand.
+    `status` is the HTTP status when the web answered with one, else None."""
+
+    def __init__(self, message, status=None):
+        super().__init__(message)
+        self.status = status
 
 
 def api_base():
     # MAVERNIX_APP_STORE_API points the store at another copy of GitHub's API,
     # such as the tests' local server.
     return os.environ.get("MAVERNIX_APP_STORE_API", "https://api.github.com").rstrip("/")
+
+
+def safe_file_name(text):
+    """`text` (a release's tag, say) as one file name: nothing but letters,
+    digits, . - and _, and no dot first."""
+    return re.sub(r"[^A-Za-z0-9_.-]|^\.", "_", text)
 
 
 def cache_folder():
@@ -53,7 +65,7 @@ def _open(request):
                 "GitHub has answered as many questions from this computer as it allows for now. "
                 f"Try again after {time.strftime('%H:%M', time.localtime(reset))}."
             ) from error
-        raise StoreProblem(f"GitHub answered {request.full_url} with {error.code} {error.reason}.") from error
+        raise StoreProblem(f"GitHub answered {request.full_url} with {error.code} {error.reason}.", error.code) from error
     except (urllib.error.URLError, TimeoutError, OSError) as error:
         reason = getattr(error, "reason", error)
         raise StoreProblem(f"Couldn't reach {urllib.parse.urlsplit(request.full_url).netloc}: {reason}.") from error

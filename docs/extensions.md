@@ -1,6 +1,6 @@
 # Extensions
 
-Extensions add things to the desktop that aren't part of it: features only some people want. Each one is a folder in `~/.config/mavernix/extensions/`, or in `/usr/share/mavernix/extensions/` if it's installed for everyone. If you have a folder with the same name as an installed one, yours takes its place. The desktop config decides which extensions are switched on (`[extensions] enabled`). You can also change that while the desktop runs, in the Extensions pane of the settings window.
+Extensions add things to the desktop that aren't part of it: features only some people want. Each one is a folder in `~/.config/mavernix/extensions/`, or in `/usr/share/mavernix/extensions/` if it's installed for everyone. If you have a folder with the same name as an installed one, yours takes its place. A folder whose name starts with a dot is skipped (the App Store keeps one while it installs or updates). The desktop config decides which extensions are switched on (`[extensions] enabled`). You can also change that while the desktop runs, in the Extensions pane of the settings window.
 
 An extension is QML plus whatever small programs it brings. Nothing gets compiled. The shell reads its files when you switch it on, so after you change something, switch it off and on again to see it.
 

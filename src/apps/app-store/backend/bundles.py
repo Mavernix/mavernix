@@ -14,13 +14,22 @@ the user made.
 
 An update unpacks the new version beside the old one and swaps the two at the
 end, so a failed update leaves the old version as it was.
+
+An extension is just its folder, put in ~/.config/mavernix/extensions/NAME/,
+where the desktop looks for the user's own. The store leaves a file in it,
+.app-store.json (the same record as an app's installed.json), and its icon;
+a folder without that file is the user's and is never replaced or removed.
+The desktop reads its extensions when it starts, so a new one shows up after
+the next login. It is switched on in the settings window, as any other.
 """
 
 import json
 import os
 import shlex
 import shutil
+import sys
 import tarfile
+import tomllib
 from pathlib import Path
 
 import web
@@ -36,16 +45,45 @@ def apps_folder():
     return data_folder() / "mavernix" / "apps"
 
 
+def extensions_folder():
+    config = os.environ.get("XDG_CONFIG_HOME") or Path.home() / ".config"
+    return Path(config) / "mavernix" / "extensions"
+
+
+EXTENSION_RECORD = ".app-store.json"
+
+
+def _read_records(folder, record_file):
+    """{folder name: the record in its record_file} for the folders that have one.
+    A record that can't be read is left out, with the reason on standard error."""
+    found = {}
+    if folder.is_dir():
+        for record_path in sorted(folder.glob(f"*/{record_file}")):
+            # Not .NAME-new or .NAME-old, which an install leaves behind if it is stopped halfway.
+            if record_path.parent.name.startswith("."):
+                continue
+            try:
+                record = json.loads(record_path.read_text())
+                record["listing"]["name"]
+            except (OSError, ValueError, KeyError, TypeError) as problem:
+                print(f"app-store: ignoring {record_path}: {problem!r}", file=sys.stderr)
+                continue
+            found[record_path.parent.name] = record
+    return found
+
+
 def installed_apps():
     """{name: what installed.json holds} for every installed app."""
-    found = {}
-    if apps_folder().is_dir():
-        for record in sorted(apps_folder().glob("*/installed.json")):
-            # Not .NAME-new or .NAME-old, which an install leaves behind if it is stopped halfway.
-            if record.parent.name.startswith("."):
-                continue
-            found[record.parent.name] = json.loads(record.read_text())
+    found = _read_records(apps_folder(), "installed.json")
+    for record in found.values():
+        # Apps installed before the store had extensions have no kind in their listing.
+        record["listing"].setdefault("kind", "app")
     return found
+
+
+def installed_extensions():
+    """{name: what .app-store.json holds} for every extension the store installed."""
+    return _read_records(extensions_folder(), EXTENSION_RECORD)
 
 
 def installed_command(name, record=None):
@@ -55,9 +93,16 @@ def installed_command(name, record=None):
     return str(apps_folder() / name / "bundle" / record["listing"]["command"])
 
 
+def icon_file_name(app):
+    """The name its folder gives the icon of `app` (a listing) once it is installed."""
+    suffix = Path(app["icon"]).suffix
+    return ".app-store-icon" + suffix if app["kind"] == "extension" else "icon" + suffix
+
+
 def installed_icon(app):
     """Where the icon of `app` (a listing) is kept once it is installed."""
-    return apps_folder() / app["name"] / ("icon" + Path(app["icon"]).suffix)
+    folder = extensions_folder() if app["kind"] == "extension" else apps_folder()
+    return folder / app["name"] / icon_file_name(app)
 
 
 def install(app, on_progress):
@@ -70,26 +115,39 @@ def install(app, on_progress):
     if not app["bundle_sha256"]:
         raise web.StoreProblem(f"GitHub gave no checksum for {app['title']}'s download, so it can't be checked.")
 
-    download = web.cache_folder() / "downloads" / f"{name}-{app['version']}.tar.gz"
-    web.download(
-        app["bundle_url"],
-        download,
-        sha256=app["bundle_sha256"],
-        on_progress=lambda done, total: on_progress("downloading", done / (total or app["bundle_size"] or 1)),
-    )
-    on_progress("installing", 1.0)
+    if app["kind"] == "extension":
+        _refuse_users_own_extension(app)
 
+    download = web.cache_folder() / "downloads" / f"{app['kind']}-{name}-{web.safe_file_name(app['version'])}.tar.gz"
+    try:
+        web.download(
+            app["bundle_url"],
+            download,
+            sha256=app["bundle_sha256"],
+            on_progress=lambda done, total: on_progress("downloading", done / (total or app["bundle_size"] or 1)),
+        )
+        on_progress("installing", 1.0)
+        if app["kind"] == "extension":
+            _install_extension(app, download)
+        else:
+            _install_app(app, download)
+    finally:
+        download.unlink(missing_ok=True)
+
+
+def _install_app(app, download):
+    name = app["name"]
     # Everything is put together in a new folder first; the old version stays until the swap.
     new_folder = apps_folder() / f".{name}-new"
     shutil.rmtree(new_folder, ignore_errors=True)
     new_folder.mkdir(parents=True)
     try:
-        _unpack(download, new_folder, name)
+        _unpack(download, new_folder, name, renamed_to="bundle")
         bundle = new_folder / "bundle"
         for key in ("command", "desktop_entry"):
             if not (bundle / app[key]).is_file():
                 raise web.StoreProblem(f"{app['title']}'s download has no {app[key]}, which its listing promises.")
-        shutil.copyfile(app["icon"], new_folder / installed_icon(app).name)
+        shutil.copyfile(app["icon"], new_folder / icon_file_name(app))
         record = {"version": app["version"], "listing": app}
         (new_folder / "installed.json").write_text(json.dumps(record, indent=2))
     except BaseException:
@@ -97,24 +155,70 @@ def install(app, on_progress):
         raise
 
     _swap_in(new_folder, apps_folder() / name)
-    download.unlink()
     _write_desktop_entry(app)
 
 
+def _refuse_users_own_extension(app):
+    """Before anything is downloaded: a folder the store didn't make is the user's."""
+    folder = extensions_folder() / app["name"]
+    if folder.exists() and not (folder / EXTENSION_RECORD).is_file():
+        raise web.StoreProblem(f"You have an extension called {app['name']} of your own; the store won't replace it.")
+
+
+def _install_extension(app, download):
+    name = app["name"]
+    folder = extensions_folder() / name
+
+    # The extension's files are unpacked in a folder of a folder, so the
+    # desktop doesn't take the half-done one for an extension.
+    staging = extensions_folder() / f".{name}-new"
+    shutil.rmtree(staging, ignore_errors=True)
+    staging.mkdir(parents=True)
+    try:
+        _unpack(download, staging, name)
+        new_folder = staging / name
+        _check_manifest(app, new_folder / "extension.toml")
+        shutil.copyfile(app["icon"], new_folder / icon_file_name(app))
+        (new_folder / EXTENSION_RECORD).write_text(json.dumps({"version": app["version"], "listing": app}, indent=2))
+        _swap_in(new_folder, folder)
+    finally:
+        shutil.rmtree(staging, ignore_errors=True)
+
+
+def _check_manifest(app, manifest_file):
+    """The desktop leaves out an extension whose extension.toml it can't read,
+    with only a line in its log; better not to install such a one."""
+    if not manifest_file.is_file():
+        raise web.StoreProblem(f"{app['title']}'s download has no extension.toml.")
+    try:
+        tomllib.loads(manifest_file.read_text())
+    except ValueError as error:
+        raise web.StoreProblem(f"{app['title']}'s extension.toml isn't valid: {error}.") from error
+
+
 def remove(name):
-    """Removes the app `name` and its desktop entry."""
-    folder = apps_folder() / name
-    record = installed_apps().get(name)
-    if record is None:
+    """Removes the app or extension `name`, and the app's desktop entry."""
+    app = installed_apps().get(name)
+    if app is not None:
+        _remove_app(name, app)
+    elif name in installed_extensions():
+        shutil.rmtree(extensions_folder() / name)
+    else:
+        # An extension folder without the store's record is the user's own,
+        # and isn't found as installed, so it is never removed.
         raise web.StoreProblem(f"{name} isn't installed.")
+
+
+def _remove_app(name, record):
     entry = _entry_path(record["listing"])
     if entry.is_file() and f"{STORE_KEY}={name}" in entry.read_text().splitlines():
         entry.unlink()
-    shutil.rmtree(folder)
+    shutil.rmtree(apps_folder() / name)
 
 
-def _unpack(archive, folder, name):
-    """Unpacks the bundle, whose files all sit in a folder called NAME, as folder/bundle."""
+def _unpack(archive, folder, name, renamed_to=None):
+    """Unpacks the bundle, whose files all sit in a folder called NAME, into
+    `folder`, as folder/NAME or, if given, folder/renamed_to."""
     with tarfile.open(archive) as bundle:
         top_folders = {Path(member.name).parts[0] for member in bundle.getmembers()}
         if top_folders != {name}:
@@ -125,7 +229,8 @@ def _unpack(archive, folder, name):
             bundle.extractall(folder, filter="data")
         except tarfile.FilterError as error:
             raise web.StoreProblem(f"The download holds a file the App Store won't unpack: {error}.") from error
-    (folder / name).rename(folder / "bundle")
+    if renamed_to is not None:
+        (folder / name).rename(folder / renamed_to)
 
 
 def _swap_in(new_folder, folder):
