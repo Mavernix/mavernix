@@ -40,6 +40,17 @@ use_theme = true
 # see docs/configuration.md).
 use_theme = true
 
+# Native screen-corner actions. Enter a corner, pause, and leave to rearm.
+[hot_corners]
+size = 4
+delay_ms = 300
+
+[hot_corners.actions]
+top_left = "none"
+top_right = "none"
+bottom_left = "none"
+bottom_right = "none"
+
 [panel]
 # Desktop settings: let wallpaper show through the menu bar.
 translucent_menu_bar = true

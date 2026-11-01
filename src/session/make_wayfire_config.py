@@ -781,10 +781,45 @@ def gesture_section(config, theme):
     return lines, ["touchpad-gestures"]
 
 
+def hot_corner_lines(config, theme):
+    """Use Wayfire's native edge dwell timers; ordinary bindings stay off while locked."""
+    wishes = config.get("hot_corners", {})
+    if not isinstance(wishes, dict):
+        fail("hot_corners must be a table")
+    actions = wishes.get("actions", {})
+    if not isinstance(actions, dict):
+        fail("hot_corners.actions must be a table")
+    corners = {"top_left": "top-left", "top_right": "top-right",
+               "bottom_left": "bottom-left", "bottom_right": "bottom-right"}
+    if set(actions) - corners.keys():
+        fail("hot_corners.actions has an unknown corner")
+    values = {}
+    for key, low, high, default in (("size", 1, 32, 4), ("delay_ms", 0, 5000, 300)):
+        value = wishes.get(key, default)
+        if isinstance(value, bool) or not isinstance(value, int) or not low <= value <= high:
+            fail(f"hot_corners.{key} must be a whole number between {low} and {high}")
+        values[key] = value
+    lines = []
+    for corner, edge in corners.items():
+        action = actions.get(corner, "none")
+        if action == "none":
+            continue
+        if action not in ("window_overview", "show_desktop", "app_grid", "lock"):
+            fail(f"hot_corners.actions.{corner} has an unknown action")
+        if action in shell_actions(theme):
+            command = shell_command(action)
+        else:
+            command = shlex.join(["python3", str(SESSION_DIR / "compositor_call.py"), COMPOSITOR_METHODS[action]])
+        size = values["size"]
+        lines += [f"binding_hot_corner_{corner} = hotspot {edge} {size}x{size} {values['delay_ms']}",
+                  f"command_hot_corner_{corner} = {command}"]
+    return lines
+
+
 def shortcut_section(config, theme):
     """The command plugin's bindings: shell [shortcuts] and [commands]."""
     shortcuts = config.get("shortcuts", {})
-    lines = command_lines(config)
+    lines = command_lines(config) + hot_corner_lines(config, theme)
     for action, key in shortcuts.items():
         if action in shell_actions(theme):
             pass

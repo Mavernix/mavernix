@@ -265,3 +265,30 @@ blurred background, including the shaped shelf's edges. Blur requires Wayfire's
 GLES renderer and its matching `blur` plugin. It adds GPU work; switching it off
 for both surfaces unloads the plugin. Changing a blur preference briefly restarts
 the desktop shell to remap the surfaces with the new matcher.
+
+## Hot corners
+
+In Settings, Desktop, **Hot Corners…** assigns an action to each corner around
+an illustration of the screen. Choose Window Overview, Desktop, All
+Applications, Lock Screen, or — to disable a corner. OK saves all four choices
+at once; Cancel leaves them unchanged. All corners start disabled.
+
+```toml
+[hot_corners]
+size = 4       # logical pixels, 1..32
+delay_ms = 300 # dwell time, 0..5000 milliseconds
+
+[hot_corners.actions]
+top_left = "window_overview"
+top_right = "none"
+bottom_left = "show_desktop"
+bottom_right = "app_grid"
+```
+
+Action ids: `none`, `window_overview`, `show_desktop`, `app_grid`, `lock`.
+Changes apply immediately. Wayfire's native hotspots operate on each output;
+a corner fires after the pointer dwells there and must be left before firing
+again. They use ordinary command bindings, not bindings active on the lock
+screen. Window Overview follows the theme's shell/compositor implementation.
+The dialog's text can be overridden with `settings.words.hot_corners_button`,
+`hot_corners_title`, `hot_corners_CORNER` and `hot_corners_action_ACTION`.
