@@ -1,8 +1,8 @@
 # Extensions
 
-Extensions add things to the desktop that aren't part of it: features only some people want. Each one is a folder in `~/.config/mavernix/extensions/`, or in `/usr/share/mavernix/extensions/` if it's installed for everyone. If you have a folder with the same name as an installed one, yours takes its place. A folder whose name starts with a dot is skipped (the App Store keeps one while it installs or updates). The desktop config decides which extensions are switched on (`[extensions] enabled`). You can also change that while the desktop runs, in the Extensions pane of the settings window.
+Extensions add things to the desktop that aren't part of it: features only some people want. Each one is a folder in `~/.config/mavernix/extensions/`, or in `/usr/share/mavernix/extensions/` if it's installed for everyone. If you have a folder with the same name as an installed one, yours takes its place. A folder whose name starts with a dot is skipped (the App Store keeps one while it installs or updates). The desktop config decides which extensions are switched on (`[extensions] enabled`). You can also change that while the desktop runs, in the Extensions pane of the settings window. The desktop looks for extensions when you log in, and again whenever the App Store installs or removes one (`mavernix-extensions-changed`); a folder you add by hand shows at the next login, or after you run that command.
 
-An extension is QML plus whatever small programs it brings. Nothing gets compiled. The shell reads its files when you switch it on, so after you change something, switch it off and on again to see it.
+An extension is QML plus whatever small programs it brings. Nothing gets compiled. The shell keeps the code of a file it has read for as long as it runs, so after you change something, run `mavernix-extensions-changed` in a terminal on the desktop: the extension starts again with your changes. Switching it off and on again isn't enough.
 
 ## What a folder holds
 
@@ -50,7 +50,7 @@ You can change a setting in the settings window (only the ones that have a label
 
 ## The running part (`background`)
 
-This is a QML file whose top object is a `Scope` (or any object). The shell creates it when the extension is switched on and destroys it when it's switched off. It hands it these:
+This is a QML file whose top object is a `Scope` (or any object). The shell creates it when the extension is switched on and destroys it when it's switched off. When the extension is updated, the old one is destroyed and one made from the new files takes its place, and the same goes for its panel items. The shell reaches the files through a link of its own, so `Qt.resolvedUrl` gives a path in the session's state folder; `extension.directory` is the folder itself. It hands it these:
 
 | Property | What it is |
 |---|---|

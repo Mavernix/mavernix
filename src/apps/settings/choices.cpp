@@ -64,6 +64,21 @@ QVariant Choices::value(const QString& table, const QString& key) const
     return configTable(table).value(key);
 }
 
+QVariant Choices::current(const QString& table, const QString& key) const
+{
+    QFile file(userChoicesFile());
+    if (file.open(QIODevice::ReadOnly))
+    {
+        const QJsonObject held_table = QJsonDocument::fromJson(file.readAll()).object().value(table).toObject();
+        if (held_table.contains(key))
+        {
+            return held_table.value(key).toVariant();
+        }
+    }
+
+    return value(table, key);
+}
+
 QString Choices::set(const QString& table, const QString& key, const QVariant& value)
 {
     QVariantMap changed_table = changed.value(table).toMap();
@@ -136,7 +151,29 @@ QVariantMap Choices::systemKeyboard() const
 
 QVariantMap Choices::extensions() const
 {
+    // What the session finds now, extensions the App Store installed since
+    // it started included; else the list as it started.
+    QFile file(extensionsFile());
+    if (file.open(QIODevice::ReadOnly))
+    {
+        const QJsonObject held = QJsonDocument::fromJson(file.readAll()).object();
+        if (held.value(QStringLiteral("extensions")).isObject())
+        {
+            return held.value(QStringLiteral("extensions")).toObject().toVariantMap();
+        }
+    }
+
     return settings.value(QStringLiteral("extensions")).toMap();
+}
+
+QString Choices::extensionsFile() const
+{
+    return settings.value(QStringLiteral("extensions_file")).toString();
+}
+
+QString Choices::userChoicesFile() const
+{
+    return settings.value(QStringLiteral("user_choices_file")).toString();
 }
 
 QString Choices::themeDirectory() const

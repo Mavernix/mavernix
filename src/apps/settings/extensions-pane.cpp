@@ -4,6 +4,7 @@
 #include <QDesktopServices>
 #include <QDoubleSpinBox>
 #include <QDir>
+#include <QFileSystemWatcher>
 #include <QFileInfo>
 #include <QFrame>
 #include <QGroupBox>
@@ -34,7 +35,6 @@ static const int setting_decimals = 3;
 ExtensionsPane::ExtensionsPane(Choices& choices, QWidget* parent) : QWidget(parent), choices(choices)
 {
     words = choices.configTable(QStringLiteral("settings")).value(QStringLiteral("words")).toMap();
-    found = choices.extensions();
 
     auto* rows = new QVBoxLayout(this);
     rows->setContentsMargins(0, 0, 0, 0);
@@ -46,24 +46,79 @@ ExtensionsPane::ExtensionsPane(Choices& choices, QWidget* parent) : QWidget(pare
             intro->fontMetrics(), intro_width_px));
     rows->addWidget(intro);
 
-    if (found.isEmpty())
-    {
-        auto* none = new QLabel(word("extensions_none", "No extensions are installed."));
-        none->setEnabled(false);
-        none->setAlignment(Qt::AlignCenter);
-        none->setMinimumHeight(detail_box_size.height());
-        rows->addWidget(none);
-    }
-    else
-    {
-        auto* side_by_side = new QHBoxLayout;
-        side_by_side->setSpacing(list_to_box_px);
-        side_by_side->addWidget(buildList(), 0, Qt::AlignVCenter);
-        side_by_side->addWidget(buildDetail(), 0, Qt::AlignVCenter);
-        rows->addLayout(side_by_side);
-        fillList(QString());
-    }
+    none = new QLabel(word("extensions_none", "No extensions are installed."));
+    none->setEnabled(false);
+    none->setAlignment(Qt::AlignCenter);
+    none->setMinimumHeight(detail_box_size.height());
+    rows->addWidget(none);
+
+    some = new QWidget;
+    auto* side_by_side = new QHBoxLayout(some);
+    side_by_side->setContentsMargins(0, 0, 0, 0);
+    side_by_side->setSpacing(list_to_box_px);
+    side_by_side->addWidget(buildList(), 0, Qt::AlignVCenter);
+    side_by_side->addWidget(buildDetail(), 0, Qt::AlignVCenter);
+    rows->addWidget(some);
     rows->addWidget(buildFolderButton(), 0, Qt::AlignLeft);
+
+    found = choices.extensions();
+    enabled = enabledInFile();
+    showFound();
+
+    // The App Store installs and removes extensions while this window is open,
+    // and the shell switches a new one on in the user's choices. The folder
+    // is watched too, for a choices file that doesn't exist yet.
+    watcher = new QFileSystemWatcher(this);
+    watcher->addPath(QFileInfo(choices.userChoicesFile()).absolutePath());
+    watchFiles();
+    auto follow = [this]() {
+        watchFiles();
+        reload();
+    };
+    connect(watcher, &QFileSystemWatcher::fileChanged, this, follow);
+    connect(watcher, &QFileSystemWatcher::directoryChanged, this, follow);
+}
+
+void ExtensionsPane::watchFiles()
+{
+    // A file replaced whole is no longer watched, and one not there yet can't be.
+    for (const QString& path : {choices.extensionsFile(), choices.userChoicesFile()})
+    {
+        if (QFileInfo::exists(path) && !watcher->files().contains(path))
+        {
+            watcher->addPath(path);
+        }
+    }
+}
+
+QStringList ExtensionsPane::enabledInFile() const
+{
+    return choices.current(QStringLiteral("extensions"), QStringLiteral("enabled")).toStringList();
+}
+
+void ExtensionsPane::reload()
+{
+    const QVariantMap found_now = choices.extensions();
+    const QStringList enabled_now = enabledInFile();
+    // Showing them again replaces the setting fields, where the user may be
+    // typing, so it waits for a change to the extensions or to which are on.
+    if (found_now == found && enabled_now == enabled)
+    {
+        return;
+    }
+    found = found_now;
+    enabled = enabled_now;
+    showFound();
+}
+
+void ExtensionsPane::showFound()
+{
+    none->setVisible(found.isEmpty());
+    some->setVisible(!found.isEmpty());
+    if (!found.isEmpty())
+    {
+        fillList(shown_name);
+    }
 }
 
 QString ExtensionsPane::word(const char* key, const char* fallback) const
@@ -163,7 +218,7 @@ QString ExtensionsPane::titleOf(const QString& name) const
 
 bool ExtensionsPane::isEnabled(const QString& name) const
 {
-    return choices.value(QStringLiteral("extensions"), QStringLiteral("enabled")).toStringList().contains(name);
+    return enabled.contains(name);
 }
 
 QIcon ExtensionsPane::iconOf(const QString& name) const
@@ -349,7 +404,8 @@ void ExtensionsPane::changeSetting(const QString& name, const QString& key, cons
 
 void ExtensionsPane::change(const QString& name, bool on)
 {
-    QStringList enabled = choices.value(QStringLiteral("extensions"), QStringLiteral("enabled")).toStringList();
+    // As the file holds it now, so that one the shell switched on stays on.
+    enabled = enabledInFile();
     enabled.removeAll(name);
     if (on)
     {

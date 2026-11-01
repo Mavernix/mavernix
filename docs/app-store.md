@@ -76,7 +76,7 @@ icon = "airpods.svg"
 # optional: description, category, developer, license, screenshots, as for an app
 ```
 
-The store unpacks `NAME/` into `~/.config/mavernix/extensions/`, where the desktop looks for the user's own, and checks the download's checksum like an app's. It leaves a file `.app-store.json` in the folder; a folder without it is the user's, and the store neither replaces nor removes it. The desktop reads its extensions when it starts, so a new one shows after the next login, and is then switched on in the settings window. The mavernix-extensions repository makes these files with `packaging/make-release`.
+The store unpacks `NAME/` into `~/.config/mavernix/extensions/`, where the desktop looks for the user's own, and checks the download's checksum like an app's. It leaves a file `.app-store.json` in the folder; a folder without it is the user's, and the store neither replaces nor removes it. Once it's in place, the store runs `mavernix-extensions-changed`, which has the running desktop look for its extensions again: a new extension is switched on at once, an update stays on or off as it was, and a removed one stops. The store's pages show extensions apart from the apps, under a heading of their own. The mavernix-extensions repository makes these files with `packaging/make-release`.
 
 Two things to know about an installed extension:
 
