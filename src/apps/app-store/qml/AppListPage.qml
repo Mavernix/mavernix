@@ -1,5 +1,6 @@
-// A page that lists apps, one row each: the Installed page and the Updates
-// page are both this, with other apps and words.
+// A page that lists apps, one row each, and after them the extensions under a
+// heading of their own: the Installed page and the Updates page are both
+// this, with other apps and words.
 
 import QtQuick
 
@@ -9,6 +10,8 @@ Flickable {
     required property var looks
     required property var apps
     property string heading: ""
+    // Over the extensions' rows.
+    property string extensionsHeading: ""
     property string emptyText: ""
     // Whether rows offer Remove (the Installed page).
     property bool removable: false
@@ -16,6 +19,9 @@ Flickable {
     property bool offersUpdateAll: false
 
     signal appChosen(string name)
+
+    readonly property var programs: apps.filter(app => app.kind !== "extension")
+    readonly property var extensions: apps.filter(app => app.kind === "extension")
 
     contentHeight: content.height + 2 * looks.value("side_margin")
     clip: true
@@ -50,16 +56,33 @@ Flickable {
         }
 
         Repeater {
-            model: page.apps
+            model: page.programs
+            delegate: row
+        }
 
-            AppRow {
-                required property var modelData
-                width: content.width
-                looks: page.looks
-                app: modelData
-                removable: page.removable
-                onChosen: page.appChosen(modelData.name)
-            }
+        SectionHeading {
+            visible: page.extensions.length > 0
+            width: parent.width
+            looks: page.looks
+            text: page.extensionsHeading
+        }
+
+        Repeater {
+            model: page.extensions
+            delegate: row
+        }
+    }
+
+    Component {
+        id: row
+
+        AppRow {
+            required property var modelData
+            width: content.width
+            looks: page.looks
+            app: modelData
+            removable: page.removable
+            onChosen: page.appChosen(modelData.name)
         }
     }
 }

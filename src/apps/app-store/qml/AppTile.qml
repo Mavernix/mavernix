@@ -54,7 +54,7 @@ Item {
             looks: tile.looks
             kind: "small"
             color: tile.looks.color("secondary_text_color")
-            text: tile.app.category
+            text: tile.app.category || (tile.app.kind === "extension" ? tile.looks.word("extension_category") : "")
         }
 
         // The gap above the button.
