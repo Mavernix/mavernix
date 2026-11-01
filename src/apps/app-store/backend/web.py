@@ -22,7 +22,12 @@ CHUNK_BYTES = 64 * 1024
 
 
 class StoreProblem(Exception):
-    """Something went wrong that the user should read about, in words they understand."""
+    """Something went wrong that the user should read about, in words they understand.
+    `status` is the HTTP status when the web answered with one, else None."""
+
+    def __init__(self, message, status=None):
+        super().__init__(message)
+        self.status = status
 
 
 def api_base():
@@ -53,7 +58,7 @@ def _open(request):
                 "GitHub has answered as many questions from this computer as it allows for now. "
                 f"Try again after {time.strftime('%H:%M', time.localtime(reset))}."
             ) from error
-        raise StoreProblem(f"GitHub answered {request.full_url} with {error.code} {error.reason}.") from error
+        raise StoreProblem(f"GitHub answered {request.full_url} with {error.code} {error.reason}.", error.code) from error
     except (urllib.error.URLError, TimeoutError, OSError) as error:
         reason = getattr(error, "reason", error)
         raise StoreProblem(f"Couldn't reach {urllib.parse.urlsplit(request.full_url).netloc}: {reason}.") from error
@@ -78,7 +83,7 @@ def get_json(path):
         # Only a 304 gets here: nothing changed since the kept answer.
         if error.code == 304 and kept is not None:
             return kept["answer"]
-        raise StoreProblem(f"GitHub answered {url} with {error.code} {error.reason}.") from error
+        raise StoreProblem(f"GitHub answered {url} with {error.code} {error.reason}.", error.code) from error
 
     kept_file.parent.mkdir(parents=True, exist_ok=True)
     kept_file.write_text(json.dumps({"etag": etag, "answer": answer}))

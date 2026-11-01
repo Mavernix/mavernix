@@ -77,8 +77,9 @@ def found_extensions(config, theme_name):
             continue
         for directory in sorted(folder.iterdir()):
             manifest_file = directory / "extension.toml"
-            # The user's own wins over a bundled one of the same name.
-            if not manifest_file.is_file() or directory.name in found:
+            # The user's own wins over a bundled one of the same name. A
+            # folder starting with a dot is an install or update left half-done.
+            if directory.name.startswith(".") or not manifest_file.is_file() or directory.name in found:
                 continue
             # Not load_toml, which exits on an unreadable file.
             try:

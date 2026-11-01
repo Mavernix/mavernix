@@ -1,12 +1,13 @@
 """The App Store's back end, run by the window (store.cpp) once for each thing it does:
 
-    app_store.py catalog ORGANISATION TOPIC
-    app_store.py install ORGANISATION TOPIC NAME
+    app_store.py catalog ORGANISATION TOPIC [EXTENSIONS_REPOSITORY]
+    app_store.py install ORGANISATION TOPIC NAME [EXTENSIONS_REPOSITORY]
     app_store.py remove NAME
 
 It reports on standard output, one JSON object per line:
 
-    {"event": "catalog", "apps": [...],       every app offered, see catalog.py; each also has
+    {"event": "catalog", "apps": [...],       every app and extension offered ("kind" says which),
+                                              see catalog.py; each also has
      "problem": "..."}                        "installed_version" and "installed_command"
                                               ("" when it isn't installed). When GitHub can't
                                               be asked, `problem` says why, and the apps are
@@ -34,9 +35,26 @@ def report(event, **details):
     print(json.dumps({"event": event, **details}), flush=True)
 
 
+def find_everything(organisation, topic, extensions_repository=""):
+    """(the apps, then the extensions, that the organisation offers; why the
+    extensions couldn't be read, or ""). An app and an extension of one name
+    can't both be installed; the app is the one kept. Without a repository
+    for extensions, there are none."""
+    offered = catalog.find_apps(organisation, topic)
+    if not extensions_repository:
+        return offered, ""
+    try:
+        extensions = catalog.find_extensions(organisation, extensions_repository)
+    # The apps still show when the extensions can't be read.
+    except web.StoreProblem as problem:
+        return offered, f"The extensions couldn't be read. {problem}"
+    taken = {app["name"] for app in offered}
+    return offered + [extension for extension in extensions if extension["name"] not in taken], ""
+
+
 def apps_with_installed_versions(apps):
     """`apps` (from the catalog), with what is installed added to them."""
-    installed = bundles.installed_apps()
+    installed = {**bundles.installed_extensions(), **bundles.installed_apps()}
     # An installed app that is no longer offered still shows, as its listing
     # was when it was installed, so it can be opened and removed.
     offered = {app["name"] for app in apps}
@@ -46,14 +64,17 @@ def apps_with_installed_versions(apps):
     for app in apps:
         record = installed.get(app["name"])
         app["installed_version"] = record["version"] if record else ""
-        app["installed_command"] = bundles.installed_command(app["name"], record) if record else ""
+        app["installed_command"] = (bundles.installed_command(app["name"], record)
+                                    if record and app["kind"] == "app" else "")
     return apps
 
 
-def install(organisation, topic, name):
-    apps = {app["name"]: app for app in catalog.find_apps(organisation, topic)}
+def install(organisation, topic, name, extensions_repository=""):
+    offered, problem = find_everything(organisation, topic, extensions_repository)
+    apps = {app["name"]: app for app in offered}
     if name not in apps:
-        raise web.StoreProblem(f"{name} isn't offered in the App Store (anymore).")
+        # Better the reason the extensions weren't read than "not offered".
+        raise web.StoreProblem(problem or f"{name} isn't offered in the App Store (anymore).")
 
     last_report = 0.0
 
@@ -69,15 +90,15 @@ def install(organisation, topic, name):
 
 def main(arguments):
     command, *rest = arguments or [""]
-    if command == "catalog" and len(rest) == 2:
+    if command == "catalog" and len(rest) in (2, 3):
         # Without GitHub (offline, or past its limit) the installed apps still
         # show, so they can be opened and removed.
         try:
-            offered, problem = catalog.find_apps(*rest), ""
+            offered, problem = find_everything(*rest)
         except web.StoreProblem as error:
             offered, problem = [], str(error)
         report("catalog", apps=apps_with_installed_versions(offered), problem=problem)
-    elif command == "install" and len(rest) == 3:
+    elif command == "install" and len(rest) in (3, 4):
         install(*rest)
         report("done")
     elif command == "remove" and len(rest) == 1:
