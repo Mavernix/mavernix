@@ -15,6 +15,7 @@
 
 ### Fixed
 
+- Files dropped on the desktop no longer replace a file of the same name there; they get a number, like "letter 2.txt".
 - In App Icons & Names, the button that brings back an application's own icon is drawn as a button again under Sea Lion. It's now called Use Original.
 
 ## 0.5.6 (2026-11-01)

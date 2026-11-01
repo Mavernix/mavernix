@@ -3,7 +3,7 @@
 # [desktop_files] table.
 #
 #   mavernix-file-action new-folder FOLDER NAME    a folder NAME in FOLDER ("NAME 2" if taken)
-#   mavernix-file-action move-into FOLDER FILE...  move the files into FOLDER
+#   mavernix-file-action move-into FOLDER FILE...  move the files into FOLDER ("letter 2.txt" if taken)
 #   mavernix-file-action duplicate FILE...         a copy beside each file ("letter copy.txt")
 set -eu
 
@@ -20,6 +20,19 @@ free_path() {
     printf '%s\n' "$candidate"
 }
 
+# FILE's name split into base and extension, so the extension stays last
+# ("letter copy.txt"); folders and dotfiles have none.
+split_name() {
+    name=$(basename "$1")
+    base=$name
+    extension=""
+    stem=${name%.*}
+    if [ ! -d "$1" ] && [ "$stem" != "$name" ] && [ -n "$stem" ]; then
+        base=$stem
+        extension=.${name##*.}
+    fi
+}
+
 action=${1:-}
 [ $# -gt 0 ] && shift
 case "$action" in
@@ -31,22 +44,19 @@ move-into)
     [ $# -ge 2 ] || { echo "usage: mavernix-file-action move-into FOLDER FILE..." >&2; exit 2; }
     folder=$1
     shift
-    gio move "$@" "$folder/"
+    for file in "$@"; do
+        # Already in FOLDER: nothing to move.
+        [ "$file" -ef "$folder/$(basename "$file")" ] && continue
+        # A free name, as gio move would replace a file of the same name.
+        split_name "$file"
+        gio move "$file" "$(free_path "$folder" "$base" "$extension")"
+    done
     ;;
 duplicate)
     [ $# -ge 1 ] || { echo "usage: mavernix-file-action duplicate FILE..." >&2; exit 2; }
     for file in "$@"; do
         folder=$(dirname "$file")
-        name=$(basename "$file")
-        # Keep the extension last ("letter copy.txt"); folders and dotfiles
-        # have none.
-        base=$name
-        extension=""
-        stem=${name%.*}
-        if [ ! -d "$file" ] && [ "$stem" != "$name" ] && [ -n "$stem" ]; then
-            base=$stem
-            extension=.${name##*.}
-        fi
+        split_name "$file"
         # cp, not gio copy: gio cannot copy a folder.
         cp -a "$file" "$(free_path "$folder" "$base copy" "$extension")"
     done
