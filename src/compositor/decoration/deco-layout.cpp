@@ -119,7 +119,7 @@ wf::geometry_t decoration_layout_t::create_buttons(int width, int)
 
     wf::geometry_t button_bounding_geometry = {
         (double)button_bounding_x_start, (double)button_y,
-        (double)button_bounding_x_end, (double)looks.button_height,
+        (double)(button_bounding_x_end - button_bounding_x_start), (double)looks.button_height,
     };
 
     this->layout_areas.push_back(std::make_unique<decoration_area_t>(
