@@ -235,17 +235,17 @@ Services that start on demand learn about all of this at login. When the session
 
 ## Background blur for the menu bar and Dock
 
-The Desktop pane has a single **Translucent menu bar** checkbox. It controls
-the menu bar's additional transparency and background blur together. Turning
-it off restores the original material. The Dock retains background blur in
-the Sea Lion configurations, independently of this checkbox, without a
-separate user-facing blur switch.
+The Desktop pane has separate **Translucent menu bar** and **Blur menu bar**
+checkboxes. Translucency is enabled by default in Sea Lion; menu bar blur is
+an optional effect and starts disabled. Turning translucency off restores
+the original material and disables the blur control without forgetting its
+stored selection. The Dock retains background blur independently.
 It uses Wayfire's `blur` plugin with an explicit matcher for `desktop-panel`
 and/or `mavernix-dock`; ordinary windows are excluded.
 
 ```toml
 [blur]
-panel = true
+panel = false
 dock = true
 panel_opacity = 0.65 # opacity of the menu bar's background, not its contents
 # The 3D shelf already has translucent colours; keep its original finish.
@@ -265,3 +265,30 @@ blurred background, including the shaped shelf's edges. Blur requires Wayfire's
 GLES renderer and its matching `blur` plugin. It adds GPU work; switching it off
 for both surfaces unloads the plugin. Changing a blur preference briefly restarts
 the desktop shell to remap the surfaces with the new matcher.
+
+## Hot corners
+
+In Settings, Desktop, **Hot Corners…** assigns an action to each corner around
+an illustration of the screen. Choose Window Overview, Desktop, All
+Applications, Lock Screen, or — to disable a corner. OK saves all four choices
+at once; Cancel leaves them unchanged. All corners start disabled.
+
+```toml
+[hot_corners]
+size = 4       # logical pixels, 1..32
+delay_ms = 300 # dwell time, 0..5000 milliseconds
+
+[hot_corners.actions]
+top_left = "window_overview"
+top_right = "none"
+bottom_left = "show_desktop"
+bottom_right = "app_grid"
+```
+
+Action ids: `none`, `window_overview`, `show_desktop`, `app_grid`, `lock`.
+Changes apply immediately. Wayfire's native hotspots operate on each output;
+a corner fires after the pointer dwells there and must be left before firing
+again. They use ordinary command bindings, not bindings active on the lock
+screen. Window Overview follows the theme's shell/compositor implementation.
+The dialog's text can be overridden with `settings.words.hot_corners_button`,
+`hot_corners_title`, `hot_corners_CORNER` and `hot_corners_action_ACTION`.

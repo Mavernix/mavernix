@@ -75,3 +75,7 @@ The Desktop pane exposes `panel.translucent_menu_bar` (default true). Turning
 it off restores the original theme material at its original opacity and excludes
 the menu bar from compositor blur. Existing transparency in the theme artwork
 is retained. The Dock and the stored blur strength are unaffected.
+
+The optional Desktop checkbox **Blur menu bar** controls `blur.panel`
+independently of opacity. Sea Lion defaults it to false. Changing blur alone
+does not change the menu bar's background opacity.

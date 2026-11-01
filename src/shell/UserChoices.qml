@@ -75,7 +75,7 @@ Item {
     // user's file changes in one of them.
 
     readonly property var compositorTables:
-        ["input", "idle", "commands", "shortcuts", "gestures", "display", "window", "desktops", "blur"]
+        ["input", "idle", "commands", "shortcuts", "gestures", "display", "window", "desktops", "blur", "hot_corners"]
     // These tables as last given to the compositor, as JSON text; unset until
     // the file has been read once.
     property var givenToCompositor: undefined

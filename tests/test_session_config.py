@@ -564,6 +564,54 @@ class TestPointerSettings(SessionTestCase):
             make_wayfire_config.input_section({"input": {"mouse_speed": 2}}, {})
 
 
+class TestHotCorners(SessionTestCase):
+    def setUp(self):
+        super().setUp()
+        sys.path[:0] = [self.folder.name, str(SESSION_SOURCE_DIR)]
+        try:
+            import make_wayfire_config
+            self.generator = make_wayfire_config
+        finally:
+            del sys.path[:2]
+
+    def test_disabled_corners_add_no_bindings(self):
+        self.assertEqual(self.generator.hot_corner_lines({}, {}), [])
+        self.assertEqual(self.generator.hot_corner_lines({"hot_corners": {
+            "actions": {"top_left": "none"}}}, {}), [])
+
+    def test_all_corners_and_native_action_routing(self):
+        actions = dict(zip(("top_left", "top_right", "bottom_left", "bottom_right"),
+                           ("window_overview", "show_desktop", "app_grid", "lock")))
+        config = {"hot_corners": {"actions": actions, "size": 6, "delay_ms": 450}}
+        lines = self.generator.hot_corner_lines(config, {})
+        for corner in actions:
+            self.assertIn(f"binding_hot_corner_{corner} = hotspot {corner.replace('_', '-')} 6x6 450", lines)
+        self.assertTrue(any("scale/toggle" in line for line in lines))
+        self.assertTrue(any("wm-actions/toggle_showdesktop" in line for line in lines))
+        self.assertTrue(any("ipc call shell run app_grid" in line for line in lines))
+        self.assertTrue(any("ipc call shell run lock" in line for line in lines))
+        self.assertFalse(any("always_binding" in line for line in lines))
+        lines = self.generator.hot_corner_lines(config, {"window_overview": {"drawn_by": "shell"}})
+        self.assertTrue(any("ipc call shell run window_overview" in line for line in lines))
+        self.assertFalse(any("scale/toggle" in line for line in lines))
+
+    def test_invalid_settings_fail_clearly(self):
+        for wishes in (False, {"actions": []}, {"actions": {"left": "lock"}},
+                       {"actions": {"top_left": "run-arbitrary-command"}},
+                       {"size": True}, {"size": 0}, {"size": 33},
+                       {"delay_ms": -1}, {"delay_ms": 1.5}, {"delay_ms": 5001}):
+            with self.subTest(wishes=wishes), self.assertRaises(SystemExit):
+                self.generator.hot_corner_lines({"hot_corners": wishes}, {})
+
+    def test_hot_corners_coexist_with_keys_and_commands(self):
+        config = {"hot_corners": {"actions": {"bottom_left": "show_desktop"}},
+                  "shortcuts": {"app_grid": "<super> KEY_A"}}
+        lines = self.generator.shortcut_section(config, {})
+        self.assertEqual(lines.count("[command]"), 1)
+        self.assertIn("binding_app_grid = <super> KEY_A", lines)
+        self.assertTrue(any("binding_hot_corner_bottom_left" in line for line in lines))
+
+
 class TestShellBlur(SessionTestCase):
     def setUp(self):
         super().setUp()
@@ -595,6 +643,18 @@ class TestShellBlur(SessionTestCase):
         self.assertEqual(plugins, ["blur"])
         self.assertIn('blur_by_default = app_id is "mavernix-dock"', section)
         self.assertFalse(any('desktop-panel' in line for line in section))
+
+    def test_menu_bar_blur_is_independent_and_optional(self):
+        for translucent, blurred, expected in ((True, False, False), (True, True, True),
+                                                (False, True, False), (False, False, False)):
+            with self.subTest(translucent=translucent, blurred=blurred):
+                config = {"panel": {"translucent_menu_bar": translucent},
+                          "blur": {"panel": blurred, "dock": True}}
+                section, plugins = self.generator.blur_section(config, {})
+                self.assertEqual(plugins, ["blur"])
+                matcher = next(line for line in section if line.startswith("blur_by_default"))
+                self.assertEqual('desktop-panel' in matcher, expected)
+                self.assertIn('mavernix-dock', matcher)
 
     def test_strength_values_are_validated(self):
         for key, value in (("method", "bad"), ("iterations", -1), ("iterations", 2.5),

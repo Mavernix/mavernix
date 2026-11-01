@@ -72,8 +72,7 @@ PanelWindow {
     Fill {
         id: background
         fill: panel.looks.background
-        opacity: panel.translucentMenuBar && (panel.choices?.value("blur", "panel") ?? panel.settings.config.blur?.panel
-                  ?? panel.settings.theme.blur?.panel ?? false)
+        opacity: panel.translucentMenuBar
                  ? Math.max(0, Math.min(1, panel.choices?.value("blur", "panel_opacity")
                     ?? panel.settings.config.blur?.panel_opacity ?? panel.settings.theme.blur?.panel_opacity ?? 1)) : 1
         themeDirectory: panel.themeDirectory
