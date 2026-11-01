@@ -109,6 +109,22 @@ Once you've changed the dock by hand, your own groups in `NAME.json` replace the
 
 Right-clicking a program in the dock also lists the program's own entries from its launcher, such as New Window or New Private Window. `[dock] actions_when_closed = false` shows them only while the program runs.
 
+## Applications' icons and names
+
+Settings, App Icons & Names, gives an application another icon or another name, for example Bandstand the name "iTunes". The desktop then shows them instead of the application's own: in the dock, the menu bar, the app grid, the program switcher, the window overview and the search. The search still finds it by its own name too. What the application shows itself, like its window title or its About box, stays its own.
+
+Both are kept by desktop entry ID, so they belong to a desktop like everything else you change (a desktop based on another one shares them):
+
+```toml
+[app_icons]
+"bandstand" = "/home/you/Pictures/itunes.png"   # a picture, or an icon theme's name
+
+[app_names]
+"bandstand" = "iTunes"
+```
+
+An empty value, or Use Original, brings back the application's own.
+
 ## The desktop's menus
 
 When no window is active, the panel shows the desktop's own name and menus, just like a program would. That's where things like New Folder, Go to Home or Downloads, and Empty Wastebasket live. They're set up under `[desktop_menus]`:

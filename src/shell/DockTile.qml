@@ -6,6 +6,7 @@ import QtQuick
 import QtQuick.Effects
 import Quickshell
 import Quickshell.Wayland
+import "ApplicationName.js" as ApplicationName
 
 Item {
     id: tile
@@ -186,7 +187,7 @@ Item {
         if (minimizedWindow !== null) {
             return minimizedWindow.title
         }
-        return entry?.name ?? appId
+        return ApplicationName.of(entry, choices) ?? appId
     }
     // Set by the dock, which tracks the pointer across all tiles for
     // magnification; a hover handler here would hide it from the dock.

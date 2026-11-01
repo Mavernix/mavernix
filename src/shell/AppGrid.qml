@@ -9,6 +9,7 @@ import QtQuick.Effects
 import Quickshell
 import Quickshell.Wayland
 import "ApplicationMatch.js" as ApplicationMatch
+import "ApplicationName.js" as ApplicationName
 import "ThemeValues.js" as ThemeValues
 
 PanelWindow {
@@ -156,7 +157,7 @@ PanelWindow {
             }
             let strength = 0
             if (wanted !== "") {
-                strength = ApplicationMatch.strength(entry, wanted)
+                strength = ApplicationMatch.strength(entry, wanted, grid.choices)
                 if (strength === 0) {
                     continue
                 }
@@ -165,7 +166,8 @@ PanelWindow {
         }
         // Found by name first, then by what they are or their keywords.
         list.sort((first, second) => second.strength - first.strength
-                                     || first.entry.name.localeCompare(second.entry.name))
+                                     || ApplicationName.of(first.entry, grid.choices)
+                                            .localeCompare(ApplicationName.of(second.entry, grid.choices)))
         return list.map(found => found.entry)
     }
 
@@ -459,7 +461,7 @@ PanelWindow {
                                         elide: Text.ElideRight
                                         // Placed by its baseline.
                                         y: (grid.looks.label_baseline ?? (cell.iconSize + 18)) - baselineOffset
-                                        text: cell.modelData.name
+                                        text: ApplicationName.of(cell.modelData, grid.choices)
                                         color: ThemeValues.color(grid.looks.label_color ?? "#ffffff")
                                         font.family: grid.theme.fonts.app_grid_label.family
                                         font.pixelSize: grid.theme.fonts.app_grid_label.size

@@ -7,10 +7,15 @@
 - Sea Lion's F3, F4 and F11 go to games: an X11 program such as Minecraft, or any full screen window, gets them instead of the desktop. Ctrl+Up still opens all windows there.
 - The Mission Control and Launchpad keys of an Apple keyboard open all windows and the app grid in Sea Lion; Settings can record them.
 - Files can be dropped onto a folder on the desktop to move them into it.
+- Applications can have a name of your own, for example Bandstand can be called iTunes: Settings, App Icons & Names. The dock, menu bar, app grid, program switcher, window overview and search all show it, and the search still finds the application by its own name.
 
 ### Changed
 
 - Screenshots are also copied to the clipboard, so you can paste them right away. They're still saved to the desktop.
+
+### Fixed
+
+- In App Icons & Names, the button that brings back an application's own icon is drawn as a button again under Sea Lion. It's now called Use Original.
 
 ## 0.5.6 (2026-11-01)
 

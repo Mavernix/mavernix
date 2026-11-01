@@ -7,6 +7,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
+import "ApplicationName.js" as ApplicationName
 import "ThemeValues.js" as ThemeValues
 
 Row {
@@ -34,6 +35,12 @@ Row {
         return index === lastShownIndex ? 0 : statusSpacing - spacing
     }
 
+    // The active window's desktop entry, or null.
+    readonly property var activeEntry: {
+        const window = ToplevelManager.activeToplevel
+        return window !== null ? DesktopEntries.heuristicLookup(window.appId) : null
+    }
+
     // The active window's application name, from its desktop entry if any.
     readonly property string activeApplicationName: {
         if (showsDesktopMenus) {
@@ -43,8 +50,7 @@ Row {
         if (window === null) {
             return ""
         }
-        const entry = DesktopEntries.heuristicLookup(window.appId)
-        return entry !== null ? entry.name : window.appId
+        return ApplicationName.of(activeEntry, panel.choices) ?? window.appId
     }
 
     // While no window is active, the panel shows the desktop's own menus, from
@@ -106,6 +112,7 @@ Row {
 
     // If the first menu is titled like the application, it is the app's own
     // menu: its entries go under the app name title, and the row starts after it.
+    // An app renamed by the user still titles it with its own name.
     // The desktop's first menu is always its own, whatever it is called, so
     // that renaming the desktop (Settings, Desktop) keeps it under the name.
     readonly property var applicationMenus:
@@ -114,7 +121,8 @@ Row {
         if (applicationMenus.length === 0 || activeApplicationName === "") {
             return null
         }
-        if (showsDesktopMenus || applicationMenus[0].label === activeApplicationName) {
+        const label = applicationMenus[0].label
+        if (showsDesktopMenus || label === activeApplicationName || label === activeEntry?.name) {
             return applicationMenus[0]
         }
         return null

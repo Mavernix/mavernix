@@ -4,12 +4,15 @@
 // by its generic name, "Terminal", or by its keywords.
 
 .pragma library
+.import "ApplicationName.js" as ApplicationName
 
-// 2: the name holds the text; 1: a word of the generic name (as in "Web
-// Browser") or a keyword begins with it; 0: neither. `wanted` is in lower
-// case and not empty.
-function strength(entry, wanted) {
-    if (entry.name.toLowerCase().includes(wanted)) {
+// 2: the name holds the text (the one the user gave it, or its own); 1: a
+// word of the generic name (as in "Web Browser") or a keyword begins with
+// it; 0: neither. `wanted` is in lower case and not empty; `choices` is the
+// shell's UserChoices, or null.
+function strength(entry, wanted, choices) {
+    const names = [ApplicationName.of(entry, choices), entry.name]
+    if (names.some(name => name.toLowerCase().includes(wanted))) {
         return 2
     }
     const words = (entry.genericName ?? "").split(/\s+/).concat(Array.from(entry.keywords ?? []))
