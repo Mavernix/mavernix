@@ -339,7 +339,7 @@ key = "<super> <shift> KEY_3"
 run = [
     "sh",
     "-c",
-    "grim \"$HOME/Desktop/Screen Shot $(date +'%Y-%m-%d at %H.%M.%S').png\" && mavernix-sound screen-capture",
+    "f=\"$HOME/Desktop/Screen Shot $(date +'%Y-%m-%d at %H.%M.%S').png\"; grim \"$f\" && { wl-copy --type image/png < \"$f\"; mavernix-sound screen-capture; }",
 ]
 
 [commands.screenshot_part]
@@ -347,7 +347,7 @@ key = "<super> <shift> KEY_4"
 run = [
     "sh",
     "-c",
-    "grim -g \"$(slurp)\" \"$HOME/Desktop/Screen Shot $(date +'%Y-%m-%d at %H.%M.%S').png\" && mavernix-sound screen-capture",
+    "f=\"$HOME/Desktop/Screen Shot $(date +'%Y-%m-%d at %H.%M.%S').png\"; grim -g \"$(slurp)\" \"$f\" && { wl-copy --type image/png < \"$f\"; mavernix-sound screen-capture; }",
 ]
 
 [commands.screenshot_to_clipboard]

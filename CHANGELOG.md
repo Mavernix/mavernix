@@ -8,6 +8,10 @@
 - The Mission Control and Launchpad keys of an Apple keyboard open all windows and the app grid in Sea Lion; Settings can record them.
 - Files can be dropped onto a folder on the desktop to move them into it.
 
+### Changed
+
+- Screenshots are also copied to the clipboard, so you can paste them right away. They're still saved to the desktop.
+
 ## 0.5.6 (2026-11-01)
 
 ### Added

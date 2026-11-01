@@ -757,6 +757,7 @@ brightness_down = { key = "KEY_BRIGHTNESSDOWN", run = ["brightnessctl", "set", "
 play_pause = { key = "KEY_PLAYPAUSE", run = ["playerctl", "play-pause"] }
 next_track = { key = "KEY_NEXTSONG", run = ["playerctl", "next"] }
 previous_track = { key = "KEY_PREVIOUSSONG", run = ["playerctl", "previous"] }
-# Screenshots to the desktop (needs `grim`, and `slurp` for a part).
-screenshot = { key = "KEY_SYSRQ", run = ["sh", "-c", "grim \"$HOME/Desktop/Screenshot $(date +'%Y-%m-%d at %H.%M.%S').png\" && mavernix-sound screen-capture"] }
-screenshot_part = { key = "<shift> KEY_SYSRQ", run = ["sh", "-c", "grim -g \"$(slurp)\" \"$HOME/Desktop/Screenshot $(date +'%Y-%m-%d at %H.%M.%S').png\" && mavernix-sound screen-capture"] }
+# Screenshots to the desktop and the clipboard (needs `grim`, `slurp` for a
+# part and `wl-clipboard` for the clipboard).
+screenshot = { key = "KEY_SYSRQ", run = ["sh", "-c", "f=\"$HOME/Desktop/Screenshot $(date +'%Y-%m-%d at %H.%M.%S').png\"; grim \"$f\" && { wl-copy --type image/png < \"$f\"; mavernix-sound screen-capture; }"] }
+screenshot_part = { key = "<shift> KEY_SYSRQ", run = ["sh", "-c", "f=\"$HOME/Desktop/Screenshot $(date +'%Y-%m-%d at %H.%M.%S').png\"; grim -g \"$(slurp)\" \"$f\" && { wl-copy --type image/png < \"$f\"; mavernix-sound screen-capture; }"] }

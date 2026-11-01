@@ -33,14 +33,14 @@ The keys aren't the same on every desktop, so the table below has one column for
 | full screen | F11 | Ctrl+Super+F |
 | left or right half, then a quarter; whole screen; back | Super+arrows | Super+arrows |
 | the desktop to the left or right | Ctrl+Alt+Left, Right | Ctrl+Left, Right |
-| screenshot of the screen, of a part | Print, Shift+Print | Super+Shift+3, Super+Shift+4 (add Ctrl to copy it instead) |
+| screenshot of the screen, of a part | Print, Shift+Print | Super+Shift+3, Super+Shift+4 (add Ctrl to only copy it) |
 | lock | Super+L | Ctrl+Super+L |
 | a terminal | Super+Enter | Super+Enter |
 | end the session right away | Ctrl+Alt+Backspace | Ctrl+Alt+Backspace |
 
 In a game, F3, F4 and F11 are the game's. Sea Lion's function keys go to the window in front when it's full screen or an X11 program (Minecraft, Wine and Steam games); Ctrl+Up still opens all windows there.
 
-The screenshot keys need `grim`, `slurp` and `wl-clipboard`. If pressing them does nothing, one of those is probably missing.
+Screenshots are saved to the desktop and also copied, so you can paste them right away. The screenshot keys need `grim`, `slurp` and `wl-clipboard`. If pressing them does nothing, one of those is probably missing.
 
 The program switcher works like it does elsewhere. Hold Super, press Tab until the program you want is highlighted, then let go. Shift+Tab goes backwards, and a quick tap takes you back to the program you used last.
 
