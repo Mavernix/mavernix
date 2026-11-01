@@ -57,6 +57,34 @@ Bandstand's `packaging/make-bundle` does all of this in a Fedora 44 container, a
 
 A repository whose release lacks something is left out of the store, and the reason is written to the store's log, `~/.cache/mavernix/app-store.log`.
 
+## Extensions
+
+The store also offers extensions (see [extensions.md](extensions.md)). They come from one repository of the organisation, `extensions_repository` under `[app_store]` (`mavernix-extensions`), and not one repository each. Its latest release holds:
+
+| File | What it is |
+|---|---|
+| `extensions.toml` | the list: a table for each extension |
+| the files it names | the icons, and screenshots if any |
+| `NAME.tar.gz` | the extension's folder, as one folder called `NAME/` that holds its `extension.toml` |
+
+```toml
+[airpods]
+title = "AirPods"
+summary = "The charge of your AirPods, in the panel."   # one line, under the name
+version = "0.1.1"                                       # the store offers an update when it changes
+icon = "airpods.svg"
+# optional: description, category, developer, license, screenshots, as for an app
+```
+
+The store unpacks `NAME/` into `~/.config/mavernix/extensions/`, where the desktop looks for the user's own, and checks the download's checksum like an app's. It leaves a file `.app-store.json` in the folder; a folder without it is the user's, and the store neither replaces nor removes it. The desktop reads its extensions when it starts, so a new one shows after the next login, and is then switched on in the settings window. The mavernix-extensions repository makes these files with `packaging/make-release`.
+
+Two things to know about an installed extension:
+
+- **It runs inside the desktop**, not as a program of its own, with the rights of the desktop. The checksum only shows the download is the file the release holds. Install extensions from sources you trust.
+- **It takes the place of a packaged extension of the same name** in `/usr/share/mavernix/extensions/`, as any extension in the user's folder does (see [extensions.md](extensions.md)). Removing it brings the packaged one back.
+
+An extension's `NAME` and `version` may hold only letters, digits, `.`, `-` and `_`, and must not start with a dot; the store leaves out an entry that doesn't. If the extensions can't be read (the release has no `extensions.toml`, say), the store says so and still shows the apps.
+
 ## Trying a release before it's public
 
 `MAVERNIX_APP_STORE_API` points the store at another copy of GitHub's API. It's what `tests/test_app_store.py` does: a small local web server answers like GitHub would.

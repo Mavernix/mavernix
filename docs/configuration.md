@@ -186,6 +186,7 @@ Where it looks, and every word it shows, is set under `[app_store]`. How it look
 name = "App Store"                     # the window's title, and its name in the app grid and the dock
 organisation = "Mavernix"              # the GitHub organisation whose apps it offers
 topic = "mavernix-app"                 # the topic that makes a repository an app
+extensions_repository = "mavernix-extensions"   # the repository whose releases offer extensions; empty for none
 
 [app_store.words]
 featured = "Featured"                  # the tabs

@@ -22,8 +22,9 @@ class Store : public QObject
 {
     Q_OBJECT
 
-    // Every app offered, as backend/catalog.py describes it, plus
-    // installed_version and installed_command ("" when it isn't installed).
+    // Every app and extension offered ("kind" says which), as
+    // backend/catalog.py describes it, plus installed_version and
+    // installed_command ("" when it isn't installed, and for an extension).
     Q_PROPERTY(QVariantList apps READ apps NOTIFY appsChanged)
     Q_PROPERTY(bool loading READ loading NOTIFY loadingChanged)
     // Why the catalog couldn't be read, or "". When it couldn't, `apps` still
@@ -37,8 +38,11 @@ class Store : public QObject
     Q_PROPERTY(QVariantMap failures READ failures NOTIFY jobsChanged)
 
   public:
-    // The apps are the repositories of `organisation` that carry `topic`.
-    Store(const QString& organisation, const QString& topic, QObject* parent = nullptr);
+    // The apps are the repositories of `organisation` that carry `topic`; the
+    // extensions are those of its repository `extensions_repository` (none
+    // if that is empty).
+    Store(const QString& organisation, const QString& topic, const QString& extensions_repository,
+        QObject* parent = nullptr);
     ~Store() override;
 
     QVariantList apps() const { return app_list; }
@@ -79,6 +83,7 @@ class Store : public QObject
 
     QString organisation;
     QString topic;
+    QString extensions_repository;
 
     QVariantList app_list;
     QPointer<QProcess> catalog_process;

@@ -47,7 +47,8 @@ int main(int argc, char** argv)
     const QVariantMap wishes =
         settings.value(QStringLiteral("config")).toMap().value(QStringLiteral("app_store")).toMap();
     Store store(wishes.value(QStringLiteral("organisation"), QStringLiteral("Mavernix")).toString(),
-        wishes.value(QStringLiteral("topic"), QStringLiteral("mavernix-app")).toString());
+        wishes.value(QStringLiteral("topic"), QStringLiteral("mavernix-app")).toString(),
+        wishes.value(QStringLiteral("extensions_repository"), QStringLiteral("mavernix-extensions")).toString());
 
     QQmlApplicationEngine engine;
     engine.rootContext()->setContextProperty(QStringLiteral("settings"), settings);
