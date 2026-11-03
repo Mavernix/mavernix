@@ -307,3 +307,15 @@ table = "dock.shelf"
 key = "surface"
 was = ["#4a4a4aba", "#333333a6", "#2a2a2a8f"]
 now = ["#4a4a4ad5", "#333333c7", "#2a2a2ab6"]
+
+[[update]]
+revision = 10
+themes = ["sea-lion"]
+[update.settings.panel]
+opaque_background = { gradient = ["#f2f2f2", "#dedede", "#c6c6c6"] }
+
+[[update]]
+revision = 11
+themes = ["sea-lion-dark"]
+[update.settings.panel]
+opaque_background = { gradient = ["#444444", "#303030", "#1c1c1c"] }
