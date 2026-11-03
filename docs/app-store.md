@@ -27,7 +27,7 @@ Optional. A few paragraphs for the app's page, in Markdown.
 """
 
 # Files attached to the release.
-icon = "bandstand.svg"                         # SVG or PNG, square
+icon = "bandstand.svg"                         # optional; SVG or PNG, square
 screenshots = ["screenshot.png"]               # optional
 
 # Inside the bundle.
@@ -37,7 +37,7 @@ desktop_entry = "share/applications/bandstand.desktop"
 
 ## The bundle
 
-The store unpacks the bundle into `~/.local/share/mavernix/apps/NAME/bundle/`. It copies the desktop entry to `~/.local/share/applications/`, pointing its `Exec` at `command` and its `Icon` at the listing's icon. That puts the app in the app grid. Name the entry after the app's window: the dock recognises windows by it (`QGuiApplication::setDesktopFileName` in a Qt app).
+The store unpacks the bundle into `~/.local/share/mavernix/apps/NAME/bundle/`. It copies the desktop entry to `~/.local/share/applications/`, pointing its `Exec` at `command` and its `Icon` at the listing's icon. A listing without an icon, or whose icon the release lacks, shows the icon theme's plain program in the store, and the entry keeps its own `Icon`. That puts the app in the app grid. Name the entry after the app's window: the dock recognises windows by it (`QGuiApplication::setDesktopFileName` in a Qt app).
 
 To have the title bar run on into your toolbar, as the store's does, add `X-Mavernix-JoinedToolBar=true` to the desktop entry. Your toolbar then has to carry on the title bar's look itself.
 
@@ -72,7 +72,7 @@ The store also offers extensions (see [extensions.md](extensions.md)). They come
 title = "AirPods"
 summary = "The charge of your AirPods, in the panel."   # one line, under the name
 version = "0.1.1"                                       # the store offers an update when it changes
-icon = "airpods.svg"
+icon = "airpods.svg"                                    # optional, as for an app
 # optional: description, category, developer, license, screenshots, as for an app
 ```
 

@@ -80,7 +80,7 @@ struct KnownPane
 static const KnownPane known_panes[] = {
     {"dock", "preferences-dock", "Dock & Menu Bar",
         "taskbar launcher magnification hide autohide size menu bar clock time 24 hour status icons"},
-    {"icons", "applications-other", "App Icons", "application program icon picture change"},
+    {"icons", "applications-other", "App Icons & Names", "application program icon picture change name rename"},
     {"theme", "preferences-desktop-theme", "Theme", "look appearance dark light colours colors style"},
     {"desktop", "preferences-desktop-wallpaper", "Desktop", "wallpaper background picture image name icons files"},
     {"sound", "preferences-desktop-sound", "Sound",

@@ -12,6 +12,7 @@
 #include <QMessageBox>
 #include <QPushButton>
 #include <QStandardPaths>
+#include <QTimer>
 #include <QVBoxLayout>
 
 #include "choices.hpp"
@@ -52,10 +53,10 @@ IconsPane::IconsPane(Choices& choices, QWidget* parent) : QWidget(parent), choic
 
     auto* intro = new QLabel;
     intro->setText(in_lines_of(
-        word("icons_intro", "Give an application another icon: one of the icon theme's, or a picture of your own. It "
-                            "is shown instead of the application's own "
-                            "wherever the desktop shows applications: the dock, the list of all applications, "
-                            "the program switcher and the search."),
+        word("icons_intro", "Give an application another icon, one of the icon theme's or a picture of your own, or "
+                            "another name. They are shown instead of the application's own wherever the desktop "
+                            "shows applications: the dock, the menu bar, the list of all applications, the "
+                            "program switcher and the search."),
         intro->fontMetrics(), intro_width_px));
     rows->addWidget(intro);
 
@@ -154,7 +155,8 @@ QWidget* IconsPane::buildDetail()
 
     choose_button = new QPushButton(word("icons_choose", "Choose Icon…"));
     connect(choose_button, &QPushButton::clicked, this, [this]() { askForIcon(); });
-    default_button = new QPushButton(word("icons_use_default", "Use the Application's Icon"));
+    // Short, so the theme's button pictures fit beside Choose Icon… in the box.
+    default_button = new QPushButton(word("icons_use_default", "Use Original"));
     connect(default_button, &QPushButton::clicked, this, [this]() { changeIcon(shown_id, QString()); });
     auto* buttons = new QHBoxLayout;
     buttons->addStretch();
@@ -162,6 +164,17 @@ QWidget* IconsPane::buildDetail()
     buttons->addWidget(default_button);
     buttons->addStretch();
     rows->addLayout(buttons);
+
+    // An empty field, showing the application's own name, keeps that name.
+    name_field = new QLineEdit;
+    connect(name_field, &QLineEdit::editingFinished, this, [this]() { changeName(name_field->text()); });
+    original_name_button = new QPushButton(word("icons_name_use_original", "Use Original"));
+    connect(original_name_button, &QPushButton::clicked, this, [this]() { changeName(QString()); });
+    auto* name_row = new QHBoxLayout;
+    name_row->addWidget(new QLabel(word("icons_name_label", "Name:")));
+    name_row->addWidget(name_field, 1);
+    name_row->addWidget(original_name_button);
+    rows->addLayout(name_row);
 
     rows->addStretch(1);
     return box;
@@ -202,6 +215,17 @@ QIcon IconsPane::ownIconOf(const InstalledApplication& application) const
     return QIcon::fromTheme(application.icon, plain_program);
 }
 
+QString IconsPane::chosenNameOf(const QString& id) const
+{
+    return choices.value(QStringLiteral("app_names"), id).toString().trimmed();
+}
+
+QString IconsPane::shownNameOf(const InstalledApplication& application) const
+{
+    const QString chosen = chosenNameOf(application.id);
+    return chosen.isEmpty() ? application.name : chosen;
+}
+
 QIcon IconsPane::iconOf(const InstalledApplication& application) const
 {
     const QString choice = ownChoiceOf(application.id);
@@ -211,16 +235,18 @@ QIcon IconsPane::iconOf(const InstalledApplication& application) const
 void IconsPane::fillList(const QString& chosen_id)
 {
     const QString wanted = search->text().trimmed();
-    QList<const InstalledApplication*> with_own_icon;
+    QList<const InstalledApplication*> changed;
     QList<const InstalledApplication*> others;
     for (const InstalledApplication& application : applications)
     {
         if (!wanted.isEmpty() && !application.name.contains(wanted, Qt::CaseInsensitive) &&
+            !chosenNameOf(application.id).contains(wanted, Qt::CaseInsensitive) &&
             !application.id.contains(wanted, Qt::CaseInsensitive))
         {
             continue;
         }
-        (ownChoiceOf(application.id).isEmpty() ? others : with_own_icon).append(&application);
+        const bool own = !ownChoiceOf(application.id).isEmpty() || !chosenNameOf(application.id).isEmpty();
+        (own ? changed : others).append(&application);
     }
 
     // No current-row signals while refilling.
@@ -237,17 +263,27 @@ void IconsPane::fillList(const QString& chosen_id)
         heading_item->setData(SourceListDelegate::kind_role, SourceListDelegate::GroupHeadingRow);
         for (const InstalledApplication* application : group)
         {
-            auto* item = new QListWidgetItem(iconOf(*application), application->name, list);
+            auto* item = new QListWidgetItem(iconOf(*application), shownNameOf(*application), list);
             item->setData(Qt::UserRole, application->id);
             item->setData(SourceListDelegate::kind_role, SourceListDelegate::ItemRow);
-            item->setData(SourceListDelegate::detail_role, label_of_choice(ownChoiceOf(application->id)));
+            // Under a given name, the application's own; then the icon's file or name.
+            QStringList details;
+            if (!chosenNameOf(application->id).isEmpty())
+            {
+                details << application->name;
+            }
+            if (!ownChoiceOf(application->id).isEmpty())
+            {
+                details << label_of_choice(ownChoiceOf(application->id));
+            }
+            item->setData(SourceListDelegate::detail_role, details.join(QStringLiteral(" · ")));
             if (!to_choose || application->id == chosen_id)
             {
                 to_choose = item;
             }
         }
     };
-    add_group(word("icons_group_own", "With an Icon of Your Own"), with_own_icon);
+    add_group(word("icons_group_own", "Changed by You"), changed);
     add_group(word("icons_group_all", "Applications"), others);
 
     if (to_choose == nullptr)
@@ -271,12 +307,14 @@ void IconsPane::showApplication(const QString& id)
         detail_name->clear();
         detail_id->clear();
         detail_state->clear();
+        name_field->clear();
+        name_field->setPlaceholderText(QString());
         return;
     }
 
     detail_icon->setPixmap(
         iconOf(*application).pixmap(QSize(detail_icon_size_px, detail_icon_size_px), devicePixelRatioF()));
-    detail_name->setText(application->name);
+    detail_name->setText(shownNameOf(*application));
     detail_id->setText(application->id);
 
     const QString choice = ownChoiceOf(id);
@@ -295,6 +333,11 @@ void IconsPane::showApplication(const QString& id)
     }
     detail_state->setText(in_lines_of(state, detail_state->fontMetrics(), box_text_width_px));
     default_button->setEnabled(!choice.isEmpty());
+
+    const QString chosen_name = chosenNameOf(id);
+    name_field->setPlaceholderText(application->name);
+    name_field->setText(chosen_name);
+    original_name_button->setEnabled(!chosen_name.isEmpty());
 }
 
 void IconsPane::askForIcon()
@@ -312,7 +355,7 @@ void IconsPane::askForIcon()
     {
         current_name.clear();
     }
-    const QString heading = word("icons_choose_heading", "Choose an icon for %1").arg(application->name);
+    const QString heading = word("icons_choose_heading", "Choose an icon for %1").arg(shownNameOf(*application));
     QString chosen_name;
     switch (IconChooser::ask(this, words, heading, current_name, chosen_name))
     {
@@ -340,7 +383,7 @@ void IconsPane::askForFile()
     {
         patterns << QStringLiteral("*.") + QString::fromLatin1(format);
     }
-    const QString heading = word("icons_choose_heading", "Choose an icon for %1").arg(application->name);
+    const QString heading = word("icons_choose_heading", "Choose an icon for %1").arg(shownNameOf(*application));
 
     // Start where the last picture was, else in the user's pictures.
     const QString earlier = ownChoiceOf(shown_id);
@@ -372,8 +415,40 @@ void IconsPane::changeIcon(const QString& id, const QString& choice)
     const QString failure = choices.set(QStringLiteral("app_icons"), id, choice);
     if (!failure.isEmpty())
     {
-        QMessageBox::warning(this, word("icons_title", "App Icons"), failure);
+        QMessageBox::warning(this, word("icons_title", "App Icons & Names"), failure);
         return;
     }
     fillList(id);
+}
+
+void IconsPane::changeName(const QString& name)
+{
+    const InstalledApplication* application = applicationWithId(shown_id);
+    if (application == nullptr)
+    {
+        return;
+    }
+    // Its own name is not one of its own: the application's, if it changes,
+    // is followed.
+    QString chosen = name.trimmed();
+    if (chosen == application->name)
+    {
+        chosen.clear();
+    }
+    if (chosen == chosenNameOf(shown_id))
+    {
+        return;
+    }
+    // An empty value stays in the user's file; the shell treats it as absent.
+    const QString failure = choices.set(QStringLiteral("app_names"), shown_id, chosen);
+    if (!failure.isEmpty())
+    {
+        QMessageBox::warning(this, word("icons_title", "App Icons & Names"), failure);
+        return;
+    }
+    // Leaving the field by pressing another application in the list ends the
+    // editing before the press reaches the list; refilled after it, the
+    // list moves to that application, not to whichever row the refill would
+    // put under the pointer.
+    QTimer::singleShot(0, this, [this]() { fillList(shown_id); });
 }

@@ -61,7 +61,7 @@ def apps_with_installed_versions(apps):
     # has taken stays hidden (and installed) rather than show up twice.
     offered = {app["name"] for app in apps}
     for records in installed.values():
-        apps += [{**record["listing"], "icon": str(bundles.installed_icon(record["listing"]))}
+        apps += [{**record["listing"], "icon": bundles.installed_icon(record["listing"])}
                  for name, record in records.items() if name not in offered]
         offered |= set(records)
     apps.sort(key=lambda app: app["title"].lower())

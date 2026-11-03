@@ -251,6 +251,12 @@ class TestCatalog(AppStoreTestCase):
         self.assertTrue(Path(tuner["icon"]).is_file())
         self.assertEqual(len(tuner["screenshots"]), 1)
 
+    def test_an_app_without_an_icon_is_listed_with_none(self):
+        self.publish(listing=LISTING.replace('icon = "tuner.svg"', ""))
+        self.publish(name="mistuned", listing=LISTING.replace("tuner.svg", "missing.svg"))
+        apps = {app["name"]: app for app in catalog.find_apps(ORGANISATION, TOPIC)}
+        self.assertEqual((apps["tuner"]["icon"], apps["mistuned"]["icon"]), ("", ""))
+
     def test_leaves_out_an_app_without_a_release(self):
         self.publish()
         self.publish(name="unfinished", release=False)
@@ -360,6 +366,13 @@ class TestInstalling(AppStoreTestCase):
         bundles.remove("tuner")
         self.assertTrue(self.entry().is_file())
 
+    def test_an_app_without_an_icon_keeps_its_entrys_own(self):
+        self.publish(listing=LISTING.replace('icon = "tuner.svg"', ""))
+        self.install()
+        self.assertIn("Icon=tuner", self.entry().read_text().splitlines())
+        self.assertFalse(any(path.name.startswith("icon") for path in self.app_folder().iterdir()))
+        self.assertEqual(bundles.installed_icon(bundles.installed_apps()["tuner"]["listing"]), "")
+
 
 class TestExtensions(AppStoreTestCase):
     def install_extension(self, name="echo"):
@@ -371,6 +384,13 @@ class TestExtensions(AppStoreTestCase):
         self.assertEqual((echo["kind"], echo["title"], echo["version"]), ("extension", "Echo", "0.3.0"))
         self.assertEqual(echo["whats_new"], "More echo.")
         self.assertTrue(Path(echo["icon"]).is_file())
+
+    def test_an_extension_without_an_icon_is_listed_and_installs(self):
+        self.publish_extensions(index=EXTENSION_INDEX.replace('icon = "echo.svg"', ""))
+        echo = self.find_extension()
+        self.assertEqual(echo["icon"], "")
+        bundles.install(echo, lambda step, fraction: None)
+        self.assertTrue((self.extension_folder() / "extension.toml").is_file())
 
     def test_leaves_out_an_entry_without_its_download_or_a_summary(self):
         self.publish_extensions(index=EXTENSION_INDEX + '''

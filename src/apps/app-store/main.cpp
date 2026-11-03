@@ -7,10 +7,12 @@
 
 #include <QFile>
 #include <QGuiApplication>
+#include <QIcon>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
+#include <QQuickImageProvider>
 
 #include <cstdio>
 #include <cstdlib>
@@ -37,6 +39,26 @@ static QVariantMap read_settings()
     return QJsonDocument::fromJson(file.readAll()).object().toVariantMap();
 }
 
+// "image://theme-icon/NAME": the icon theme's icon NAME, for an app or
+// extension whose listing has none (AppIcon.qml). A pixmap provider, as Qt
+// asks those on the main thread only, where QIcon may be used.
+class ThemeIconProvider : public QQuickImageProvider
+{
+  public:
+    ThemeIconProvider() : QQuickImageProvider(QQuickImageProvider::Pixmap) {}
+
+    QPixmap requestPixmap(const QString& name, QSize* size, const QSize& requested_size) override
+    {
+        const QSize wanted = requested_size.isEmpty() ? QSize(128, 128) : requested_size;
+        const QPixmap drawn = QIcon::fromTheme(name).pixmap(wanted);
+        if (size != nullptr)
+        {
+            *size = drawn.size();
+        }
+        return drawn;
+    }
+};
+
 int main(int argc, char** argv)
 {
     QGuiApplication app(argc, argv);
@@ -51,6 +73,7 @@ int main(int argc, char** argv)
         wishes.value(QStringLiteral("extensions_repository"), QStringLiteral("mavernix-extensions")).toString());
 
     QQmlApplicationEngine engine;
+    engine.addImageProvider(QStringLiteral("theme-icon"), new ThemeIconProvider);
     engine.rootContext()->setContextProperty(QStringLiteral("settings"), settings);
     engine.rootContext()->setContextProperty(QStringLiteral("store"), &store);
     engine.load(QStringLiteral(QML_DIRECTORY "/Main.qml"));

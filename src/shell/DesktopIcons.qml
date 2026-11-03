@@ -471,23 +471,36 @@ Item {
                 fileItem.grabToImage(result => { fileItem.dragPicture = result.url })
             }
 
-            // Files dropped on a program launcher are given to its program.
+            // Files dropped on a program launcher are given to its program; files
+            // dropped on a folder are moved into it.
             DropArea {
-                id: launcherDrop
-                enabled: fileItem.modelData.isLauncher
+                id: fileDrop
+                enabled: fileItem.modelData.isLauncher || fileItem.modelData.isFolder
                 anchors.fill: parent
+                // An icon dragged over itself is left to the desktop, which places it.
+                onEntered: drag => {
+                    if (icons.carriedPath !== "" && fileItem.picked) {
+                        drag.accepted = false
+                    }
+                }
                 onDropped: drop => {
                     const paths = DroppedFiles.paths(drop)
                         .filter(path => path !== fileItem.modelData.path)
-                    if (paths.length > 0) {
+                    if (paths.length === 0) {
+                        return
+                    }
+                    if (fileItem.modelData.isLauncher) {
                         icons.launch(fileItem.modelData.path, paths)
                         drop.accept(Qt.CopyAction)
+                    } else {
+                        icons.run(icons.wishes.move_in_command, [fileItem.modelData.path].concat(paths))
+                        drop.accept(Qt.MoveAction)
                     }
                 }
             }
             Fill {
                 readonly property real reach: icons.looks?.picked_reach ?? 4
-                visible: launcherDrop.containsDrag
+                visible: fileDrop.containsDrag
                 anchors.fill: parent
                 anchors.margins: -reach
                 fill: icons.looks?.picked ?? ({ color: "#00000040", radius: 4 })

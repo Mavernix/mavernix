@@ -71,9 +71,11 @@ entries = [
 ]
 
 [shortcuts]
-app_grid = "KEY_F4"
-window_overview = "KEY_F3 | <ctrl> KEY_UP"
-show_desktop = "KEY_F11"
+# F3, F4 and F11 as on the original, and the Mission Control and Launchpad
+# keys of an Apple keyboard. Games get the function keys (src/compositor/game-keys).
+app_grid = "KEY_F4 | KEY_ALL_APPLICATIONS"
+window_overview = "KEY_F3 | KEY_SCALE | <ctrl> KEY_UP"
+show_desktop = "KEY_F11 | <super> KEY_SCALE"
 close_window = "<super> KEY_Q"
 switch_window = "<super> KEY_GRAVE"
 minimize_window = "<super> KEY_M"
@@ -178,12 +180,13 @@ sort_by_added = "Sort By Date Added"
 name = "System Preferences"
 
 [settings.words]
-icons_title = "App\nIcons"
-icons_group_own = "With an Icon of Your Own"
+icons_title = "App Icons\n& Names"
+icons_group_own = "Changed by You"
 icons_none = "No Applications Are Installed."
 icons_choose = "Choose Icon…"
 icons_choose_heading = "Choose an Icon for %1"
-icons_use_default = "Use the Application’s Icon"
+icons_use_default = "Use Original"
+icons_name_use_original = "Use Original"
 icons_picture_file = "Picture File…"
 bluetooth_on = "Bluetooth On"
 bluetooth_not_connected = "Not Connected"
@@ -246,6 +249,8 @@ shortcut_key_KEY_PAGEUP = "⇞"
 shortcut_key_KEY_PAGEDOWN = "⇟"
 shortcut_key_KEY_HOME = "↖"
 shortcut_key_KEY_END = "↘"
+shortcut_key_KEY_SCALE = "Mission Control"
+shortcut_key_KEY_ALL_APPLICATIONS = "Launchpad"
 command_terminal = "Open Terminal"
 command_end_session = "End Session"
 command_brightness_up = "Brighter"
@@ -342,7 +347,7 @@ key = "<super> <shift> KEY_3"
 run = [
     "sh",
     "-c",
-    "grim \"$HOME/Desktop/Screen Shot $(date +'%Y-%m-%d at %H.%M.%S').png\" && mavernix-sound screen-capture",
+    "f=\"$HOME/Desktop/Screen Shot $(date +'%Y-%m-%d at %H.%M.%S').png\"; grim \"$f\" && { wl-copy --type image/png < \"$f\"; mavernix-sound screen-capture; }",
 ]
 
 [commands.screenshot_part]
@@ -350,7 +355,7 @@ key = "<super> <shift> KEY_4"
 run = [
     "sh",
     "-c",
-    "grim -g \"$(slurp)\" \"$HOME/Desktop/Screen Shot $(date +'%Y-%m-%d at %H.%M.%S').png\" && mavernix-sound screen-capture",
+    "f=\"$HOME/Desktop/Screen Shot $(date +'%Y-%m-%d at %H.%M.%S').png\"; grim -g \"$(slurp)\" \"$f\" && { wl-copy --type image/png < \"$f\"; mavernix-sound screen-capture; }",
 ]
 
 [commands.screenshot_to_clipboard]

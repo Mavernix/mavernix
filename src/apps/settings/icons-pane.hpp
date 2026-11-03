@@ -1,9 +1,11 @@
-// The applications' icons: the installed applications on the left, and the
-// chosen one's icon on the right, with buttons to give it another one.
+// The applications' icons and names: the installed applications on the
+// left, and the chosen one's icon and name on the right, with buttons to give
+// it another icon and a field to give it another name.
 //
 // The config's [app_icons] maps a desktop entry ID to a picture file's path
-// (beginning with "/") or an icon theme name; the shell follows it
-// (src/shell/IconSource.qml).
+// (beginning with "/") or an icon theme name, and [app_names] to the name the
+// desktop shows; the shell follows both (src/shell/IconSource.qml,
+// src/shell/ApplicationName.js).
 
 #pragma once
 
@@ -42,12 +44,19 @@ class IconsPane : public QWidget
     // The icon an application shows now, and the one its desktop entry names.
     QIcon iconOf(const InstalledApplication& application) const;
     QIcon ownIconOf(const InstalledApplication& application) const;
+    // Empty if the user gave it no name of its own.
+    QString chosenNameOf(const QString& id) const;
+    // The name the desktop shows: the chosen one, else its own.
+    QString shownNameOf(const InstalledApplication& application) const;
     const InstalledApplication* applicationWithId(const QString& id) const;
 
     void askForIcon();
     void askForFile();
     // Also moves the application to the list group it now belongs to.
     void changeIcon(const QString& id, const QString& choice);
+    // The field's name for the shown application; its own name, or none,
+    // takes the given one back.
+    void changeName(const QString& name);
 
     Choices& choices;
     QVariantMap words;
@@ -62,5 +71,7 @@ class IconsPane : public QWidget
     QLabel* detail_state = nullptr;
     QPushButton* choose_button = nullptr;
     QPushButton* default_button = nullptr;
+    QLineEdit* name_field = nullptr;
+    QPushButton* original_name_button = nullptr;
     QString shown_id;
 };

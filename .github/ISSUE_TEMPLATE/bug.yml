@@ -14,6 +14,14 @@ body:
       label: How to make it happen again
       placeholder: "1. Open …\n2. Press …"
   - type: input
+    id: version
+    attributes:
+      label: Mavernix version
+      description: "`pacman -Q mavernix` on Arch, `rpm -q mavernix` on Fedora; the commit if built from source."
+      placeholder: "0.5.6"
+    validations:
+      required: true
+  - type: input
     id: system
     attributes:
       label: Distribution, Wayfire and Quickshell versions
@@ -31,7 +39,7 @@ body:
     attributes:
       label: The end of the logs
       description: >
-        The last 50 lines or so of `$XDG_RUNTIME_DIR/mavernix/session.log` and `login.log`;
+        Optional. The last 50 lines or so of `$XDG_RUNTIME_DIR/mavernix/session.log` and `login.log`;
         for the Theme Installer, `~/.cache/mavernix/theme-installer.log`.
         Please do not attach pictures or files taken from an installer.
       render: text

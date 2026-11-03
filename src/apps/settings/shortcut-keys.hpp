@@ -2,7 +2,7 @@
 //
 // The config holds a shortcut as text such as "<ctrl> <alt> KEY_LEFT", the key
 // named as in the Linux kernel's list. Alternatives are separated by a bar
-// ("KEY_F3 | <ctrl> KEY_UP"). Plain text work, tested in tests/test-keyboard.cpp.
+// ("KEY_SCALE | <ctrl> KEY_UP"). Plain text work, tested in tests/test-keyboard.cpp.
 
 #pragma once
 

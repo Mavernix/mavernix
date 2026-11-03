@@ -11,6 +11,7 @@ NAME=COMMAND` (repeatable) starts a program with the session.
 import argparse
 import json
 import os
+import re
 import shlex
 import socket
 import struct
@@ -46,6 +47,7 @@ BASE_PLUGINS = [
     "desktop-focus",
     "desktop-aside",
     "window-attention",
+    "game-keys",
 ]
 
 
@@ -736,6 +738,26 @@ def compositor_key_sections(config):
     return by_section
 
 
+def game_keys_section(config):
+    """The function keys among the shortcuts, alone and without a modifier,
+    which the game-keys plugin hands to games instead.
+
+    Not the full screen key: a window put full screen by the compositor
+    may not know it, and could not be brought back.
+    """
+    entries = [(action, key) for action, key in config.get("shortcuts", {}).items()
+               if action != "fullscreen_window"]
+    entries += [(name, entry.get("key")) for name, entry in config.get("commands", {}).items()
+                if entry is not None]
+    keys = []
+    for _, text in entries:
+        for alternative in (text or "").split("|"):
+            key = alternative.strip()
+            if re.fullmatch(r"KEY_F([1-9]|1[0-2])", key) and key not in keys:
+                keys.append(key)
+    return ["[game-keys]", f"keys = {' '.join(keys)}"]
+
+
 def shell_actions(theme):
     """Shell actions under this theme, including the window overview when
     the theme has the shell draw it."""
@@ -1034,6 +1056,7 @@ def main():
     if shortcuts:
         sections.append(shortcuts)
     sections.append(window_overview_section(config, theme))
+    sections.append(game_keys_section(config))
     sections.append(input_section(config, theme))
     sections.append(idle_section(config))
     sections += display_sections(config)

@@ -671,6 +671,26 @@ class TestPointerSettings(SessionTestCase):
             make_wayfire_config.input_section({"input": {"mouse_speed": 2}}, {})
 
 
+class TestGameKeys(SessionTestCase):
+    def test_bare_function_keys_are_let_through_but_not_full_screens(self):
+        sys.path[:0] = [self.folder.name, str(SESSION_SOURCE_DIR)]
+        try:
+            import make_wayfire_config
+        finally:
+            del sys.path[:2]
+        section = make_wayfire_config.game_keys_section({
+            "shortcuts": {
+                "window_overview": "KEY_F3 | KEY_SCALE | <ctrl> KEY_UP",
+                "show_desktop": "<super> KEY_F11",
+                "app_grid": "KEY_F4",
+                "fullscreen_window": "KEY_F11",
+                "lock": "",
+            },
+            "commands": {"terminal": {"key": "KEY_F12", "run": ["foot"]}, "gone": None},
+        })
+        self.assertEqual(section, ["[game-keys]", "keys = KEY_F3 KEY_F4 KEY_F12"])
+
+
 class TestShellBlur(SessionTestCase):
     def setUp(self):
         super().setUp()

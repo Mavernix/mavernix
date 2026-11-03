@@ -10,6 +10,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 import Shell.Native
+import "ApplicationName.js" as ApplicationName
 import "ThemeValues.js" as ThemeValues
 
 PanelWindow {
@@ -264,7 +265,7 @@ PanelWindow {
                     Text {
                         id: label
                         anchors.centerIn: parent
-                        text: programItem.entry?.name ?? programItem.modelData.appId
+                        text: ApplicationName.of(programItem.entry, switcher.choices) ?? programItem.modelData.appId
                         color: ThemeValues.color(parent.name.color ?? "#ffffff")
                         readonly property var face: switcher.fonts.program_switcher ?? switcher.fonts.interface
                         font.family: face.family

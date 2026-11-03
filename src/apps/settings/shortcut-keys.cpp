@@ -39,6 +39,8 @@ QStringList choosable_keys()
     keys << QStringLiteral("KEY_SYSRQ") << QStringLiteral("KEY_VOLUMEUP") << QStringLiteral("KEY_VOLUMEDOWN")
          << QStringLiteral("KEY_MUTE") << QStringLiteral("KEY_BRIGHTNESSUP") << QStringLiteral("KEY_BRIGHTNESSDOWN")
          << QStringLiteral("KEY_PLAYPAUSE") << QStringLiteral("KEY_NEXTSONG") << QStringLiteral("KEY_PREVIOUSSONG");
+    // What an Apple keyboard's Mission Control and Launchpad keys send.
+    keys << QStringLiteral("KEY_SCALE") << QStringLiteral("KEY_ALL_APPLICATIONS");
     return keys;
 }
 
@@ -132,6 +134,8 @@ static const struct
     {"KEY_PLAYPAUSE", KEY_PLAYPAUSE},
     {"KEY_NEXTSONG", KEY_NEXTSONG},
     {"KEY_PREVIOUSSONG", KEY_PREVIOUSSONG},
+    {"KEY_SCALE", KEY_SCALE},
+    {"KEY_ALL_APPLICATIONS", KEY_ALL_APPLICATIONS},
 };
 
 QString key_name_from_code(int evdev_code)
@@ -255,6 +259,8 @@ static QString special_label(const QString& name)
         {"KEY_PLAYPAUSE", "Play/Pause"},
         {"KEY_NEXTSONG", "Next Track"},
         {"KEY_PREVIOUSSONG", "Previous Track"},
+        {"KEY_SCALE", "Overview"},
+        {"KEY_ALL_APPLICATIONS", "All Applications"},
     };
     for (const auto& entry : labels)
     {
@@ -296,6 +302,8 @@ bool is_typing_key(const QString& key)
         QStringLiteral("KEY_PLAYPAUSE"),
         QStringLiteral("KEY_NEXTSONG"),
         QStringLiteral("KEY_PREVIOUSSONG"),
+        QStringLiteral("KEY_SCALE"),
+        QStringLiteral("KEY_ALL_APPLICATIONS"),
     };
     return !stand_alone.contains(key);
 }

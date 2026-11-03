@@ -16,6 +16,7 @@ import QtQuick.Effects
 import Quickshell
 import Quickshell.Wayland
 import Shell.Native
+import "ApplicationName.js" as ApplicationName
 import "ThemeValues.js" as ThemeValues
 import "WindowOverviewLayout.js" as Layout
 
@@ -695,7 +696,7 @@ PanelWindow {
             OverviewLabel {
                 anchors.horizontalCenter: parent.horizontalCenter
                 y: groupIcon.y + groupIcon.height + (overview.looks.group_name_gap ?? 4)
-                text: groupItem.entry?.name ?? groupItem.modelData.appId
+                text: ApplicationName.of(groupItem.entry, overview.userChoices) ?? groupItem.modelData.appId
             }
         }
     }

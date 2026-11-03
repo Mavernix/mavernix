@@ -17,6 +17,7 @@
 import QtQuick
 import Quickshell
 import Shell.Native
+import "ApplicationName.js" as ApplicationName
 
 QtObject {
     id: folders
@@ -101,7 +102,8 @@ QtObject {
     function programEntries(folder) {
         const order = folder.order ?? "name"
         const shown = DesktopEntries.applications.values.filter(entry => !entry.noDisplay)
-        const byName = (first, second) => first.name.localeCompare(second.name)
+        const name = entry => ApplicationName.of(entry, icons.choices)
+        const byName = (first, second) => name(first).localeCompare(name(second))
         if (order === "kind") {
             const kind = entry => entry.categories.length > 0 ? entry.categories[0] : ""
             shown.sort((first, second) => kind(first).localeCompare(kind(second)) || byName(first, second))
@@ -118,7 +120,7 @@ QtObject {
                                                       genericIcon: "folder", entries: [] }))
         const top = []
         for (const entry of shown) {
-            const asEntry = { name: entry.name, path: entry.id, icon: icons.nameFor(entry),
+            const asEntry = { name: name(entry), path: entry.id, icon: icons.nameFor(entry),
                               genericIcon: "application-x-executable" }
             const inside = wanted.findIndex(
                 subfolder => entry.categories.some(category => (subfolder.categories ?? []).includes(category)))
@@ -132,7 +134,7 @@ QtObject {
         if (order !== "name") {
             return top.concat(filled)
         }
-        return top.concat(filled).sort(byName)
+        return top.concat(filled).sort((first, second) => first.name.localeCompare(second.name))
     }
 
     // --- Opening ------------------------------------------------------------------

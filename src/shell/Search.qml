@@ -12,6 +12,7 @@ import Quickshell.Io
 import Quickshell.Wayland
 import Shell.Native
 import "ApplicationMatch.js" as ApplicationMatch
+import "ApplicationName.js" as ApplicationName
 import "ThemeValues.js" as ThemeValues
 
 PanelWindow {
@@ -97,13 +98,14 @@ PanelWindow {
         // Found by name first, then by what they are or their keywords.
         const matches = []
         for (const entry of DesktopEntries.applications.values) {
-            const strength = entry.noDisplay ? 0 : ApplicationMatch.strength(entry, search.wantedLowerCase)
+            const strength = entry.noDisplay ? 0 : ApplicationMatch.strength(entry, search.wantedLowerCase, search.choices)
             if (strength > 0) {
                 matches.push({ entry: entry, strength: strength })
             }
         }
         matches.sort((first, second) => second.strength - first.strength
-                                         || search.closerMatchFirst(first.entry.name, second.entry.name))
+                                         || search.closerMatchFirst(ApplicationName.of(first.entry, search.choices),
+                                                                  ApplicationName.of(second.entry, search.choices)))
         return matches.slice(0, mostOfAKind).map(match => match.entry)
     }
 
@@ -183,7 +185,7 @@ PanelWindow {
         })
 
         add(wishes.applications_label ?? "Applications", foundApplications.map(entry => ({
-            name: entry.name,
+            name: ApplicationName.of(entry, search.choices),
             icon: themeIcons.forEntry(entry, "application-x-executable"),
             open: () => entry.execute()
         })))

@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="game-keys">
+		<_short>Game Keys</_short>
+		<_long>Lets the function keys among the desktop's shortcuts through to games: pressed alone while an X11 program or a full screen window is focused, such a key goes to that window instead of doing the shortcut.</_long>
+		<category>Input</category>
+		<option name="keys" type="string">
+			<_short>Keys</_short>
+			<_long>The function keys to let through, such as "KEY_F3 KEY_F11".</_long>
+			<default></default>
+		</option>
+	</plugin>
+</wayfire>
