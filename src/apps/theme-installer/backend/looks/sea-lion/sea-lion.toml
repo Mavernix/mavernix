@@ -116,6 +116,11 @@ time_minutes = "%1m ago"
 time_hours = "%1h ago"
 
 [dock]
+window_reflections = true
+window_reflection_blur = 9.0
+window_reflection_opacity = 0.63
+window_reflection_compression = 0.22
+rear_outline = false
 groups = [
     [
         { name = "Home", icon = "user-home", folder = "~", view = "list", order = "name" },
@@ -431,5 +436,5 @@ dock_opacity = 1.0
 method = "gaussian"
 iterations = 2
 degrade = 1
-offset = 1.5
+offset = 1.85
 saturation = 1.0

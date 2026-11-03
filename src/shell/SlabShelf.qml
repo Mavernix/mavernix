@@ -75,11 +75,19 @@ Canvas {
 
         // The rim: stroke at twice its width, then cut away the inner half.
         if (looks.outline !== undefined) {
+            context.save()
+            if (looks.back_outline === false) {
+                // Keep the side/front rim; omit only the dark horizontal rear edge.
+                context.beginPath()
+                context.rect(0, (looks.clear_above ?? 0) + looks.outline_width, width, height)
+                context.clip()
+            }
             context.beginPath()
             addMirroredOutline(context, end.silhouette)
             context.strokeStyle = ThemeValues.color(looks.outline)
             context.lineWidth = 2 * looks.outline_width
             context.stroke()
+            context.restore()
 
             context.globalCompositeOperation = "destination-out"
             context.fillStyle = "black"

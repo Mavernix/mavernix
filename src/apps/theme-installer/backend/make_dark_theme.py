@@ -50,7 +50,7 @@ TITLE_BAR_GRADIENT_INACTIVE = ["#3b3b3b", "#2e2e2e"]
 # --- Dock shelf --------------------------------------------------------------------
 # CHOSEN: ProKit has no Dock. The glass shelf keeps its opacities; its light
 # greys become dark greys near ProKit's window greys.
-DOCK_SURFACE = ["#4a4a4aba", "#333333a6", "#2a2a2a8f"]
+DOCK_SURFACE = ["#4a4a4add", "#333333cf", "#2a2a2abe"]
 DOCK_FACE = ["#1a1a1acc", "#2e2e2edb"]
 DOCK_LINE = "#ffffff4d"
 DOCK_OUTLINE = "#0000004d"

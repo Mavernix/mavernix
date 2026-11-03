@@ -382,7 +382,7 @@ DOCK_SHELF_FRONT_CORNER_SIZES = [4, 12]
 DOCK_SHELF_CLEAR_ABOVE = 1
 DOCK_SHELF_CLEAR_BESIDE = 1
 # (grey, opacity) pairs, from the front of the shelf to the back.
-DOCK_SHELF_SURFACE = [(1.0, 0.73), (0.81, 0.65), (0.61, 0.56)]
+DOCK_SHELF_SURFACE = [(1.0, 221 / 255), (0.81, 207 / 255), (0.61, 190 / 255)]
 DOCK_SHELF_FACE = [(0.55, 0.80), (0.79, 0.86)]
 DOCK_SHELF_LINE = (1.0, 0.65)
 DOCK_SHELF_OUTLINE = (0.0, 0.12)
@@ -451,7 +451,8 @@ DOCK_REFLECTION_OPACITY = 0.315
 DOCK_REFLECTION_OVERLAP = 5
 DOCK_REFLECTION_CLIP_BOTTOM = 3
 # As a share of the icon's size, at the reflection's foot (the only part that shows).
-DOCK_REFLECTION_BLUR = 6 / 128
+DOCK_FLOOR_SHADOW_BLUR = 6 / 128
+DOCK_REFLECTION_BLUR = 0.09
 DOCK_REFLECTION_CONTRAST = 1.45
 DOCK_REFLECTION_BRIGHTNESS = 0.2
 DOCK_FLOOR_SHADOW = (0.0, 0.25)
@@ -1889,7 +1890,7 @@ brightness = {DOCK_REFLECTION_BRIGHTNESS}
 [dock.floor_shadow]
 color = "{displayed_grey(*DOCK_FLOOR_SHADOW)}"
 height = 0.5
-blur = {DOCK_REFLECTION_BLUR:.4f}
+blur = {DOCK_FLOOR_SHADOW_BLUR:.4f}
 
 [dock.icon_shadow]
 color = "{displayed_grey(*DOCK_ICON_SHADOW)}"

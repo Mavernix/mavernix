@@ -719,6 +719,11 @@ class TestShellBlur(SessionTestCase):
                 self.assertEqual('desktop-panel' in matcher, expected)
                 self.assertIn('mavernix-dock', matcher)
 
+    def test_reflective_shelf_gets_dock_blur(self):
+        config = {"dock": {"window_reflections": True}, "blur": {"dock": True}}
+        lines, _ = self.generator.blur_section(config, {})
+        self.assertIn('blur_by_default = app_id is "mavernix-dock-shelf"', lines)
+
     def test_strength_values_are_validated(self):
         for key, value in (("method", "bad"), ("iterations", -1), ("iterations", 2.5),
                            ("degrade", 0), ("saturation", 4), ("offset", float("nan"))):
