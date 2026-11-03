@@ -1300,7 +1300,6 @@ blur_radius_inactive = 12
 offset_inactive = [0, 5]
 
 [panel]
-opaque_base_color = "#ffffff"
 height = {PANEL_HEIGHT}
 
 background = {{ image = "images/panel-background.png" }}
