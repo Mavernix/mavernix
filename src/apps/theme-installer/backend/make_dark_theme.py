@@ -662,6 +662,7 @@ def change_window(theme, prokit):
 
 
 def change_panel(theme, prokit):
+    theme.set("panel", "opaque_base_color", '"#333333"', "Solid base for an opaque menu bar.")
     theme.set("panel", "separator", f'["{prokit.colour("menubarEdgeColor")}"]',
               "PROKIT, menubarEdgeColor: the black last row of ProKit's MenuBar picture.")
     theme.set("panel", "highlight", '["#ffffff00"]',

@@ -307,3 +307,15 @@ table = "dock.shelf"
 key = "surface"
 was = ["#4a4a4aba", "#333333a6", "#2a2a2a8f"]
 now = ["#4a4a4ad5", "#333333c7", "#2a2a2ab6"]
+
+[[update]]
+revision = 10
+themes = ["sea-lion"]
+[update.settings.panel]
+opaque_base_color = "#ffffff"
+
+[[update]]
+revision = 11
+themes = ["sea-lion-dark"]
+[update.settings.panel]
+opaque_base_color = "#333333"

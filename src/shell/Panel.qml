@@ -75,6 +75,13 @@ PanelWindow {
     readonly property bool translucentMenuBar:
         choices?.value("panel", "translucent_menu_bar") ?? layout.translucent_menu_bar ?? true
 
+    // Theme images may contain alpha even when drawn at full item opacity.
+    Rectangle {
+        anchors.fill: parent
+        visible: !panel.translucentMenuBar
+        color: ThemeValues.color(panel.looks.opaque_base_color ?? "#ffffff")
+    }
+
     Fill {
         id: background
         fill: panel.looks.background
