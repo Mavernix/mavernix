@@ -90,6 +90,13 @@ PanelWindow {
         }
     }
 
+    Rectangle {
+        anchors.fill: background
+        visible: panel.translucentMenuBar
+        color: ThemeValues.color(panel.choices?.value("panel", "translucent_tint")
+                                ?? panel.layout.translucent_tint ?? "#00000000")
+    }
+
     Column {
         id: separator
         anchors {
