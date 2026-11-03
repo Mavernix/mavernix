@@ -382,7 +382,7 @@ DOCK_SHELF_FRONT_CORNER_SIZES = [4, 12]
 DOCK_SHELF_CLEAR_ABOVE = 1
 DOCK_SHELF_CLEAR_BESIDE = 1
 # (grey, opacity) pairs, from the front of the shelf to the back.
-DOCK_SHELF_SURFACE = [(1.0, 221 / 255), (0.81, 207 / 255), (0.61, 190 / 255)]
+DOCK_SHELF_SURFACE = [(1.0, 213 / 255), (0.81, 199 / 255), (0.61, 182 / 255)]
 DOCK_SHELF_FACE = [(0.55, 0.80), (0.79, 0.86)]
 DOCK_SHELF_LINE = (1.0, 0.65)
 DOCK_SHELF_OUTLINE = (0.0, 0.12)
