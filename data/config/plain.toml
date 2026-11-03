@@ -41,9 +41,8 @@ use_theme = true
 use_theme = true
 
 [panel]
-# Desktop settings: the menu bar and Dock blur the wallpaper behind them,
-# where the desktop's [blur] table allows it. Off until switched on.
-translucent_menu_bar = false
+# Desktop settings: let wallpaper show through the menu bar.
+translucent_menu_bar = true
 position = "top"
 left = ["app_name", "menus"]
 # Status items (docs/panel-items.md); one with nothing to show takes no room.
@@ -556,7 +555,7 @@ desktop_title = "Desktop"
 desktop_picture = "Picture:"
 desktop_name = "Name in the menu bar:"
 desktop_name_note = "Shown at the top left while no window is active."
-translucent_menu_bar = "Translucent menu bar and Dock"
+translucent_menu_bar = "Translucent menu bar"
 desktop_show_files = "Show the files of the Desktop folder"
 desktop_picture_choose = "Choose a picture…"
 desktop_picture_default = "Use the default"

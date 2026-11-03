@@ -1,0 +1,72 @@
+#!/usr/bin/env python3
+"""Forward the newest shelf geometry, reusing the local compositor connection."""
+
+import json
+import os
+import select
+import socket
+import struct
+import sys
+
+
+def receive_exact(connection, size):
+    result = bytearray()
+    while len(result) < size:
+        chunk = connection.recv(size - len(result))
+        if not chunk:
+            raise ConnectionError("Compositor disconnected")
+        result.extend(chunk)
+    return result
+
+
+def configure(connection, geometry):
+    body = json.dumps(
+        {"method": "dock-window-reflections/configure", "data": geometry}
+    ).encode()
+    connection.sendall(struct.pack("<I", len(body)) + body)
+    (size,) = struct.unpack("<I", receive_exact(connection, 4))
+    return json.loads(receive_exact(connection, size)).get("result") == "ok"
+
+
+def main():
+    fd = sys.stdin.fileno()
+    connection = None
+    partial = b""
+    last = None
+    pending = False
+    try:
+        while True:
+            readable, _, _ = select.select([fd], [], [], 0.15 if pending else None)
+            if readable:
+                chunk = os.read(fd, 65536)
+                if not chunk:
+                    break
+                lines = (partial + chunk).split(b"\n")
+                partial = lines.pop()
+                if lines:
+                    last = json.loads(lines[-1])
+                    pending = True
+                if select.select([fd], [], [], 0)[0]:
+                    continue
+            if pending:
+                try:
+                    if connection is None:
+                        connection = socket.socket(socket.AF_UNIX)
+                        connection.settimeout(1)
+                        connection.connect(os.environ["WAYFIRE_SOCKET"])
+                    pending = not configure(connection, last)
+                except OSError:
+                    connection.close()
+                    connection = None
+    finally:
+        if connection is not None:
+            try:
+                if last:
+                    configure(connection, {**last, "width": 0, "height": 0})
+            except OSError:
+                pass
+            connection.close()
+
+
+if __name__ == "__main__":
+    main()

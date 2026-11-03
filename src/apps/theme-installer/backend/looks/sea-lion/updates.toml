@@ -285,3 +285,25 @@ table = "panel"
 key = "separator"
 was = ["#00000000"]
 now = ["#000000"]
+
+[[update]]
+revision = 9
+themes = ["sea-lion", "sea-lion-dark"]
+
+[[update.corrections]]
+table = "dock.reflection"
+key = "blur"
+was = 0.0469
+now = 0.09
+
+[[update.corrections]]
+table = "dock.shelf"
+key = "surface"
+was = ["#ffffffba", "#d7d7d7a6", "#aaaaaa8f"]
+now = ["#ffffffdd", "#d7d7d7cf", "#aaaaaabe"]
+
+[[update.corrections]]
+table = "dock.shelf"
+key = "surface"
+was = ["#4a4a4aba", "#333333a6", "#2a2a2a8f"]
+now = ["#4a4a4add", "#333333cf", "#2a2a2abe"]

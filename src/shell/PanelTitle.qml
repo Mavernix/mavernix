@@ -24,6 +24,7 @@ Item {
     property real pictureHeight: 0
     // Use only the picture's shape, painted in the text colour.
     property bool pictureTinted: false
+    property real pictureBottomOpacity: 1.0
     // Gap between text and picture; the text comes first.
     property real textGap: 0
 
@@ -108,11 +109,33 @@ Item {
 
         // Whitened, then colourised, so soft edges keep their alpha. (A mask would
         // make every pixel fully in or out and leave jagged edges.)
-        layer.enabled: title.pictureTinted
+        layer.enabled: title.pictureTinted || (title.pictureBottomOpacity < 1 && !title.lit)
         layer.effect: MultiEffect {
-            brightness: 1.0
-            colorization: 1.0
+            brightness: title.pictureTinted ? 1.0 : 0.0
+            colorization: title.pictureTinted ? 1.0 : 0.0
+            maskEnabled: title.pictureBottomOpacity < 1 && !title.lit
+            maskSource: pictureFade
+            maskThresholdMin: 0.5
+            maskSpreadAtMin: 1.0
             colorizationColor: title.inkColor
+        }
+    }
+
+    Item {
+        id: pictureFade
+        width: image.width
+        height: image.height
+        visible: false
+        layer.enabled: true
+        Rectangle {
+            anchors.fill: parent
+            gradient: Gradient {
+                GradientStop { position: 0; color: "white" }
+                GradientStop {
+                    position: 1
+                    color: Qt.rgba(1, 1, 1, Math.max(0, Math.min(1, title.pictureBottomOpacity)))
+                }
+            }
         }
     }
 

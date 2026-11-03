@@ -71,7 +71,11 @@ alpha_threshold = 0.5
 User and desktop preferences take precedence. Opacity applies only to the
 panel background and Dock shelf; foreground text and icons keep their opacity.
 
-The Desktop pane exposes `panel.translucent_menu_bar` (default false). While
-it's off, the menu bar and Dock keep the theme's material at its original
-opacity and the compositor blurs neither. Existing transparency in the theme
-artwork is retained, and the stored blur strength is unaffected.
+The Desktop pane exposes `panel.translucent_menu_bar` (default true). Turning
+it off restores the original theme material at its original opacity and excludes
+the menu bar from compositor blur. Existing transparency in the theme artwork
+is retained. The Dock and the stored blur strength are unaffected.
+
+The optional Desktop checkbox **Blur menu bar** controls `blur.panel`
+independently of opacity. Sea Lion defaults it to false. Changing blur alone
+does not change the menu bar's background opacity.

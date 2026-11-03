@@ -13,6 +13,8 @@ joined_tool_bar_apps = ["mavernix-settings", "mavernix-app-store", "bandstand", 
 quick_open_close_ms = 120
 
 [panel]
+translucent_tint = "#ffffff0f"
+logo_bottom_opacity = 0.60
 left = ["logo", "app_name", "menus"]
 right = ["tray", "bluetooth", "volume", "network", "battery", "clock", "search", "notifications"]
 quit_label = "Quit %1"
@@ -116,6 +118,11 @@ time_minutes = "%1m ago"
 time_hours = "%1h ago"
 
 [dock]
+window_reflections = true
+window_reflection_blur = 9.0
+window_reflection_opacity = 0.63
+window_reflection_compression = 0.22
+rear_outline = false
 groups = [
     [
         { name = "Home", icon = "user-home", folder = "~", view = "list", order = "name" },
@@ -422,14 +429,14 @@ computer = "Computer"
 update = "Software Update…"
 more = "More Info…"
 
-# The translucent shelf and menu bar use the compositor's background blur.
+# Keep the menu bar translucent without blur; its optional blur is a user choice.
 [blur]
-panel = true
+panel = false
 dock = true
-panel_opacity = 0.65
+panel_opacity = 0.72
 dock_opacity = 1.0
 method = "gaussian"
 iterations = 2
 degrade = 1
-offset = 1.5
+offset = 1.85
 saturation = 1.0
