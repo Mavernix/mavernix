@@ -73,8 +73,7 @@ void main() {
  float proximity=1.0-smoothstep(0.0,shelf.w/compression,shelf.y-origin);
  // Inverse perspective projection onto the glass plane. Its rear edge is the anchor.
  float inverseScale=1.0/(1.0+0.25*depth);
- float center=shelf.x+0.5*shelf.z;
- vec2 original=vec2(center+(point.x-center)*inverseScale,
+ vec2 original=vec2(point.x,
                     origin-min(distance,surfaceHeight)*inverseScale/compression);
  vec2 uv=(original-window_box.xy)/window_box.zw;
  // A Gaussian kernel in reflected screen pixels, with transparent window edges.
