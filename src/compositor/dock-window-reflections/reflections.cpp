@@ -26,7 +26,7 @@ struct picture_t
 {
     uint32_t id = 0;
     wf::auxilliary_buffer_t buffer;
-    std::unique_ptr<wf::auxilliary_buffer_t> filtered;
+    std::vector<std::unique_ptr<wf::auxilliary_buffer_t>> filters;
     wf::geometry_t box;
 };
 struct state_t
@@ -147,7 +147,7 @@ class node_t : public wf::scene::transformer_base_node_t
                 if (s.active)
                     for (auto& p : s.pictures)
                     {
-                        auto tex = wf::gles_texture_t::from_aux(p->filtered ? *p->filtered : p->buffer);
+                        auto tex = wf::gles_texture_t::from_aux(p->filters.empty() ? p->buffer : *p->filters.back());
                         self->program.use(tex.type);
                         self->program.uniformMatrix4f(
                             "mvp", wf::gles::render_target_orthographic_projection(data.target));
@@ -162,8 +162,13 @@ class node_t : public wf::scene::transformer_base_node_t
                             "texel", double(s.blur) / p->box.width, double(s.blur) / s.compression / p->box.height);
                         self->program.set_active_texture(tex);
                         self->program.attrib_pointer("position", 2, 0, quad);
+                        // No sample can reach beyond two blur radii horizontally.
+                        // Avoid running the full kernel over unrelated parts of the shelf.
+                        double padding = 2.0 * double(s.blur);
+                        wf::geometry_t reflected{std::floor(p->box.x - padding), b.y,
+                            std::ceil(p->box.width + 2 * padding + 1), double(height)};
                         wf::gles::for_each_scissor_rect(
-                            data.target, data.damage & b, [&] { glDrawArrays(GL_TRIANGLE_FAN, 0, 4); });
+                            data.target, data.damage & b & reflected, [&] { glDrawArrays(GL_TRIANGLE_FAN, 0, 4); });
                         self->program.deactivate();
                     }
                 glDisable(GL_SCISSOR_TEST);
@@ -195,6 +200,9 @@ class output_t : public wf::per_output_plugin_instance_t
                 return;
         }
         bool had = !state->pictures.empty();
+        // Keep each window's capture and filter buffers across frames. Recreating
+        // their textures/framebuffers at the output refresh rate is expensive.
+        auto previous_pictures = std::move(state->pictures);
         state->pictures.clear();
         if (state->active && state->shelf.width > 0)
         {
@@ -224,8 +232,7 @@ class output_t : public wf::per_output_plugin_instance_t
                 if (box.x + box.width <= b.x - padding_x || box.x >= b.x + b.width + padding_x ||
                     box.y >= b.y + padding_y || box.y + box.height < b.y - reach)
                     continue;
-                auto picture = std::make_unique<picture_t>();
-                picture->id = view->get_id();
+
                 // Crop to the source strip before rendering: large windows cost only a narrow GPU buffer.
                 double left = std::max(box.x, std::floor(b.x - padding_x)),
                        right = std::min(box.x + box.width, std::ceil(b.x + b.width + padding_x));
@@ -233,6 +240,11 @@ class output_t : public wf::per_output_plugin_instance_t
                        bottom = std::min(box.y + box.height, std::ceil(b.y + padding_y));
                 if (right <= left || bottom <= top)
                     continue;
+                auto previous = std::find_if(previous_pictures.begin(), previous_pictures.end(),
+                    [&](const auto& p) { return p && p->id == view->get_id(); });
+                auto picture =
+                    previous == previous_pictures.end() ? std::make_unique<picture_t>() : std::move(*previous);
+                picture->id = view->get_id();
                 picture->box = {left, top, right - left, bottom - top};
                 float scale = output->handle->scale;
                 picture->buffer.allocate(wf::dimensions(picture->box), scale);
@@ -258,29 +270,35 @@ class output_t : public wf::per_output_plugin_instance_t
                 int levelsY = std::clamp(
                     int(std::floor(std::log2(std::max(1.0, double(state->blur) * scale / (3 * state->compression))))),
                     0, 4);
+                int levels = std::max(levelsX, levelsY);
+                picture->filters.resize(levels);
                 wf::gles::run_in_context_if_gles([&] {
                     GLint readFbo, drawFbo;
                     glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &readFbo);
                     glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFbo);
                     auto scissor = glIsEnabled(GL_SCISSOR_TEST);
                     glDisable(GL_SCISSOR_TEST);
-                    for (int level = 0; level < std::max(levelsX, levelsY); ++level)
+                    for (int level = 0; level < levels; ++level)
                     {
-                        auto& previous = picture->filtered ? *picture->filtered : picture->buffer;
+                        auto& previous = level ? *picture->filters[level - 1] : picture->buffer;
                         auto old = previous.get_size();
                         wf::dimensions_t small{level < levelsX ? (old.width + 1) / 2 : old.width,
                             level < levelsY ? (old.height + 1) / 2 : old.height};
-                        auto next = std::make_unique<wf::auxilliary_buffer_t>();
+                        auto& next = picture->filters[level];
+                        if (!next)
+                            next = std::make_unique<wf::auxilliary_buffer_t>();
                         next->allocate(small);
                         if (!next->get_texture())
+                        {
+                            picture->filters.resize(level);
                             break;
+                        }
                         auto from = wf::gles::ensure_render_buffer_fb_id(previous.get_renderbuffer());
                         auto to = wf::gles::ensure_render_buffer_fb_id(next->get_renderbuffer());
                         glBindFramebuffer(GL_READ_FRAMEBUFFER, from);
                         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, to);
                         glBlitFramebuffer(0, 0, old.width, old.height, 0, 0, small.width, small.height,
                             GL_COLOR_BUFFER_BIT, GL_LINEAR);
-                        picture->filtered = std::move(next);
                     }
                     glBindFramebuffer(GL_READ_FRAMEBUFFER, readFbo);
                     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, drawFbo);
