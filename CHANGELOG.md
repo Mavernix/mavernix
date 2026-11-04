@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.5.8 (2026-11-04)
+
+### Added
+
+- Windows can be reflected in the glass of Sea Lion's Dock, as on Mavericks: Settings, Dock & Menu Bar, Reflect windows in the Dock's glass. It's off at first.
+- Blur behind the menu bar and behind the Dock each have their own checkbox in Dock & Menu Bar, off at first.
+
+### Changed
+
+- The Desktop pane's checkbox is now just Translucent menu bar, as on Mavericks, and stays off at first: the menu bar then shows Sea Lion's picture of it as it is.
+- Sea Lion's Dock glass is frostier, as on Mavericks, so less shows through it, and the reflections of its icons are softer.
+- The Desktop pane shows three rows of desktop pictures, and Settings is never taller than the screen.
+- Letting go of a dragged menu outside it, away from the menu bar, closes it, as on OS X.
+
+### Fixed
+
+- The gaps beside a window's title, and the one under its title bar, move the window instead of letting clicks through to the window behind.
+- Icons in the Dock no longer show as a theme's small, plain symbol at some sizes.
+- The shadows and reflections of Dock icons are no longer stretched while the Dock is resized.
+
+Log out and back in once after updating.
+
 ## 0.5.7 (2026-11-01)
 
 ### Added
