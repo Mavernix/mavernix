@@ -1,9 +1,11 @@
 #include "icon-files.hpp"
 
 #include <QFileInfo>
+#include <QGuiApplication>
 #include <QIcon>
 #include <QImage>
 #include <QMutex>
+#include <QtMath>
 #include <QPainter>
 #include <QtGui/private/qiconloader_p.h>
 
@@ -82,9 +84,18 @@ QHash<QString, QList<IconFile>> files_by_name;
 
 void remember_files(const QString& name, const QThemeIconInfo& info)
 {
+    // A file in a folder like 22x22@2 is drawn for a 22-pixel icon on a
+    // screen of twice the density, often as a small, plain symbol, not as a
+    // 44-pixel icon: so it is kept only for screens of that density. (The
+    // densest screen's; the providers do not know which screen asks.)
+    const int screen_scale = qMax(1, qCeil(qGuiApp->devicePixelRatio()));
     QList<IconFile> files;
     for (const auto& entry : info.entries)
     {
+        if (entry->dir.scale > 1 && entry->dir.scale != screen_scale)
+        {
+            continue;
+        }
         const bool scalable = entry->dir.type == QIconDirInfo::Scalable || is_drawing(entry->filename);
         files.append({entry->filename, scalable ? 0 : entry->dir.size * entry->dir.scale});
     }

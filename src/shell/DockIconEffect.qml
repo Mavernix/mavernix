@@ -1,10 +1,13 @@
 // An icon drawn as an effect: blurred, tinted, flipped or with contrast and
 // brightness changed. The dock uses it for shadows and reflections. The
-// picture is stretched to this item's size.
+// picture is stretched to `heightShare` of this item's width.
 //
 // The effect is drawn at a fixed size (`drawnWidth`) and scaled: MultiEffect
 // rebuilds its buffers on every size change, which leaves stale rectangles
-// around icons while the dock is resized.
+// around icons while the dock is resized. Its height comes from
+// `heightShare`, not from this item's height: while the dock resizes, the
+// width changes a moment before a height bound to it follows, and buffers
+// made for that moment's shape stretched the icon until the next rebuild.
 
 import QtQuick
 import QtQuick.Effects
@@ -16,6 +19,8 @@ Item {
     property string iconSource: ""
     // The largest width this item gets.
     required property real drawnWidth
+    // Height over width, fixed so the drawn shape never changes.
+    property real heightShare: 1
     // In logical pixels of this item.
     property real blurRadius: 0
     // A theme colour to fill the icon's shape with, or "" for none.
@@ -32,10 +37,12 @@ Item {
 
     readonly property real shrink: width > 0 ? width / drawnWidth : 1
 
+    height: width * heightShare
+
     Item {
         id: drawn
         width: effect.drawnWidth
-        height: effect.width > 0 ? effect.drawnWidth * effect.height / effect.width : effect.drawnWidth
+        height: effect.drawnWidth * effect.heightShare
         transform: Scale {
             xScale: effect.shrink
             yScale: effect.shrink

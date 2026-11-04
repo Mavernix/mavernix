@@ -16,14 +16,27 @@
 
 static const QSize THUMBNAIL_SIZE(112, 70);
 static const QSize CELL_SIZE(128, 100);
-// Two rows and a bit of the third, which says there is more.
+// Three rows and a bit of the fourth, which says there is more; on a
+// screen too short for that, as little as one row and a bit.
 static const int COLUMNS_SHOWN = 3;
-static const int LIST_HEIGHT_PX = 250;
+static const int LIST_HEIGHT_PX = 3 * CELL_SIZE.height() + 35;
+static const int LIST_LEAST_HEIGHT_PX = CELL_SIZE.height() + 35;
 // The list wraps a little before a row is really full; this much more
 // width keeps COLUMNS_SHOWN in a row (found by trying).
 static const int ROW_SLACK_PX = 8;
 // The value that choosing the entry writes.
 static const int VALUE_ROLE = Qt::UserRole;
+
+namespace
+{
+// Asks for LIST_HEIGHT_PX but can be given less, down to its minimum, so a
+// short window shrinks the list rather than drawing the buttons over it.
+class PictureList : public QListWidget
+{
+  public:
+    QSize sizeHint() const override { return {QListWidget::sizeHint().width(), LIST_HEIGHT_PX}; }
+};
+} // namespace
 
 // Scaled to cover the size, the overhang cut off evenly; null if unreadable.
 // Safe off the main thread.
@@ -62,14 +75,15 @@ PictureChooser::PictureChooser(Choices& choices, QWidget* parent) : QWidget(pare
         return words.value(QLatin1String(key), QString::fromUtf8(fallback)).toString();
     };
 
-    list = new QListWidget;
+    list = new PictureList;
     list->setViewMode(QListView::IconMode);
     list->setResizeMode(QListView::Adjust);
     list->setMovement(QListView::Static);
     list->setIconSize(THUMBNAIL_SIZE);
     list->setGridSize(CELL_SIZE);
     list->setWordWrap(true);
-    list->setFixedHeight(LIST_HEIGHT_PX);
+    list->setMinimumHeight(LIST_LEAST_HEIGHT_PX);
+    list->setMaximumHeight(LIST_HEIGHT_PX);
     list->setMinimumWidth(COLUMNS_SHOWN * CELL_SIZE.width() + 2 * list->frameWidth() +
                           list->style()->pixelMetric(QStyle::PM_ScrollBarExtent) + ROW_SLACK_PX);
     // Shown once there is something in it (addPicture).

@@ -285,3 +285,34 @@ table = "panel"
 key = "separator"
 was = ["#00000000"]
 now = ["#000000"]
+
+[[update]]
+revision = 9
+themes = ["sea-lion", "sea-lion-dark"]
+
+[[update.corrections]]
+table = "dock.reflection"
+key = "blur"
+was = 0.0469
+now = 0.09
+
+[[update.corrections]]
+table = "dock.shelf"
+key = "surface"
+was = ["#ffffffba", "#d7d7d7a6", "#aaaaaa8f"]
+now = ["#ffffffd5", "#d7d7d7c7", "#aaaaaab6"]
+
+[[update.corrections]]
+table = "dock.shelf"
+key = "surface"
+was = ["#4a4a4aba", "#333333a6", "#2a2a2a8f"]
+now = ["#4a4a4ad5", "#333333c7", "#2a2a2ab6"]
+
+# 10 and 11 gave the opaque menu bar a gradient of its own; withdrawn before
+# 0.5.8, as the menu bar's own picture is Mavericks'. Kept, empty, so the
+# revisions still count up.
+[[update]]
+revision = 10
+
+[[update]]
+revision = 11

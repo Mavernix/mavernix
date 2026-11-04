@@ -54,11 +54,16 @@ BASE_PLUGINS = [
 def blur_section(config, theme):
     """Opt-in background blur for named shell surfaces, never normal windows."""
     looks = {**theme.get("blur", {}), **config.get("blur", {})}
-    # Both wait for the Desktop pane's checkbox, off at first.
-    if not config.get("panel", {}).get("translucent_menu_bar", False):
-        return [], []
-    surfaces = [name for key, name in (("panel", "desktop-panel"), ("dock", "mavernix-dock"))
-                if looks.get(key, False)]
+    dock_surface = "mavernix-dock-shelf" if config.get("dock", {}).get("window_reflections") else "mavernix-dock"
+    # blur.panel and blur.dock say a surface can blur; the checkboxes in the
+    # Dock & Menu Bar pane (blur.menu_bar, blur.dock_shelf, off at first)
+    # switch it on.
+    # Older imports have panel and dock true, which alone blurs nothing.
+    wanted = {"panel": looks.get("menu_bar", False)
+              and config.get("panel", {}).get("translucent_menu_bar", False),
+              "dock": looks.get("dock_shelf", False)}
+    surfaces = [name for key, name in (("panel", "desktop-panel"), ("dock", dock_surface))
+                if looks.get(key, False) and wanted[key]]
     if not surfaces:
         return [], []
     matcher = " | ".join(f'app_id is "{name}"' for name in surfaces)
@@ -935,11 +940,15 @@ def desktop_sections(config, theme, key_lines):
         for part in parts:
             if part not in STILL_PARTS:
                 fail(f'[desktops] {key} names "{part}"; known: {", ".join(STILL_PARTS)}')
+    surface_names = dict(STILL_PARTS)
+    if config.get("dock", {}).get("window_reflections"):
+        surface_names["dock"] += " mavernix-dock-shelf"
     if still or as_two:
         sections.append([
             "[still-surfaces]",
-            "names = " + " ".join(STILL_PARTS[part] for part in still),
-            "sliding = " + " ".join(STILL_PARTS[part] for part in as_two),
+            "during = vswitch vswipe move" if "dock" in still else "during = vswitch vswipe",
+            "names = " + " ".join(surface_names[part] for part in still),
+            "sliding = " + " ".join(surface_names[part] for part in as_two),
         ])
         plugins.append("still-surfaces")
 
@@ -1073,6 +1082,12 @@ def main():
         if section != "core":
             sections.append([f"[{section}]"] + lines)
 
+    if config.get("dock", {}).get("window_reflections"):
+        spread = config["dock"].get("window_reflection_blur", 9.0)
+        if isinstance(spread, bool) or not isinstance(spread, (int, float)) or not 0 <= spread <= 12:
+            fail("dock.window_reflection_blur must be between 0 and 12")
+        plugins.append("dock-window-reflections")
+        sections.append(["[dock-window-reflections]", f"blur = {spread}"])
     plugins += arguments.extra_plugins.split()
 
     lines = [

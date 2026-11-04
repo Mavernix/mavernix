@@ -8,6 +8,7 @@ import QtQuick
 import QtCore
 import Quickshell
 import Quickshell.Wayland
+import Quickshell.Io
 import Shell.Native
 import "DockLayout.js" as DockLayout
 import "DroppedFiles.js" as DroppedFiles
@@ -27,11 +28,17 @@ PanelWindow {
     property var shell: null
     // While raised the dock is above everything, the application grid included.
     property bool raised: false
-    WlrLayershell.layer: raised ? WlrLayer.Overlay : WlrLayer.Top
+    // With window reflections the glass is a surface of its own in the
+    // overlay layer, and the icons must stay above it there.
+    WlrLayershell.layer: raised || windowReflections ? WlrLayer.Overlay : WlrLayer.Top
     // Lets the compositor tell this surface from the shell's others.
     WlrLayershell.namespace: "mavernix-dock"
 
-    visible: keepShown.canShow
+    readonly property bool fullscreenApplication: ToplevelManager.toplevels.values.some(window =>
+        window.fullscreen && window.activated && window.screens.some(screen => screen.name === dock.screen?.name))
+    // In the top layer the compositor puts a fullscreen window above the
+    // dock itself; the overlay layer is above it, so the dock steps aside.
+    visible: keepShown.canShow && !(windowReflections && fullscreenApplication)
     KeepShown {
         id: keepShown
         target: dock
@@ -44,6 +51,34 @@ PanelWindow {
     readonly property var looks: settings.theme.dock
     readonly property var config: settings.config.dock
     readonly property string themeDirectory: settings.theme_directory
+
+
+    // Publish shelf geometry as its size, screen or visibility changes.
+    readonly property bool windowReflections: choices.value("dock", "window_reflections") ?? false
+    readonly property string reflectedShelf: JSON.stringify({
+        output: dock.screen?.name ?? "",
+        x: Math.round(dock.shelfEdges.left),
+        y: Math.round(dock.screen.height - dock.shelfHeight + dock.sunk * dock.restingHeight),
+        width: dock.visible && dock.shelfIsSlab ? Math.round(dock.shelfEdges.right - dock.shelfEdges.left) : 0,
+        height: dock.visible && dock.sunk < 1 ? Math.round(dock.shelfHeight) : 0,
+        opacity: dock.choices.value("dock", "window_reflection_opacity") ?? 0.35,
+        compression: dock.choices.value("dock", "window_reflection_compression") ?? 0.32,
+        slant: dock.looks.shelf.slant ?? 0.6,
+        // A whole number: the compositor reads it as one.
+        face: Math.round((dock.looks.shelf.face_height ?? 3) + (dock.looks.shelf.line_height ?? 1))
+    })
+    // Settle related bindings once per event-loop turn, including during continuous resizing.
+    function sendReflectedShelf() {
+        if (reflectionBridge.running) reflectionBridge.write(dock.reflectedShelf + "\n")
+    }
+    onReflectedShelfChanged: Qt.callLater(dock.sendReflectedShelf)
+    Process {
+        id: reflectionBridge
+        command: ["mavernix-dock-geometry"]
+        running: dock.windowReflections
+        stdinEnabled: true
+        onStarted: Qt.callLater(dock.sendReflectedShelf)
+    }
 
     // --- What is in the dock ------------------------------------------------
 
@@ -991,7 +1026,7 @@ PanelWindow {
     // --- Layers, from the lowest to the highest -----------------------------------
 
     Repeater {
-        model: placeModel
+        model: dock.windowReflections ? null : placeModel
         DockIconEffect {
             drawnWidth: dock.largestIconSize
             required property int index
@@ -1007,16 +1042,15 @@ PanelWindow {
 
             x: tile?.iconX ?? 0
             width: tile?.iconSize ?? 0
-            height: width
             y: dock.fromBottom(dock.base + (tile?.lift ?? 0) + (dock.looks.icon_shadow?.raise ?? 0), height)
         }
     }
 
     Loader {
         id: shelf
-        // Translucent with the Desktop pane's checkbox, as the menu bar is.
-        opacity: (dock.choices.value("panel", "translucent_menu_bar")
-                  ?? dock.settings.config.panel?.translucent_menu_bar ?? false)
+        visible: !dock.windowReflections
+        // The shelf's finish is independent of the menu bar's translucency.
+        opacity: (dock.choices.value("blur", "dock_shelf") ?? false)
                  && (dock.choices.value("blur", "dock") ?? dock.settings.config.blur?.dock
                   ?? dock.settings.theme.blur?.dock ?? false)
                  ? Math.max(0, Math.min(1, dock.choices.value("blur", "dock_opacity")
@@ -1028,10 +1062,62 @@ PanelWindow {
         sourceComponent: dock.shelfIsSlab ? slabShelf : boxShelf
     }
 
+    // The glass has its own surface so native reflections can be painted
+    // above it while the original icon, shadow and icon-reflection layers stay above both.
+    PanelWindow {
+        id: glassWindow
+        screen: dock.screen
+        anchors { left: true; right: true; bottom: true }
+        implicitHeight: dock.height
+        exclusionMode: ExclusionMode.Ignore
+        WlrLayershell.namespace: "mavernix-dock-shelf"
+        WlrLayershell.layer: WlrLayer.Overlay
+        color: "transparent"
+        mask: Region {}
+        visible: dock.visible && dock.windowReflections && glassKeepShown.canShow
+        KeepShown { id: glassKeepShown; target: glassWindow }
+        Binding {
+            target: glassWindow.contentItem
+            property: "y"
+            value: dock.sunk * dock.restingHeight
+        }
+        Repeater {
+            model: placeModel
+            DockIconEffect {
+                drawnWidth: dock.largestIconSize
+                required property int index
+                required property string modelData
+                readonly property var place: dock.placeOf(modelData)
+                readonly property var tile: dock.tileOf(modelData)
+
+                visible: !place.isSeparator && dock.looks.icon_shadow !== undefined
+                iconSource: tile?.iconSource ?? ""
+                tint: dock.looks.icon_shadow?.color ?? "#00000000"
+                opacity: tile?.shownShare ?? 1
+                blurRadius: dock.looks.icon_shadow?.blur ?? 0
+
+                x: tile?.iconX ?? 0
+                width: tile?.iconSize ?? 0
+                y: dock.fromBottom(dock.base + (tile?.lift ?? 0) + (dock.looks.icon_shadow?.raise ?? 0), height)
+            }
+        }
+
+        Loader {
+            x: dock.shelfEdges.left
+            width: dock.shelfEdges.right - dock.shelfEdges.left
+            height: dock.shelfHeight
+            y: glassWindow.height - height
+            opacity: shelf.opacity
+            sourceComponent: dock.shelfIsSlab ? slabShelf : boxShelf
+        }
+    }
+
     Component {
         id: slabShelf
         SlabShelf {
-            looks: dock.looks.shelf
+            looks: Object.assign({}, dock.looks.shelf, {
+                back_outline: dock.choices.value("dock", "rear_outline") ?? dock.looks.shelf.back_outline ?? true
+            })
         }
     }
 
@@ -1141,7 +1227,6 @@ PanelWindow {
 
                 x: tile?.iconX ?? 0
                 width: tile?.iconSize ?? 0
-                height: width
                 // Its top edge starts a little above the icon's lower edge,
                 // hidden behind the icon, and it moves down as the icon rises.
                 readonly property real topAboveScreenEdge:
@@ -1169,7 +1254,8 @@ PanelWindow {
 
             x: tile?.iconX ?? 0
             width: iconSize
-            height: iconSize * dock.looks.floor_shadow.height
+            // The documented value where a theme leaves it out.
+            heightShare: dock.looks.floor_shadow.height ?? 0.5
             // Centred a quarter of the icon's height above its lower edge.
             y: dock.fromBottom(dock.base + iconSize / 4 - height / 2, height)
         }
@@ -1254,7 +1340,7 @@ PanelWindow {
             // frame (magnified, or resized by hand) and scaled from that:
             // read anew at each size, they kept the shell busy decoding
             // pictures through the whole of a resize.
-            drawnIconSize: dock.magnifies || dock.draggedIconSize > 0 ? dock.largestIconSize : 0
+            drawnIconSize: dock.magnificationRamp > 0 || dock.draggedIconSize > 0 ? dock.largestIconSize : 0
             name: place.isTrash ? (dock.config.trash_label ?? "") : (custom?.name ?? "")
             command: place.isTrash ? (dock.config.trash_command ?? []) : (custom?.command ?? [])
             shellAction: custom?.shell ?? ""

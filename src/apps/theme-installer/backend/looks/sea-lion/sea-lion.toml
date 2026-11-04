@@ -118,6 +118,12 @@ time_minutes = "%1m ago"
 time_hours = "%1h ago"
 
 [dock]
+# Dock & Menu Bar settings: windows reflected in the glass. Off at first.
+window_reflections = false
+window_reflection_blur = 9.0
+window_reflection_opacity = 0.63
+window_reflection_compression = 0.22
+rear_outline = false
 groups = [
     [
         { name = "Home", icon = "user-home", folder = "~", view = "list", order = "name" },
@@ -427,14 +433,15 @@ computer = "Computer"
 update = "Software Update…"
 more = "More Info…"
 
-# The translucent shelf and menu bar use the compositor's background blur.
+# The menu bar and shelf can blur what is behind them; checkboxes in the Dock
+# & Menu Bar pane (menu_bar, dock_shelf) switch it on, off at first.
 [blur]
 panel = true
 dock = true
-panel_opacity = 0.65
+panel_opacity = 0.72
 dock_opacity = 1.0
 method = "gaussian"
 iterations = 2
 degrade = 1
-offset = 1.5
+offset = 1.85
 saturation = 1.0

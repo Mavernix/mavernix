@@ -251,18 +251,24 @@ Services that start on demand learn about all of this at login. When the session
 
 ## Background blur for the menu bar and Dock
 
-The Desktop pane has a single **Translucent menu bar and Dock** checkbox,
-off at first. It switches the menu bar's and the Dock's extra transparency and
-background blur on and off together (`panel.translucent_menu_bar`). Off, both
-keep their original material. Which of the two blur, and how strongly, comes
-from the `[blur]` table below; Sea Lion sets both.
+The Desktop pane has a **Translucent menu bar** checkbox, and the Dock & Menu
+Bar pane has **Blur menu bar** and **Blur behind the Dock**, all off at first:
+the menu bar then shows the theme's picture of it as it is. Both blurs are
+extras Mavericks didn't have (`blur.menu_bar`, `blur.dock_shelf`). The menu
+bar's blur only shows while it is translucent; turning translucency off
+restores the original material and keeps the blur choice for later. The
+Dock's blur doesn't depend on the menu bar's translucency.
+`blur.panel` and `blur.dock` only say that a surface can blur; on their own
+they blur nothing, so older imports that set them stay unblurred.
 It uses Wayfire's `blur` plugin with an explicit matcher for `desktop-panel`
 and/or `mavernix-dock`; ordinary windows are excluded.
 
 ```toml
 [blur]
-panel = true
-dock = true
+panel = true # the menu bar can blur
+dock = true # the Dock's shelf can blur
+menu_bar = false # Blur menu bar, in the Dock & Menu Bar pane
+dock_shelf = false # Blur behind the Dock, in the Dock & Menu Bar pane
 panel_opacity = 0.65 # opacity of the menu bar's background, not its contents
 # The 3D shelf already has translucent colours; keep its original finish.
 dock_opacity = 1.0

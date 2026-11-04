@@ -78,8 +78,7 @@ PanelWindow {
     Fill {
         id: background
         fill: panel.looks.background
-        opacity: panel.translucentMenuBar && (panel.choices?.value("blur", "panel") ?? panel.settings.config.blur?.panel
-                  ?? panel.settings.theme.blur?.panel ?? false)
+        opacity: panel.translucentMenuBar
                  ? Math.max(0, Math.min(1, panel.choices?.value("blur", "panel_opacity")
                     ?? panel.settings.config.blur?.panel_opacity ?? panel.settings.theme.blur?.panel_opacity ?? 1)) : 1
         themeDirectory: panel.themeDirectory
@@ -261,7 +260,10 @@ PanelWindow {
     function releaseAt(point) {
         if (openTitle !== null) {
             const onScreen = screenPoint(point)
-            titleMenu.chooseAt(onScreen.x, onScreen.y)
+            // Outside the bar: below it, or above it for a bar at the bottom.
+            if (!titleMenu.chooseAt(onScreen.x, onScreen.y) && (point.y > panel.height || point.y < 0)) {
+                closeMenu(titleMenu)
+            }
         }
     }
 

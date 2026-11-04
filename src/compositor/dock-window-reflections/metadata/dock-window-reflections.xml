@@ -1,0 +1,15 @@
+<?xml version='1.0' encoding='utf-8'?>
+<wayfire>
+  <plugin name="dock-window-reflections">
+    <_short>Dock window reflections</_short>
+    <_long>GPU window reflections, limited to dock geometry supplied over IPC.</_long>
+    <category>Effects</category>
+    <option name="blur" type="double">
+      <_short>Window reflection blur</_short>
+      <_long>Gaussian sampling spread in logical reflected screen pixels.</_long>
+      <default>9.0</default>
+      <min>0.0</min>
+      <max>12.0</max>
+    </option>
+  </plugin>
+</wayfire>
