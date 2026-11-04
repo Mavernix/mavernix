@@ -1,6 +1,7 @@
 #include "deco-layout.hpp"
 #include "deco-theme.hpp"
 #include <wayfire/core.hpp>
+#include <wayfire/geometry.hpp>
 #include <wayfire/nonstd/reverse.hpp>
 #include <wayfire/nonstd/wlroots-full.hpp>
 #include <wayfire/util.hpp>
@@ -185,16 +186,38 @@ void decoration_layout_t::resize(int width, int height)
         const bool buttons_on_left = (button_strip.x == 0);
         const double free_start = buttons_on_left ? button_strip.width : 0.0;
         const double free_width = (double)width - button_strip.width;
+        const double titlebar_size = (double)this->titlebar_size + 1; // 1 pixel is added to avoid a gap.
 
         const double padding = theme.values().title_padding;
+
+        /* The padding area before the the title, allows move */
+        wf::geometry_t title_left_padding_geometry = {
+            free_start,
+            0.0,
+            (double)padding,
+            titlebar_size
+        };
+        this->layout_areas.push_back(std::make_unique<decoration_area_t>(
+            DECORATION_AREA_MOVE, title_left_padding_geometry));
+        
         wf::geometry_t title_geometry = {
             free_start + padding,
             0.0,
             std::max(0.0, free_width - 2 * padding),
-            (double)titlebar_size,
+            titlebar_size
         };
         this->layout_areas.push_back(std::make_unique<decoration_area_t>(
             DECORATION_AREA_TITLE, title_geometry));
+
+        /* The padding area after the the title, allows move */
+        wf::geometry_t title_right_padding_geometry = {
+            title_geometry.x + title_geometry.width,
+            0.0,
+            free_width - title_geometry.width,
+            titlebar_size
+        };
+        this->layout_areas.push_back(std::make_unique<decoration_area_t>(
+            DECORATION_AREA_MOVE, title_right_padding_geometry));
     }
 }
 
