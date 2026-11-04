@@ -59,7 +59,7 @@ def blur_section(config, theme):
     # checkboxes (blur.menu_bar, blur.dock_shelf, off at first) switch it on.
     # Older imports have panel and dock true, which alone blurs nothing.
     wanted = {"panel": looks.get("menu_bar", False)
-              and config.get("panel", {}).get("translucent_menu_bar", True),
+              and config.get("panel", {}).get("translucent_menu_bar", False),
               "dock": looks.get("dock_shelf", False)}
     surfaces = [name for key, name in (("panel", "desktop-panel"), ("dock", dock_surface))
                 if looks.get(key, False) and wanted[key]]

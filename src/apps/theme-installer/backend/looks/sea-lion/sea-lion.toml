@@ -13,8 +13,6 @@ joined_tool_bar_apps = ["mavernix-settings", "mavernix-app-store", "bandstand", 
 quick_open_close_ms = 120
 
 [panel]
-translucent_tint = "#ffffff0f"
-logo_bottom_opacity = 0.60
 left = ["logo", "app_name", "menus"]
 right = ["tray", "bluetooth", "volume", "network", "battery", "clock", "search", "notifications"]
 quit_label = "Quit %1"

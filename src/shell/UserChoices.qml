@@ -94,7 +94,7 @@ Item {
                 part[table] = held[table]
             }
         }
-        part.panel_translucency = held.panel?.translucent_menu_bar ?? true
+        part.panel_translucency = held.panel?.translucent_menu_bar ?? false
         const text = JSON.stringify(part)
         if (givenToCompositor !== undefined && text !== givenToCompositor) {
             const before = JSON.parse(givenToCompositor)

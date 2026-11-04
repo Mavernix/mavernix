@@ -252,10 +252,10 @@ Services that start on demand learn about all of this at login. When the session
 ## Background blur for the menu bar and Dock
 
 The Desktop pane has **Translucent menu bar**, **Blur menu bar** and **Blur
-behind the Dock** checkboxes. Translucency is on at first, as on Mavericks;
-both blurs are extras Mavericks didn't have and start off (`blur.menu_bar`,
-`blur.dock_shelf`). Turning translucency off restores the original material
-and disables the menu bar's blur control without forgetting its stored
+behind the Dock** checkboxes, all off at first: the menu bar then shows the
+theme's picture of it as it is. Both blurs are extras Mavericks didn't have
+(`blur.menu_bar`, `blur.dock_shelf`). Turning translucency off restores the
+original material and disables the menu bar's blur control without forgetting its stored
 selection. The Dock's blur doesn't depend on the menu bar's translucency.
 `blur.panel` and `blur.dock` only say that a surface can blur; on their own
 they blur nothing, so older imports that set them stay unblurred.

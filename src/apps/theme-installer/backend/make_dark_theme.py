@@ -662,8 +662,6 @@ def change_window(theme, prokit):
 
 
 def change_panel(theme, prokit):
-    theme.set("panel", "opaque_background", '{ gradient = ["#444444", "#303030", "#1c1c1c"] }',
-              "Opaque menu bar gradient.")
     theme.set("panel", "separator", f'["{prokit.colour("menubarEdgeColor")}"]',
               "PROKIT, menubarEdgeColor: the black last row of ProKit's MenuBar picture.")
     theme.set("panel", "highlight", '["#ffffff00"]',

@@ -73,12 +73,11 @@ PanelWindow {
     mask: concealed ? nothing : null
 
     readonly property bool translucentMenuBar:
-        choices?.value("panel", "translucent_menu_bar") ?? layout.translucent_menu_bar ?? true
+        choices?.value("panel", "translucent_menu_bar") ?? layout.translucent_menu_bar ?? false
 
     Fill {
         id: background
-        fill: panel.translucentMenuBar ? panel.looks.background
-              : (panel.looks.opaque_background ?? panel.looks.background)
+        fill: panel.looks.background
         opacity: panel.translucentMenuBar
                  ? Math.max(0, Math.min(1, panel.choices?.value("blur", "panel_opacity")
                     ?? panel.settings.config.blur?.panel_opacity ?? panel.settings.theme.blur?.panel_opacity ?? 1)) : 1
@@ -89,13 +88,6 @@ PanelWindow {
             top: panel.atBottom ? separator.bottom : parent.top
             bottom: panel.atBottom ? parent.bottom : separator.top
         }
-    }
-
-    Rectangle {
-        anchors.fill: background
-        visible: panel.translucentMenuBar
-        color: ThemeValues.color(panel.choices?.value("panel", "translucent_tint")
-                                ?? panel.layout.translucent_tint ?? "#00000000")
     }
 
     Column {

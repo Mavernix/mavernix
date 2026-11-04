@@ -41,8 +41,9 @@ use_theme = true
 use_theme = true
 
 [panel]
-# Desktop settings: let wallpaper show through the menu bar.
-translucent_menu_bar = true
+# Desktop settings: let wallpaper show through the menu bar. Off at first,
+# so the menu bar shows its picture as it is.
+translucent_menu_bar = false
 position = "top"
 left = ["app_name", "menus"]
 # Status items (docs/panel-items.md); one with nothing to show takes no room.
