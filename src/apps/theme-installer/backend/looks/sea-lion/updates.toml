@@ -285,3 +285,37 @@ table = "panel"
 key = "separator"
 was = ["#00000000"]
 now = ["#000000"]
+
+[[update]]
+revision = 9
+themes = ["sea-lion", "sea-lion-dark"]
+
+[[update.corrections]]
+table = "dock.reflection"
+key = "blur"
+was = 0.0469
+now = 0.09
+
+[[update.corrections]]
+table = "dock.shelf"
+key = "surface"
+was = ["#ffffffba", "#d7d7d7a6", "#aaaaaa8f"]
+now = ["#ffffffd5", "#d7d7d7c7", "#aaaaaab6"]
+
+[[update.corrections]]
+table = "dock.shelf"
+key = "surface"
+was = ["#4a4a4aba", "#333333a6", "#2a2a2a8f"]
+now = ["#4a4a4ad5", "#333333c7", "#2a2a2ab6"]
+
+[[update]]
+revision = 10
+themes = ["sea-lion"]
+[update.settings.panel]
+opaque_background = { gradient = ["#f2f2f2", "#dedede", "#c6c6c6"] }
+
+[[update]]
+revision = 11
+themes = ["sea-lion-dark"]
+[update.settings.panel]
+opaque_background = { gradient = ["#444444", "#303030", "#1c1c1c"] }

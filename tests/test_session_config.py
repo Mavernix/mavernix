@@ -701,7 +701,7 @@ class TestShellBlur(SessionTestCase):
         finally:
             del sys.path[:2]
 
-    # The Desktop pane's checkbox, which the menu bar's and Dock's blur wait for.
+    # The menu bar's translucency checkbox; the Dock stays independent.
     SWITCHED_ON = {"panel": {"translucent_menu_bar": True}}
 
     def test_blur_is_opt_in_and_targets_only_selected_shell_surfaces(self):
@@ -719,11 +719,30 @@ class TestShellBlur(SessionTestCase):
         self.assertEqual(self.generator.blur_section(
             {"blur": {"panel": False}, **self.SWITCHED_ON}, {"blur": {"panel": True}}), ([], []))
 
-    def test_nothing_blurs_until_the_checkbox_is_on(self):
-        for panel in ({}, {"translucent_menu_bar": False}):
-            with self.subTest(panel=panel):
-                self.assertEqual(self.generator.blur_section(
-                    {"blur": {"panel": True, "dock": True}, "panel": panel}, {}), ([], []))
+    def test_opaque_menu_bar_does_not_disable_dock_blur(self):
+        section, plugins = self.generator.blur_section(
+            {"blur": {"panel": True, "dock": True},
+             "panel": {"translucent_menu_bar": False}}, {})
+        self.assertEqual(plugins, ["blur"])
+        self.assertIn('blur_by_default = app_id is "mavernix-dock"', section)
+        self.assertFalse(any('desktop-panel' in line for line in section))
+
+    def test_menu_bar_blur_is_independent_and_optional(self):
+        for translucent, blurred, expected in ((True, False, False), (True, True, True),
+                                                (False, True, False), (False, False, False)):
+            with self.subTest(translucent=translucent, blurred=blurred):
+                config = {"panel": {"translucent_menu_bar": translucent},
+                          "blur": {"panel": blurred, "dock": True}}
+                section, plugins = self.generator.blur_section(config, {})
+                self.assertEqual(plugins, ["blur"])
+                matcher = next(line for line in section if line.startswith("blur_by_default"))
+                self.assertEqual('desktop-panel' in matcher, expected)
+                self.assertIn('mavernix-dock', matcher)
+
+    def test_reflective_shelf_gets_dock_blur(self):
+        config = {"dock": {"window_reflections": True}, "blur": {"dock": True}}
+        lines, _ = self.generator.blur_section(config, {})
+        self.assertIn('blur_by_default = app_id is "mavernix-dock-shelf"', lines)
 
     def test_strength_values_are_validated(self):
         for key, value in (("method", "bad"), ("iterations", -1), ("iterations", 2.5),

@@ -50,7 +50,7 @@ TITLE_BAR_GRADIENT_INACTIVE = ["#3b3b3b", "#2e2e2e"]
 # --- Dock shelf --------------------------------------------------------------------
 # CHOSEN: ProKit has no Dock. The glass shelf keeps its opacities; its light
 # greys become dark greys near ProKit's window greys.
-DOCK_SURFACE = ["#4a4a4aba", "#333333a6", "#2a2a2a8f"]
+DOCK_SURFACE = ["#4a4a4ad5", "#333333c7", "#2a2a2ab6"]
 DOCK_FACE = ["#1a1a1acc", "#2e2e2edb"]
 DOCK_LINE = "#ffffff4d"
 DOCK_OUTLINE = "#0000004d"
@@ -662,6 +662,8 @@ def change_window(theme, prokit):
 
 
 def change_panel(theme, prokit):
+    theme.set("panel", "opaque_background", '{ gradient = ["#444444", "#303030", "#1c1c1c"] }',
+              "Opaque menu bar gradient.")
     theme.set("panel", "separator", f'["{prokit.colour("menubarEdgeColor")}"]',
               "PROKIT, menubarEdgeColor: the black last row of ProKit's MenuBar picture.")
     theme.set("panel", "highlight", '["#ffffff00"]',

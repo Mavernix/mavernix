@@ -20,3 +20,5 @@ subdir('still-surfaces')
 subdir('touchpad-gestures')
 subdir('window-attention')
 subdir('window-pictures')
+
+subdir('dock-window-reflections')

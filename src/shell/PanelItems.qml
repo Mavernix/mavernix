@@ -192,6 +192,9 @@ Row {
                 itemRow: row
                 enabled: parent.entries.length > 0
                 picture: row.panel.looks.logo ?? ""
+                pictureBottomOpacity: row.panel.translucentMenuBar
+                    ? (row.panel.choices?.value("panel", "logo_bottom_opacity")
+                       ?? row.panel.layout.logo_bottom_opacity ?? 1.0) : 1.0
                 openPicture: row.panel.looks.logo_highlighted ?? ""
                 boxOverhang: row.panel.looks.logo_highlight_overhang ?? row.spacing / 2
 

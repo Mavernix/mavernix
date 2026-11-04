@@ -26,13 +26,26 @@ DesktopPane::DesktopPane(Choices& choices, QWidget* parent) : QWidget(parent)
     form->addRow(new PictureChooser(choices));
 
     auto* translucent = new QCheckBox(
-        words.value(QStringLiteral("translucent_menu_bar"), QStringLiteral("Translucent menu bar and Dock"))
-            .toString());
+        words.value(QStringLiteral("translucent_menu_bar"), QStringLiteral("Translucent menu bar")).toString());
+    translucent->setObjectName(QStringLiteral("translucent_menu_bar"));
     const QVariant translucency = choices.value(QStringLiteral("panel"), QStringLiteral("translucent_menu_bar"));
-    translucent->setChecked(translucency.toBool());
+    translucent->setChecked(!translucency.isValid() || translucency.toBool());
     connect(translucent, &QCheckBox::toggled, this,
         [&choices](bool on) { choices.set(QStringLiteral("panel"), QStringLiteral("translucent_menu_bar"), on); });
     form->addRow(QString(), translucent);
+
+    auto* blur =
+        new QCheckBox(words.value(QStringLiteral("menu_bar_blur"), QStringLiteral("Blur menu bar")).toString());
+    blur->setObjectName(QStringLiteral("menu_bar_blur"));
+    const QVariant blur_choice = choices.value(QStringLiteral("blur"), QStringLiteral("panel"));
+    blur->setChecked(blur_choice.isValid()
+                         ? blur_choice.toBool()
+                         : choices.themeTable(QStringLiteral("blur")).value(QStringLiteral("panel"), false).toBool());
+    blur->setEnabled(translucent->isChecked());
+    connect(translucent, &QCheckBox::toggled, blur, &QWidget::setEnabled);
+    connect(blur, &QCheckBox::toggled, this,
+        [&choices](bool on) { choices.set(QStringLiteral("blur"), QStringLiteral("panel"), on); });
+    form->addRow(QString(), blur);
 
     // The files of the Desktop folder as icons; the shell follows at once.
     auto* files = new QCheckBox(

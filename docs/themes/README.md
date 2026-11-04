@@ -312,3 +312,5 @@ The compositor also reads the window frame's tables when the session starts. If 
 - Behaviour or layout (button side, dock position, which parts are enabled).
 - Code or scripts.
 - Anything a program would have to guess the meaning of. Every key is documented here.
+
+[Dock glass and window reflections](dock-reflections.md)
