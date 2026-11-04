@@ -34,10 +34,7 @@ namespace
 class PictureList : public QListWidget
 {
   public:
-    QSize sizeHint() const override
-    {
-        return {QListWidget::sizeHint().width(), LIST_HEIGHT_PX};
-    }
+    QSize sizeHint() const override { return {QListWidget::sizeHint().width(), LIST_HEIGHT_PX}; }
 };
 } // namespace
 
