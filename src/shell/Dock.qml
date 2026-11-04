@@ -1042,7 +1042,6 @@ PanelWindow {
 
             x: tile?.iconX ?? 0
             width: tile?.iconSize ?? 0
-            height: width
             y: dock.fromBottom(dock.base + (tile?.lift ?? 0) + (dock.looks.icon_shadow?.raise ?? 0), height)
         }
     }
@@ -1099,7 +1098,6 @@ PanelWindow {
 
                 x: tile?.iconX ?? 0
                 width: tile?.iconSize ?? 0
-                height: width
                 y: dock.fromBottom(dock.base + (tile?.lift ?? 0) + (dock.looks.icon_shadow?.raise ?? 0), height)
             }
         }
@@ -1229,7 +1227,6 @@ PanelWindow {
 
                 x: tile?.iconX ?? 0
                 width: tile?.iconSize ?? 0
-                height: width
                 // Its top edge starts a little above the icon's lower edge,
                 // hidden behind the icon, and it moves down as the icon rises.
                 readonly property real topAboveScreenEdge:
@@ -1257,7 +1254,8 @@ PanelWindow {
 
             x: tile?.iconX ?? 0
             width: iconSize
-            height: iconSize * dock.looks.floor_shadow.height
+            // The documented value where a theme leaves it out.
+            heightShare: dock.looks.floor_shadow.height ?? 0.5
             // Centred a quarter of the icon's height above its lower edge.
             y: dock.fromBottom(dock.base + iconSize / 4 - height / 2, height)
         }
