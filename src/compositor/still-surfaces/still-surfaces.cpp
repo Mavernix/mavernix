@@ -16,6 +16,7 @@
 // Assumes one screen at the scene's origin: at the front of the tree,
 // positions are global rather than per output.
 
+#include <algorithm>
 #include <cmath>
 #include <sstream>
 #include <vector>
@@ -159,15 +160,41 @@ class plugin_t : public wf::plugin_interface_t
         wf::scene::readd_front(wf::get_core().scene(), surface);
     }
 
+    // Where a node is in the scene: its place among its siblings at each
+    // level from the root down, the front one first (a smaller number).
+    static std::vector<size_t> place_in_scene(wf::scene::node_t* node)
+    {
+        std::vector<size_t> place;
+        for (; node->parent() != nullptr; node = node->parent())
+        {
+            const auto& siblings = node->parent()->get_children();
+            const auto found = std::find_if(siblings.begin(), siblings.end(),
+                [node](const wf::scene::node_ptr& sibling) { return sibling.get() == node; });
+            place.insert(place.begin(), size_t(found - siblings.begin()));
+        }
+        return place;
+    }
+
     void hold()
     {
         const auto wanted = words_of(names);
+        std::vector<wayfire_view> views;
         for (auto& view : wf::get_core().get_all_views())
         {
             if (view->is_mapped() && contains(wanted, view->get_app_id()))
             {
-                hold_one(view);
+                views.push_back(view);
             }
+        }
+        // Each one held goes to the front, so the rearmost goes first and
+        // they keep their order (the dock's glass stays under its icons);
+        // get_all_views() has them in the order they were made.
+        std::sort(views.begin(), views.end(), [](const wayfire_view& a, const wayfire_view& b) {
+            return place_in_scene(a->get_root_node().get()) > place_in_scene(b->get_root_node().get());
+        });
+        for (auto& view : views)
+        {
+            hold_one(view);
         }
     }
 
