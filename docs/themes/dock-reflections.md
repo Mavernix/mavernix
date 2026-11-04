@@ -1,6 +1,6 @@
 # Dock reflections
 
-A desktop config can enable live window reflections on a slab shelf with `dock.window_reflections = true`. Sea Lion enables the effect for both appearances. Wayfire renders the visible window strip onto the glass at its original horizontal width. The renderer prefilters the strip before sampling a compressed reflection, so small details blend together as windows move.
+The Dock & Menu Bar pane's **Reflect windows in the Dock's glass** checkbox (`dock.window_reflections`, off at first) draws live window reflections on a slab shelf. It takes effect at once: the compositor loads its plugin and the shell restarts. Wayfire renders the visible window strip onto the glass at its original horizontal width. The renderer prefilters the strip before sampling a compressed reflection, so small details blend together as windows move.
 
 The desktop config accepts `dock.window_reflection_blur` (0–12, in reflected logical pixels), `dock.window_reflection_opacity` (0–1) and `dock.window_reflection_compression` (0.05–1). The theme controls reflected icons separately with `dock.reflection.blur`, a fraction of the icon width. Set `dock.rear_outline = false` to omit the shelf’s rear rim.
 

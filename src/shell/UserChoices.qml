@@ -94,12 +94,19 @@ Item {
                 part[table] = held[table]
             }
         }
-        part.panel_translucency = held.panel?.translucent_menu_bar ?? false
+        // Unset in the user's file, these are the desktop config's.
+        part.panel_translucency = held.panel?.translucent_menu_bar
+            ?? settings.config.panel?.translucent_menu_bar ?? false
+        // Reflections load a compositor plugin and move the shelf to a surface
+        // of its own, which the blur and the still surfaces match by name.
+        part.dock_reflections = held.dock?.window_reflections
+            ?? settings.config.dock?.window_reflections ?? false
         const text = JSON.stringify(part)
         if (givenToCompositor !== undefined && text !== givenToCompositor) {
             const before = JSON.parse(givenToCompositor)
             const blurChanged = JSON.stringify(before.blur ?? ({})) !== JSON.stringify(part.blur ?? ({}))
                 || before.panel_translucency !== part.panel_translucency
+                || before.dock_reflections !== part.dock_reflections
             Quickshell.execDetached(blurChanged
                 ? ["mavernix-reconfigure", "--restart-shell"] : ["mavernix-reconfigure"])
         }

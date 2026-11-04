@@ -69,7 +69,15 @@ DockPane::DockPane(Choices& choices, QWidget* parent) : QWidget(parent), choices
         with_end_words(magnified_size, word("dock_magnification_min", "Min"), word("dock_magnification_max", "Max")));
     form->addRow(QString(), hides);
 
-    // Blur, which the original didn't have; off at first.
+    // Effects the original didn't have, or had otherwise; all off at first.
+    // The compositor follows at once (the shell restarts for them).
+    auto* reflections = new QCheckBox(word("dock_window_reflections", "Reflect windows in the Dock's glass"));
+    reflections->setChecked(choices.value(QStringLiteral("dock"), QStringLiteral("window_reflections")).toBool());
+    connect(reflections, &QCheckBox::toggled, this,
+        [this](bool on) { this->choices.set(QStringLiteral("dock"), QStringLiteral("window_reflections"), on); });
+    form->addRow(QString(), with_note(reflections, word("dock_window_reflections_note",
+                                                         "Uses more of the graphics card while windows move.")));
+
     auto* dock_blur = new QCheckBox(word("dock_blur", "Blur behind the Dock"));
     dock_blur->setChecked(choices.value(QStringLiteral("blur"), QStringLiteral("dock_shelf")).toBool());
     connect(dock_blur, &QCheckBox::toggled, this,

@@ -118,7 +118,8 @@ time_minutes = "%1m ago"
 time_hours = "%1h ago"
 
 [dock]
-window_reflections = true
+# Dock & Menu Bar settings: windows reflected in the glass. Off at first.
+window_reflections = false
 window_reflection_blur = 9.0
 window_reflection_opacity = 0.63
 window_reflection_compression = 0.22
