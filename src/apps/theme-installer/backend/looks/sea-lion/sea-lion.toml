@@ -432,8 +432,8 @@ computer = "Computer"
 update = "Software Update…"
 more = "More Info…"
 
-# The menu bar and shelf can blur what is behind them; the Desktop pane's
-# checkboxes (menu_bar, dock_shelf) switch it on, off at first.
+# The menu bar and shelf can blur what is behind them; checkboxes in the Dock
+# & Menu Bar pane (menu_bar, dock_shelf) switch it on, off at first.
 [blur]
 panel = true
 dock = true

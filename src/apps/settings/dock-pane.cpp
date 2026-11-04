@@ -69,6 +69,13 @@ DockPane::DockPane(Choices& choices, QWidget* parent) : QWidget(parent), choices
         with_end_words(magnified_size, word("dock_magnification_min", "Min"), word("dock_magnification_max", "Max")));
     form->addRow(QString(), hides);
 
+    // Blur, which the original didn't have; off at first.
+    auto* dock_blur = new QCheckBox(word("dock_blur", "Blur behind the Dock"));
+    dock_blur->setChecked(choices.value(QStringLiteral("blur"), QStringLiteral("dock_shelf")).toBool());
+    connect(dock_blur, &QCheckBox::toggled, this,
+        [this](bool on) { this->choices.set(QStringLiteral("blur"), QStringLiteral("dock_shelf"), on); });
+    form->addRow(QString(), dock_blur);
+
     // The menu bar: which items show at its right end, and the clock's hours.
     // The shell follows at once.
     const QVariantMap item_names = words.value(QStringLiteral("menu_bar_items")).toMap();
@@ -136,6 +143,14 @@ DockPane::DockPane(Choices& choices, QWidget* parent) : QWidget(parent), choices
         this->choices.set(QStringLiteral("panel"), QStringLiteral("clock_format"), changed);
     });
     form->addRow(QString(), seconds);
+
+    // Only a translucent menu bar (the Desktop pane's checkbox) shows it.
+    auto* menu_bar_blur = new QCheckBox(word("menu_bar_blur", "Blur menu bar"));
+    menu_bar_blur->setChecked(choices.value(QStringLiteral("blur"), QStringLiteral("menu_bar")).toBool());
+    connect(menu_bar_blur, &QCheckBox::toggled, this,
+        [this](bool on) { this->choices.set(QStringLiteral("blur"), QStringLiteral("menu_bar"), on); });
+    form->addRow(QString(), with_note(menu_bar_blur, word("menu_bar_blur_note",
+                                                           "Shows with a translucent menu bar (Desktop).")));
 
     // The folder is watched too, for a choices file replaced whole or not
     // there yet (as in the Extensions pane).

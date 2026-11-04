@@ -11,6 +11,7 @@
 #include <QPixmap>
 #include <QStackedWidget>
 #include <QPropertyAnimation>
+#include <QScreen>
 #include <QTimer>
 #include <QTabWidget>
 #include <QToolBar>
@@ -485,11 +486,22 @@ void SettingsWindow::showPlace()
     }
 }
 
+// Screen height kept clear of the window: menu bar, title bar and dock.
+static const int screen_room_px = 140;
+
 void SettingsWindow::fitHeight()
 {
     // Only the height follows the page: the width is the overview's, fixed.
     pages->updateGeometry();
-    const int wanted = sizeHint().height();
+    // Never taller than the screen leaves room for: a page that doesn't fit
+    // gets its least height (a list gives way) instead of parts drawn over
+    // each other. The room is for the menu bar, the title bar and the dock.
+    int wanted = sizeHint().height();
+    if (const QScreen* shown_on = screen())
+    {
+        const int room = shown_on->availableGeometry().height() - screen_room_px;
+        wanted = std::min(wanted, std::max(minimumSizeHint().height(), room));
+    }
     if (resizing->state() == QAbstractAnimation::Running)
     {
         // The page changed its mind on the way; the motion goes on there.

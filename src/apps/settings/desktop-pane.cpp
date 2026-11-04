@@ -34,26 +34,6 @@ DesktopPane::DesktopPane(Choices& choices, QWidget* parent) : QWidget(parent)
         [&choices](bool on) { choices.set(QStringLiteral("panel"), QStringLiteral("translucent_menu_bar"), on); });
     form->addRow(QString(), translucent);
 
-    auto* blur =
-        new QCheckBox(words.value(QStringLiteral("menu_bar_blur"), QStringLiteral("Blur menu bar")).toString());
-    blur->setObjectName(QStringLiteral("menu_bar_blur"));
-    // Off at first: the blur is not Mavericks'. (blur.panel only says the
-    // menu bar can blur; older imports have it true.)
-    blur->setChecked(choices.value(QStringLiteral("blur"), QStringLiteral("menu_bar")).toBool());
-    blur->setEnabled(translucent->isChecked());
-    connect(translucent, &QCheckBox::toggled, blur, &QWidget::setEnabled);
-    connect(blur, &QCheckBox::toggled, this,
-        [&choices](bool on) { choices.set(QStringLiteral("blur"), QStringLiteral("menu_bar"), on); });
-    form->addRow(QString(), blur);
-
-    auto* dock_blur =
-        new QCheckBox(words.value(QStringLiteral("dock_blur"), QStringLiteral("Blur behind the Dock")).toString());
-    dock_blur->setObjectName(QStringLiteral("dock_blur"));
-    dock_blur->setChecked(choices.value(QStringLiteral("blur"), QStringLiteral("dock_shelf")).toBool());
-    connect(dock_blur, &QCheckBox::toggled, this,
-        [&choices](bool on) { choices.set(QStringLiteral("blur"), QStringLiteral("dock_shelf"), on); });
-    form->addRow(QString(), dock_blur);
-
     // The files of the Desktop folder as icons; the shell follows at once.
     auto* files = new QCheckBox(
         words.value(QStringLiteral("desktop_show_files"), QStringLiteral("Show the files of the Desktop folder"))
