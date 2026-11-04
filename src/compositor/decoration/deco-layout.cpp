@@ -128,7 +128,7 @@ wf::geometry_t decoration_layout_t::create_buttons(int width, int)
 
     return {
         (double)strip_x, 0.0,
-        (double)(button_bounding_x_end - button_bounding_x_start), (double)titlebar_size
+        (double)strip_width, (double)titlebar_size
     };
 }
 
