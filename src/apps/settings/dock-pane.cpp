@@ -75,8 +75,7 @@ DockPane::DockPane(Choices& choices, QWidget* parent) : QWidget(parent), choices
     reflections->setChecked(choices.value(QStringLiteral("dock"), QStringLiteral("window_reflections")).toBool());
     connect(reflections, &QCheckBox::toggled, this,
         [this](bool on) { this->choices.set(QStringLiteral("dock"), QStringLiteral("window_reflections"), on); });
-    form->addRow(QString(), with_note(reflections, word("dock_window_reflections_note",
-                                                         "Uses more of the graphics card while windows move.")));
+    form->addRow(QString(), reflections);
 
     auto* dock_blur = new QCheckBox(word("dock_blur", "Blur behind the Dock"));
     dock_blur->setChecked(choices.value(QStringLiteral("blur"), QStringLiteral("dock_shelf")).toBool());
@@ -157,8 +156,7 @@ DockPane::DockPane(Choices& choices, QWidget* parent) : QWidget(parent), choices
     menu_bar_blur->setChecked(choices.value(QStringLiteral("blur"), QStringLiteral("menu_bar")).toBool());
     connect(menu_bar_blur, &QCheckBox::toggled, this,
         [this](bool on) { this->choices.set(QStringLiteral("blur"), QStringLiteral("menu_bar"), on); });
-    form->addRow(QString(), with_note(menu_bar_blur, word("menu_bar_blur_note",
-                                                           "Shows with a translucent menu bar (Desktop).")));
+    form->addRow(QString(), menu_bar_blur);
 
     // The folder is watched too, for a choices file replaced whole or not
     // there yet (as in the Extensions pane).
