@@ -260,7 +260,8 @@ PanelWindow {
     function releaseAt(point) {
         if (openTitle !== null) {
             const onScreen = screenPoint(point)
-            if (!titleMenu.chooseAt(onScreen.x, onScreen.y) && point.y > panel.height) {
+            // Outside the bar: below it, or above it for a bar at the bottom.
+            if (!titleMenu.chooseAt(onScreen.x, onScreen.y) && (point.y > panel.height || point.y < 0)) {
                 closeMenu(titleMenu)
             }
         }

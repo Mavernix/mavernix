@@ -64,7 +64,8 @@ PanelWindow {
         opacity: dock.choices.value("dock", "window_reflection_opacity") ?? 0.35,
         compression: dock.choices.value("dock", "window_reflection_compression") ?? 0.32,
         slant: dock.looks.shelf.slant ?? 0.6,
-        face: (dock.looks.shelf.face_height ?? 3) + (dock.looks.shelf.line_height ?? 1)
+        // A whole number: the compositor reads it as one.
+        face: Math.round((dock.looks.shelf.face_height ?? 3) + (dock.looks.shelf.line_height ?? 1))
     })
     // Settle related bindings once per event-loop turn, including during continuous resizing.
     function sendReflectedShelf() {
