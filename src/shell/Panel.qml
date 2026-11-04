@@ -261,7 +261,9 @@ PanelWindow {
     function releaseAt(point) {
         if (openTitle !== null) {
             const onScreen = screenPoint(point)
-            titleMenu.chooseAt(onScreen.x, onScreen.y)
+            if (!titleMenu.chooseAt(onScreen.x, onScreen.y) && point.y > panel.height) {
+                closeMenu(titleMenu)
+            }
         }
     }
 
