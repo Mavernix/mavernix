@@ -190,7 +190,7 @@ void decoration_layout_t::resize(int width, int height)
 
         const double padding = theme.values().title_padding;
 
-        /* The padding area before the the title, allows move */
+        /* The padding area before the title, allows move */
         wf::geometry_t title_left_padding_geometry = {
             free_start,
             0.0,
@@ -199,17 +199,28 @@ void decoration_layout_t::resize(int width, int height)
         };
         this->layout_areas.push_back(std::make_unique<decoration_area_t>(
             DECORATION_AREA_MOVE, title_left_padding_geometry));
-        
+
+        // The title is drawn at the title bar's own height: one more point
+        // is a fraction of a pixel at a fractional scale, and its text was
+        // drawn stretched. The point below it is only for moving.
         wf::geometry_t title_geometry = {
             free_start + padding,
             0.0,
             std::max(0.0, free_width - 2 * padding),
-            titlebar_size
+            (double)this->titlebar_size
         };
         this->layout_areas.push_back(std::make_unique<decoration_area_t>(
             DECORATION_AREA_TITLE, title_geometry));
+        wf::geometry_t under_title_geometry = {
+            title_geometry.x,
+            title_geometry.height,
+            title_geometry.width,
+            titlebar_size - title_geometry.height
+        };
+        this->layout_areas.push_back(std::make_unique<decoration_area_t>(
+            DECORATION_AREA_MOVE, under_title_geometry));
 
-        /* The padding area after the the title, allows move */
+        /* The padding area after the title, allows move */
         wf::geometry_t title_right_padding_geometry = {
             title_geometry.x + title_geometry.width,
             0.0,
