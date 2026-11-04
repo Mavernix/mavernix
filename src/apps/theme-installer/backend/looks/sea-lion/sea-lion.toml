@@ -434,9 +434,10 @@ computer = "Computer"
 update = "Software Update…"
 more = "More Info…"
 
-# Keep the menu bar translucent without blur; its optional blur is a user choice.
+# The menu bar and shelf can blur what is behind them; the Desktop pane's
+# checkboxes (menu_bar, dock_shelf) switch it on, off at first.
 [blur]
-panel = false
+panel = true
 dock = true
 panel_opacity = 0.72
 dock_opacity = 1.0

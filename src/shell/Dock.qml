@@ -28,13 +28,17 @@ PanelWindow {
     property var shell: null
     // While raised the dock is above everything, the application grid included.
     property bool raised: false
-    WlrLayershell.layer: WlrLayer.Overlay
+    // With window reflections the glass is a surface of its own in the
+    // overlay layer, and the icons must stay above it there.
+    WlrLayershell.layer: raised || windowReflections ? WlrLayer.Overlay : WlrLayer.Top
     // Lets the compositor tell this surface from the shell's others.
     WlrLayershell.namespace: "mavernix-dock"
 
     readonly property bool fullscreenApplication: ToplevelManager.toplevels.values.some(window =>
         window.fullscreen && window.activated && window.screens.some(screen => screen.name === dock.screen?.name))
-    visible: keepShown.canShow && !fullscreenApplication
+    // In the top layer the compositor puts a fullscreen window above the
+    // dock itself; the overlay layer is above it, so the dock steps aside.
+    visible: keepShown.canShow && !(windowReflections && fullscreenApplication)
     KeepShown {
         id: keepShown
         target: dock
@@ -1046,7 +1050,8 @@ PanelWindow {
         id: shelf
         visible: !dock.windowReflections
         // The shelf's finish is independent of the menu bar's translucency.
-        opacity: (dock.choices.value("blur", "dock") ?? dock.settings.config.blur?.dock
+        opacity: (dock.choices.value("blur", "dock_shelf") ?? false)
+                 && (dock.choices.value("blur", "dock") ?? dock.settings.config.blur?.dock
                   ?? dock.settings.theme.blur?.dock ?? false)
                  ? Math.max(0, Math.min(1, dock.choices.value("blur", "dock_opacity")
                     ?? dock.settings.config.blur?.dock_opacity ?? dock.settings.theme.blur?.dock_opacity ?? 1)) : 1

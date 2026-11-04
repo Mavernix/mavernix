@@ -55,9 +55,14 @@ def blur_section(config, theme):
     """Opt-in background blur for named shell surfaces, never normal windows."""
     looks = {**theme.get("blur", {}), **config.get("blur", {})}
     dock_surface = "mavernix-dock-shelf" if config.get("dock", {}).get("window_reflections") else "mavernix-dock"
+    # blur.panel and blur.dock say a surface can blur; the Desktop pane's
+    # checkboxes (blur.menu_bar, blur.dock_shelf, off at first) switch it on.
+    # Older imports have panel and dock true, which alone blurs nothing.
+    wanted = {"panel": looks.get("menu_bar", False)
+              and config.get("panel", {}).get("translucent_menu_bar", True),
+              "dock": looks.get("dock_shelf", False)}
     surfaces = [name for key, name in (("panel", "desktop-panel"), ("dock", dock_surface))
-                if looks.get(key, False)
-                and (key != "panel" or config.get("panel", {}).get("translucent_menu_bar", True))]
+                if looks.get(key, False) and wanted[key]]
     if not surfaces:
         return [], []
     matcher = " | ".join(f'app_id is "{name}"' for name in surfaces)

@@ -251,18 +251,23 @@ Services that start on demand learn about all of this at login. When the session
 
 ## Background blur for the menu bar and Dock
 
-The Desktop pane has separate **Translucent menu bar** and **Blur menu bar**
-checkboxes. Translucency is enabled by default in Sea Lion; menu bar blur is
-an optional effect and starts disabled. Turning translucency off restores
-the original material and disables the blur control without forgetting its
-stored selection. The Dock retains background blur independently.
+The Desktop pane has **Translucent menu bar**, **Blur menu bar** and **Blur
+behind the Dock** checkboxes. Translucency is on at first, as on Mavericks;
+both blurs are extras Mavericks didn't have and start off (`blur.menu_bar`,
+`blur.dock_shelf`). Turning translucency off restores the original material
+and disables the menu bar's blur control without forgetting its stored
+selection. The Dock's blur doesn't depend on the menu bar's translucency.
+`blur.panel` and `blur.dock` only say that a surface can blur; on their own
+they blur nothing, so older imports that set them stay unblurred.
 It uses Wayfire's `blur` plugin with an explicit matcher for `desktop-panel`
 and/or `mavernix-dock`; ordinary windows are excluded.
 
 ```toml
 [blur]
-panel = false
-dock = true
+panel = true # the menu bar can blur
+dock = true # the Dock's shelf can blur
+menu_bar = false # Blur menu bar, in the Desktop pane
+dock_shelf = false # Blur behind the Dock, in the Desktop pane
 panel_opacity = 0.65 # opacity of the menu bar's background, not its contents
 # The 3D shelf already has translucent colours; keep its original finish.
 dock_opacity = 1.0
