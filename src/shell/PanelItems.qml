@@ -247,7 +247,13 @@ Row {
             }
             onChosen: id => {
                 if (id === quitId) {
-                    ToplevelManager.activeToplevel?.close()
+                    // [window] quit_closes_app: all of the program's windows, as on OS X.
+                    if (row.panel.choices?.value("window", "quit_closes_app")
+                            ?? row.panel.settings.config.window?.quit_closes_app ?? false) {
+                        row.panel.shell.quitActiveApp()
+                    } else {
+                        ToplevelManager.activeToplevel?.close()
+                    }
                 } else {
                     row.chooseMenuEntry(id)
                 }

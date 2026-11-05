@@ -704,6 +704,16 @@ class TestGameSettings(SessionTestCase):
         with self.assertRaises(SystemExit):
             self.make.game_vrr_section({"display": {"screens": {"DP-1": {"vrr": "sometimes"}}}})
 
+    def test_quit_can_close_the_whole_program(self):
+        config = {"shortcuts": {"close_window": "<super> KEY_Q"}, "window": {"quit_closes_app": True}}
+        self.assertEqual(self.make.with_quit_closing_app(config)["shortcuts"], {"quit_app": "<super> KEY_Q"})
+        own_key = {"shortcuts": {"close_window": "KEY_W", "quit_app": "KEY_Q"}, "window": {"quit_closes_app": True}}
+        self.assertEqual(self.make.with_quit_closing_app(own_key)["shortcuts"], own_key["shortcuts"])
+        off = {"shortcuts": {"close_window": "<super> KEY_Q"}}
+        self.assertEqual(self.make.with_quit_closing_app(off)["shortcuts"], off["shortcuts"])
+        command = self.make.shortcut_section(self.make.with_quit_closing_app(config), {})
+        self.assertIn("binding_quit_app = <super> KEY_Q", command)
+
     def test_x11_primary_and_middle_click_paste(self):
         self.assertIn("enabled = true", self.make.x11_primary_section({}))
         self.assertIn("enabled = false", self.make.x11_primary_section({"display": {"x11_primary": False}}))

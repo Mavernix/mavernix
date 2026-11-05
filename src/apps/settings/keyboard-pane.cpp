@@ -34,6 +34,7 @@ static const QList<Category>& categories()
         {"windows", "Windows",
             {
                 {"close_window", "Close Window"},
+                {"quit_app", "Quit the Program"},
                 {"minimize_window", "Minimize Window"},
                 {"fullscreen_window", "Full Screen"},
                 {"switch_window", "Next Window of the Program"},

@@ -244,7 +244,7 @@ def resize_animation_section(animations):
 
 # Actions of the shell's run() (shell.qml).
 SHELL_ACTIONS = ["app_grid", "volume_up", "volume_down", "volume_mute", "lock", "notification_list", "search",
-                 "switch_program", "switch_program_back"]
+                 "switch_program", "switch_program_back", "quit_app"]
 # Repeated while the key is held.
 REPEATING_ACTIONS = ["volume_up", "volume_down"]
 
@@ -825,6 +825,19 @@ def shell_actions(theme):
     return SHELL_ACTIONS + (["window_overview"] if drawn_by == "shell" else [])
 
 
+def with_quit_closing_app(config):
+    """[window] quit_closes_app: the close_window key quits the whole
+    program (the shell's quit_app), as on OS X, unless quit_app has a key of
+    its own."""
+    quits = config.get("window", {}).get("quit_closes_app", False)
+    if not isinstance(quits, bool):
+        fail("[window] quit_closes_app must be true or false")
+    shortcuts = dict(config.get("shortcuts", {}))
+    if quits and "close_window" in shortcuts and not shortcuts.get("quit_app"):
+        shortcuts["quit_app"] = shortcuts.pop("close_window")
+    return {**config, "shortcuts": shortcuts}
+
+
 def shell_command(action):
     """The command that asks the running shell to do something."""
     return f"qs -p {SHELL_DIR} ipc call shell run {action}"
@@ -1090,7 +1103,7 @@ def main():
     )
     arguments = parser.parse_args()
 
-    config = with_user_choices(load_desktop_config(arguments.config), arguments.config)
+    config = with_quit_closing_app(with_user_choices(load_desktop_config(arguments.config), arguments.config))
     if "theme" not in config:
         fail(f"{arguments.config} does not name a theme")
     theme_dir = find_theme(config["theme"])

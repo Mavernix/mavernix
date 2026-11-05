@@ -244,11 +244,28 @@ ShellRoot {
             programSwitcher.step(-1)
         } else if (action === "empty_trash") {
             dock.emptyTrash()
+        } else if (action === "quit_app") {
+            quitActiveApp()
         } else {
             console.warn("shell: the config asks for an action the shell does not have:", action,
                          "- known: app_grid, volume_up, volume_down, volume_mute, lock, notification_list,",
-                         "search, window_overview, switch_program, switch_program_back, empty_trash")
+                         "search, window_overview, switch_program, switch_program_back, empty_trash, quit_app")
         }
+    }
+
+    // Asks every window of the active window's program to close; the
+    // program may still ask about unsaved work.
+    function quitActiveApp() {
+        const active = ToplevelManager.activeToplevel
+        if (!active) {
+            return
+        }
+        for (const window of ToplevelManager.toplevels.values) {
+            if (window !== active && window.appId !== "" && window.appId === active.appId) {
+                window.close()
+            }
+        }
+        active.close()
     }
 
     // The compositor's key bindings run `qs ipc call shell run ACTION`.

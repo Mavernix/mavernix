@@ -26,6 +26,10 @@ quick_resize_ms = 120
 # Tiled windows that touch share their edge: resizing one resizes the
 # others along it. With `false`, only the dragged window changes.
 shared_edges = true
+# Quit in the menu bar, and the close_window key, close every window of the
+# program, as on OS X; false closes only the front one. The quit_app
+# shortcut always quits the whole program.
+quit_closes_app = false
 
 [gtk]
 # Buttons in GTK header bars, which the compositor does not draw. Left out:
@@ -227,6 +231,8 @@ app_grid = "<super> KEY_A"
 window_overview = "<super> KEY_W"
 show_desktop = "<super> KEY_D"
 close_window = "<alt> KEY_F4"
+# Closes every window of the front program; unbound by default:
+# quit_app = "<super> KEY_Q"
 switch_window = "<alt> KEY_TAB"
 # The program switcher; both must use the same held modifier.
 switch_program = "<super> KEY_TAB"
@@ -511,6 +517,8 @@ desktops_drag_to_edge = "A window held at the screen's side goes to the next des
 windows_title = "Windows"
 windows_snap = "Windows snap to the screen's sides"
 windows_snap_note = "Left or right side: that half. A corner: that quarter. The top: the whole screen."
+windows_quit_closes_app = "Quit closes all of a program's windows"
+windows_quit_closes_app_note = "Quit in the menu bar, and the Close Window key, close every window of the program, not only the front one."
 windows_drag_key = "Move and resize a window by holding:"
 windows_drag_key_none = "No key"
 windows_drag_key_super = "Super"
