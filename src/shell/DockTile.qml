@@ -88,6 +88,9 @@ Item {
         return []
     }
     readonly property bool running: minimizedWindow === null && windows.length > 0
+    // The program's window in front as the pointer came onto the icon; a
+    // press on the dock takes the focus from it before the press is handled.
+    property var frontWindow: null
 
     // In pixels; the dock moves the tile up by this and the reflection down.
     property real lift: 0
@@ -193,6 +196,12 @@ Item {
     // magnification; a hover handler here would hide it from the dock.
     property bool pointerOver: false
     readonly property bool hovered: pointerOver && press.enabled
+    onHoveredChanged: {
+        if (hovered) {
+            const active = ToplevelManager.activeToplevel
+            frontWindow = active !== null && windows.includes(active) ? active : null
+        }
+    }
 
     signal menuWanted()
     // A press held this long opens the menu too, as on a Mac (on 10.9, about
@@ -236,9 +245,9 @@ Item {
         if (running) {
             // [dock] click_minimizes: a click on the icon of the program in
             // front minimizes its front window.
-            const front = windows.find(window => window.activated && !window.minimized)
-            if (front !== undefined && (choices?.value("dock", "click_minimizes") ?? false)) {
-                front.minimized = true
+            if (frontWindow !== null && !frontWindow.minimized && windows.includes(frontWindow)
+                    && (choices?.value("dock", "click_minimizes") ?? false)) {
+                frontWindow.minimized = true
                 return
             }
             const inView = windows.find(window => !window.minimized)
@@ -247,6 +256,8 @@ Item {
             } else {
                 minimizedWindowWanted(windows[0])
             }
+            // In front now, for a second click without leaving the icon.
+            frontWindow = inView ?? windows[0]
             return
         }
         if (entry === null) {
