@@ -1,6 +1,8 @@
 // The window that has the keyboard: its application and where its menu can
-// be fetched. Applications announce their menu's bus address through the
-// "kde-appmenu" protocol; Wayfire exposes it as two window properties.
+// be fetched. Wayland applications announce their menu's bus address through
+// the "kde-appmenu" protocol; Wayfire exposes it as two window properties.
+// X11 applications register it with the shell's menu registrar
+// (menu-registrar.hpp), found here by the window's process.
 //
 // Usage in QML:
 //   ActiveWindow { id: activeWindow }
@@ -42,6 +44,8 @@ class ActiveWindow : public QObject
 
     // -1 for none.
     int windowId = -1;
+    // The window's process; for an X11 window, the one that drew it.
+    uint windowPid = 0;
     QString currentAppId;
     QString currentMenuService;
     QString currentMenuPath;

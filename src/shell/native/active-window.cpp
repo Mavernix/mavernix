@@ -2,6 +2,8 @@
 
 #include <QJsonArray>
 
+#include "menu-registrar.hpp"
+
 namespace
 {
 // Undocumented property names of Wayfire's kde-appmenu plugin (0.11.0).
@@ -26,6 +28,9 @@ ActiveWindow::ActiveWindow(QObject* parent) : QObject(parent)
             takeWindow(event.value("view"));
         }
     });
+
+    // An X11 application registers its menu when it likes.
+    connect(&X11Menus::instance(), &X11Menus::changed, this, &ActiveWindow::askForMenuAddress);
 
     compositor.open();
 }
@@ -74,6 +79,7 @@ void ActiveWindow::takeWindow(const QJsonValue& window)
     }
 
     windowId = newId;
+    windowPid = uint(qMax(0, description.value("pid").toInt()));
     currentAppId = description.value("app-id").toString();
     currentMenuService.clear();
     currentMenuPath.clear();
@@ -110,8 +116,16 @@ void ActiveWindow::askForMenuAddress()
     });
 }
 
-void ActiveWindow::setMenuAddress(const QString& service, const QString& path)
+void ActiveWindow::setMenuAddress(const QString& wayland_service, const QString& wayland_path)
 {
+    QString service = wayland_service;
+    QString path = wayland_path;
+    if (service.isEmpty() && windowPid > 0)
+    {
+        const X11Menu menu = X11Menus::instance().forProcess(windowPid);
+        service = menu.service;
+        path = menu.path;
+    }
     const bool found = !service.isEmpty() && !path.isEmpty();
     if (!found)
     {
