@@ -1,4 +1,4 @@
-// Tells the compositor's "x11-primary" plugin which screen is the main one
+// Tells the compositor's "x11-settings" plugin which screen is the main one
 // (the menu bar's and dock's), which it makes X11's primary screen: games
 // under Xwayland open there and offer its resolutions. Set again whenever
 // the main screen changes; the shell decides which one it is.

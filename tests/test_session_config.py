@@ -324,6 +324,8 @@ class TestWindowAnimations(SessionTestCase):
         sections, plugins = make_wayfire_config.animation_sections(theme)
         self.assertIn("themed-open-close", plugins)
         self.assertIn("open_animation = pop", sections[0])
+        # Not X11 menus, which Wayland menus are not either.
+        self.assertIn('enabled_for = type equals "toplevel"', sections[0])
         self.assertIn(["[themed-open-close]", "pop_duration = 200ms circle"], sections)
 
         # A desktop's [window] quick_open_close_ms keeps the curve.
@@ -681,6 +683,22 @@ class TestPointerSettings(SessionTestCase):
             make_wayfire_config.input_section({"input": {"mouse_speed": 2}}, {})
 
 
+class TestGtkSettingsFile(SessionTestCase):
+    def test_x11_gtk_programs_get_the_font_and_pointer(self):
+        sys.path[:0] = [self.folder.name, str(SESSION_SOURCE_DIR)]
+        try:
+            import make_app_theme
+        finally:
+            del sys.path[:2]
+        theme = {"controls": {}, "fonts": {"interface": {"family": "Lucida Grande", "size": 13}},
+                 "cursors": {"theme": "Aqua", "size": 32}}
+        make_app_theme.write_gtk_settings(theme, self.home)
+        written = (self.home / "xdg" / "gtk-3.0" / "settings.ini").read_text().splitlines()
+        self.assertIn("gtk-font-name=Lucida Grande 9.75", written)
+        self.assertIn("gtk-cursor-theme-name=Aqua", written)
+        self.assertIn("gtk-cursor-theme-size=32", written)
+
+
 class TestGameSettings(SessionTestCase):
     def setUp(self):
         super().setUp()
@@ -738,8 +756,13 @@ class TestGameSettings(SessionTestCase):
     def test_x11_primary_and_middle_click_paste(self):
         self.assertIn("enabled = true", self.make.borderless_section({}))
         self.assertIn("enabled = false", self.make.borderless_section({"window": {"borderless_full_screen": False}}))
-        self.assertIn("enabled = true", self.make.x11_primary_section({}))
-        self.assertIn("enabled = false", self.make.x11_primary_section({"display": {"x11_primary": False}}))
+        self.assertEqual(self.make.x11_settings_section({}),
+                         ["[x11-settings]", "primary_screen = true", "dpi = false"])
+        sharp = {"display": {"x11_primary": False, "sharp_x11": True}}
+        self.assertEqual(self.make.x11_settings_section(sharp),
+                         ["[x11-settings]", "primary_screen = false", "dpi = true"])
+        self.assertIn("force_xwayland_scaling = true", self.make.workarounds_section(sharp))
+        self.assertIn("force_xwayland_scaling = false", self.make.workarounds_section({}))
         self.assertIn("disable_primary_selection = false", self.make.workarounds_section({}))
         self.assertIn("disable_primary_selection = true",
                       self.make.workarounds_section({"input": {"middle_click_paste": False}}))
@@ -764,7 +787,12 @@ class TestGameKeys(SessionTestCase):
             },
             "commands": {"terminal": {"key": "KEY_F12", "run": ["foot"]}, "gone": None},
         })
-        self.assertEqual(section, ["[game-keys]", "keys = KEY_F3 KEY_F4 KEY_F12"])
+        self.assertEqual(section, ["[game-keys]", "keys = KEY_F3 KEY_F4 KEY_F12",
+                                   "programs = steam_app_* Minecraft*", "all_x11 = false"])
+        own = make_wayfire_config.game_keys_section({"game_keys": {"games": ["osu!"], "all_x11": True}})
+        self.assertEqual(own[2:], ["programs = osu!", "all_x11 = true"])
+        with self.assertRaises(SystemExit):
+            make_wayfire_config.game_keys_section({"game_keys": {"games": "steam_app_*"}})
 
 
 class TestShellBlur(SessionTestCase):

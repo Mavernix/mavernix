@@ -32,6 +32,8 @@ A desktop based on another one shares its file. So whatever you set under one st
 
 In the config, keys are under `[shortcuts]` and `[commands]`, touchpad gestures under `[gestures]`, and the touchpad itself under `[input]`. The Keyboard pane in Settings changes keys without you having to edit any files.
 
+Some games need the function keys that are also the desktop's shortcuts, like Sea Lion's F3, F4 and F11. Pressed alone, these keys go to the game instead when its window is full screen, or when its app ID (an X11 program's WM_CLASS) matches `[game_keys] games`. By default that list is Steam's games (`"steam_app_*"`) and Minecraft. `[game_keys] all_x11 = true` (Settings, Keyboard) sends them to every X11 program, which suits games run under Wine.
+
 Closing and quitting work like this:
 - `close_window` closes the front window.
 - `quit_app` closes every window of the front program. It has no key unless you give it one.
@@ -50,6 +52,8 @@ Settings, Displays also picks each screen's resolution and refresh rate. It save
 A screen built into the computer (eDP, LVDS, DSI) often reports only its own size. For those, Settings also offers the usual smaller sizes of the same shape, at the screen's own refresh rates. The graphics card stretches them to fill the screen, so they look a bit less sharp, but programs and games have fewer pixels to draw. Wayfire sets such a size from timings the session writes next to it (`custom_mode`, the way `cvt -r` makes them).
 
 With more than one screen, the panel and dock go on the screen named in `[display] main_screen`, or on the first one if that isn't set.
+
+On a screen drawn at more than 100%, X11 programs look blurry by default: they draw at 100% and the compositor stretches the result. With `[display] sharp_x11 = true` (Settings, Displays), they're drawn at the screen's own pixels instead, and told the main screen's scale through `Xft.dpi` so they can size themselves. Qt, Chromium, Electron and GTK's text follow it, but only in programs started after the change. Some programs, games among them, ignore it and look small.
 
 To turn a screen off, pick it in Settings, Displays and untick Use this screen. That's saved as `[display.screens.NAME] enabled = false`. Screens that are off are listed under the picture, each with a button to turn it back on. One screen always stays on.
 

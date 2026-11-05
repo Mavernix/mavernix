@@ -52,7 +52,7 @@ BASE_PLUGINS = [
     "desktop-aside",
     "window-attention",
     "game-keys",
-    "x11-primary",
+    "x11-settings",
     "borderless-full-screen",
 ]
 
@@ -162,7 +162,9 @@ def animation_sections(theme):
     switched off: a theme never gets an effect it did not ask for.
     """
     animations = theme.get("animation", {})
-    animate = ["[animate]"]
+    # Windows only. Wayfire's default also takes X11 menus ("x-or"), which
+    # then pop in and out like windows while Wayland menus simply appear.
+    animate = ["[animate]", 'enabled_for = type equals "toplevel"']
     sections = [animate]
     plugins = []
 
@@ -684,27 +686,36 @@ def borderless_section(config):
     return ["[borderless-full-screen]", f"enabled = {yes_or_no(wanted)}"]
 
 
-def x11_primary_section(config):
-    """The x11-primary plugin makes the main screen Xwayland's primary one,
-    unless [display] x11_primary is false. It is told when Xwayland is ready
-    (the [core] line xwayland_ready_line())."""
-    follows = config.get("display", {}).get("x11_primary", True)
-    if not isinstance(follows, bool):
-        fail("[display] x11_primary must be true or false")
-    return ["[x11-primary]", f"enabled = {yes_or_no(follows)}"]
+def display_flag(config, key, default):
+    value = config.get("display", {}).get(key, default)
+    if not isinstance(value, bool):
+        fail(f"[display] {key} must be true or false")
+    return value
+
+
+def x11_settings_section(config):
+    """The x11-settings plugin makes the main screen Xwayland's primary one,
+    unless [display] x11_primary is false, and with [display] sharp_x11 sets
+    Xft.dpi from its scale. It is told when Xwayland is ready (the [core]
+    line xwayland_ready_line())."""
+    return ["[x11-settings]", f"primary_screen = {yes_or_no(display_flag(config, 'x11_primary', True))}",
+            f"dpi = {yes_or_no(display_flag(config, 'sharp_x11', False))}"]
 
 
 def xwayland_ready_line():
-    return f"xwayland_startup_script = python3 {SESSION_DIR / 'compositor_call.py'} x11-primary/xwayland-ready"
+    return f"xwayland_startup_script = python3 {SESSION_DIR / 'compositor_call.py'} x11-settings/xwayland-ready"
 
 
 def workarounds_section(config):
     """[input] middle_click_paste: false takes the primary selection away,
-    which Wayfire reads only when it starts."""
+    which Wayfire reads only when it starts. [display] sharp_x11: X11
+    programs are drawn at the screen's own pixels instead of stretched,
+    sizing themselves by Xft.dpi (x11_settings_section)."""
     paste = config.get("input", {}).get("middle_click_paste", True)
     if not isinstance(paste, bool):
         fail("[input] middle_click_paste must be true or false")
-    return ["[workarounds]", f"disable_primary_selection = {yes_or_no(not paste)}"]
+    return ["[workarounds]", f"disable_primary_selection = {yes_or_no(not paste)}",
+            f"force_xwayland_scaling = {yes_or_no(display_flag(config, 'sharp_x11', False))}"]
 
 
 def yes_or_no(value):
@@ -846,7 +857,8 @@ def compositor_key_sections(config):
 
 def game_keys_section(config):
     """The function keys among the shortcuts, alone and without a modifier,
-    which the game-keys plugin hands to games instead.
+    which the game-keys plugin hands to games instead: full-screen windows,
+    and those [game_keys] games names (or every X11 program, with all_x11).
 
     Not the full screen key: a window put full screen by the compositor
     may not know it, and could not be brought back.
@@ -861,7 +873,17 @@ def game_keys_section(config):
             key = alternative.strip()
             if re.fullmatch(r"KEY_F([1-9]|1[0-2])", key) and key not in keys:
                 keys.append(key)
-    return ["[game-keys]", f"keys = {' '.join(keys)}"]
+    # [game_keys]: which windows besides full-screen ones get the keys.
+    wishes = config.get("game_keys", {})
+    games = wishes.get("games", ["steam_app_*", "Minecraft*"])
+    all_x11 = wishes.get("all_x11", False)
+    if not isinstance(games, list) or not all(isinstance(game, str) and game.strip() and " " not in game
+                                              for game in games):
+        fail("[game_keys] games must be a list of app IDs or patterns without spaces, such as \"steam_app_*\"")
+    if not isinstance(all_x11, bool):
+        fail("[game_keys] all_x11 must be true or false")
+    return ["[game-keys]", f"keys = {' '.join(keys)}", f"programs = {' '.join(games)}",
+            f"all_x11 = {yes_or_no(all_x11)}"]
 
 
 def shell_actions(theme):
@@ -1183,7 +1205,7 @@ def main():
     if vrr:
         sections.append(vrr)
     plugins += vrr_plugins
-    sections.append(x11_primary_section(config))
+    sections.append(x11_settings_section(config))
     sections.append(borderless_section(config))
     sections.append(workarounds_section(config))
     gestures, gesture_plugins = gesture_section(config, theme)

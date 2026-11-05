@@ -35,12 +35,12 @@ void MainScreen::send()
         }
         return;
     }
-    compositor.request("x11-primary/main-screen", {{"name", screenName}}, [](const QJsonObject& answer) {
+    compositor.request("x11-settings/main-screen", {{"name", screenName}}, [](const QJsonObject& answer) {
         if (answer.contains("error"))
         {
             qWarning().noquote() << "Shell.Native: X11 programs are not told the main screen:"
                                  << answer.value("error").toString()
-                                 << "(is the compositor's \"x11-primary\" plugin loaded?)";
+                                 << "(is the compositor's \"x11-settings\" plugin loaded?)";
         }
     });
 }

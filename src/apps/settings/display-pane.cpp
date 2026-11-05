@@ -173,6 +173,17 @@ DisplayPane::DisplayPane(Choices& choices, QWidget* parent) : QWidget(parent), c
         }
     });
 
+    // For every screen: X11 programs at the screen's own pixels instead of
+    // stretched, sizing themselves by the main screen's scale ([display] sharp_x11).
+    auto* sharp_x11 = new QCheckBox(word("display_sharp_x11", "Draw X11 programs sharply on scaled screens"));
+    sharp_x11->setChecked(choices.value(QStringLiteral("display"), QStringLiteral("sharp_x11")).toBool());
+    connect(sharp_x11, &QCheckBox::toggled, this,
+        [this](bool on) { this->choices.set(QStringLiteral("display"), QStringLiteral("sharp_x11"), on); });
+    auto* sharp_x11_row = with_note(
+        sharp_x11, word("display_sharp_x11_note",
+                       "X11 programs started from now on size themselves by the main screen's scale. Some, games among "
+                       "them, may then look small."));
+
     off_screens = new QWidget;
     off_rows = new QVBoxLayout(off_screens);
     off_rows->setContentsMargins(0, 0, 0, 0);
@@ -189,6 +200,7 @@ DisplayPane::DisplayPane(Choices& choices, QWidget* parent) : QWidget(parent), c
     rows->addLayout(form);
     rows->addWidget(one_screen_note, 0, Qt::AlignHCenter);
     rows->addWidget(off_screens, 0, Qt::AlignHCenter);
+    rows->addWidget(sharp_x11_row, 0, Qt::AlignHCenter);
     rows->addStretch();
 
     // The screen's resolution and refresh rate come first: what is drawn

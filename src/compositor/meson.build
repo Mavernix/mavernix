@@ -22,6 +22,6 @@ subdir('still-surfaces')
 subdir('touchpad-gestures')
 subdir('window-attention')
 subdir('window-pictures')
-subdir('x11-primary')
+subdir('x11-settings')
 
 subdir('dock-window-reflections')

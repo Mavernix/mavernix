@@ -1,13 +1,18 @@
 <?xml version="1.0"?>
 <wayfire>
-	<plugin name="x11-primary">
-		<_short>X11 Primary Screen</_short>
-		<_long>Makes the screen with the menu bar and dock X11's primary screen, so that games and other X11 programs open there and offer its resolutions.</_long>
+	<plugin name="x11-settings">
+		<_short>X11 Settings</_short>
+		<_long>Tells X11 programs about the screen with the menu bar and dock: it becomes their primary screen, so that games open there and offer its resolutions, and its scale may set their Xft.dpi.</_long>
 		<category>General</category>
-		<option name="enabled" type="bool">
-			<_short>Enabled</_short>
+		<option name="primary_screen" type="bool">
+			<_short>Main screen is primary</_short>
 			<_long>Off leaves X11 without a primary screen.</_long>
 			<default>true</default>
+		</option>
+		<option name="dpi" type="bool">
+			<_short>Xft.dpi from the main screen's scale</_short>
+			<_long>For X11 programs drawn at the screen's own pixels (workarounds/force_xwayland_scaling): 96 times the main screen's scale.</_long>
+			<default>false</default>
 		</option>
 	</plugin>
 </wayfire>

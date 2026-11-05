@@ -636,6 +636,7 @@ network_password_for = "The Wi-Fi network “%1” requires a password."
 network_enterprise = "“%1” signs in with a user name or a certificate. Set it up with NetworkManager's connection editor (nm-connection-editor)."
 network_address = "IP Address:"
 network_router = "Router:"
+keyboard_game_keys_all_x11 = "Function keys go to every X11 program, as to games"
 mouse_title = "Mouse"
 mouse_speed = "Tracking speed:"
 mouse_speed_slow = "Slow"
@@ -655,6 +656,8 @@ display_brightness = "Brightness:"
 display_arrangement_note = "Click a screen to change its settings below. Drag the screens to stand as they do on your desk, and drag the bar along the top of one to move the menu bar and dock to another screen."
 display_main_here = "Show the menu bar and dock on this screen"
 display_use_here = "Use this screen"
+display_sharp_x11 = "Draw X11 programs sharply on scaled screens"
+display_sharp_x11_note = "X11 programs started from now on size themselves by the main screen's scale. Some, games among them, may then look small."
 display_turned_off = "%1 is turned off."
 display_turn_on = "Turn On"
 display_built_in = "Built-in screen"
@@ -727,6 +730,10 @@ scale = "auto"
 # X11 programs (games under Xwayland, Steam, Wine) take that screen as their
 # primary one; false leaves X11 without one.
 # x11_primary = true
+# X11 programs drawn at the screen's own pixels instead of stretched (sharp
+# on a scaled screen), told the main screen's scale through Xft.dpi to size
+# themselves; some may look small. Left out: false.
+# sharp_x11 = false
 # Per-screen settings, by name (`wlr-randr` lists them):
 # [display.screens."HDMI-A-1"]
 # scale = 1
@@ -760,6 +767,14 @@ natural_scroll = false
 # Pasting the selected text with the middle button, in every program; takes
 # effect at the next login. Left out: true.
 # middle_click_paste = true
+
+[game_keys]
+# The function keys among the shortcuts (F3, F4, F11 on Sea Lion), pressed
+# alone, go to a full-screen window instead, and to the games named here by
+# app ID (an X11 program's WM_CLASS); * matches anything. With all_x11, every
+# X11 program gets them, as games under Wine do.
+games = ["steam_app_*", "Minecraft*"]
+all_x11 = false
 
 [lock]
 # The lock screen checks the password with PAM, using this /etc/pam.d/

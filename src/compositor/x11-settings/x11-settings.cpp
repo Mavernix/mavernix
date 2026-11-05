@@ -1,21 +1,28 @@
-// The plugin "x11-primary": makes the main screen, the one with the menu bar
-// and dock, X11's primary screen. Xwayland names none, and X11 programs then
-// take the first screen it lists for their own: games (SDL, Wine and Proton)
-// open there and offer only that screen's resolutions.
+// The plugin "x11-settings": tells X11 programs about the main screen, the
+// one with the menu bar and dock.
+//
+// "primary_screen": it is made X11's primary screen. Xwayland names none, and
+// X11 programs then take the first screen it lists for their own: games
+// (SDL, Wine and Proton) open there and offer only that screen's resolutions.
+//
+// "dpi": X11's Xft.dpi is 96 times its scale, for X11 programs drawn at the
+// screen's own pixels (workarounds/force_xwayland_scaling) to size
+// themselves. Qt, GTK's text, Chromium and Electron read it as they start.
 //
 // The plugin talks to Xwayland as an X11 client, as KWin does. It connects
 // only once Xwayland says it is ready (core/xwayland_startup_script calls
-// x11-primary/xwayland-ready), since connecting earlier would wait on a server
+// x11-settings/xwayland-ready), since connecting earlier would wait on a server
 // that cannot start while the compositor waits. Xwayland adds and removes its
 // screens after the compositor does, so the plugin sets the primary again
 // whenever Xwayland reports a change. Nothing waits for Xwayland's answers.
 //
 // Which screen is the main one is the shell's to decide ([display]
 // main_screen, else the first), so the shell tells it, and again when it
-// changes. Option "enabled": off leaves X11 without a primary screen.
+// changes.
 //
-// IPC: x11-primary/xwayland-ready; x11-primary/main-screen { "name" }.
+// IPC: x11-settings/xwayland-ready; x11-settings/main-screen { "name" }.
 
+#include <cmath>
 #include <string>
 #include <utility>
 #include <vector>
@@ -25,21 +32,26 @@
 #include <xcb/xcbext.h>
 
 #include <wayfire/core.hpp>
+#include <wayfire/output-layout.hpp>
+#include <wayfire/output.hpp>
 #include <wayfire/plugin.hpp>
 #include <wayfire/plugins/common/shared-core-data.hpp>
 #include <wayfire/plugins/ipc/ipc-helpers.hpp>
 #include <wayfire/plugins/ipc/ipc-method-repository.hpp>
 #include <wayfire/util/log.hpp>
 
-namespace x11_primary
+namespace x11_settings
 {
-const std::string READY_METHOD = "x11-primary/xwayland-ready";
-const std::string MAIN_SCREEN_METHOD = "x11-primary/main-screen";
+const std::string READY_METHOD = "x11-settings/xwayland-ready";
+const std::string MAIN_SCREEN_METHOD = "x11-settings/main-screen";
 
 class plugin_t : public wf::plugin_interface_t
 {
     wf::shared_data::ref_ptr_t<wf::ipc::method_repository_t> repo;
-    wf::option_wrapper_t<bool> enabled{"x11-primary/enabled"};
+    wf::option_wrapper_t<bool> primary_screen{"x11-settings/primary_screen"};
+    wf::option_wrapper_t<bool> dpi{"x11-settings/dpi"};
+    // Xft.dpi as last written; 0 if this plugin has not written it.
+    int written_dpi = 0;
     // As the shell last said; empty until it does.
     std::string main_screen;
 
@@ -86,6 +98,7 @@ class plugin_t : public wf::plugin_interface_t
         step = step_t::none;
         again = false;
         names_asked.clear();
+        written_dpi = 0;
     }
 
     // Xwayland has said it is ready, so the connection's setup is answered at once.
@@ -100,7 +113,7 @@ class plugin_t : public wf::plugin_interface_t
         x11 = xcb_connect(display.c_str(), nullptr);
         if (xcb_connection_has_error(x11))
         {
-            LOGE("x11-primary: cannot connect to Xwayland's display ", display);
+            LOGE("x11-settings: cannot connect to Xwayland's display ", display);
             disconnect();
             return;
         }
@@ -171,7 +184,7 @@ class plugin_t : public wf::plugin_interface_t
             free(randr);
             if (!present)
             {
-                LOGE("x11-primary: Xwayland has no RandR");
+                LOGE("x11-settings: Xwayland has no RandR");
                 disconnect();
                 return;
             }
@@ -179,6 +192,7 @@ class plugin_t : public wf::plugin_interface_t
                 x11, root, XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE | XCB_RANDR_NOTIFY_MASK_OUTPUT_CHANGE);
             step = step_t::none;
             apply();
+            write_dpi();
         }
 
         if (step == step_t::screens)
@@ -223,7 +237,7 @@ class plugin_t : public wf::plugin_interface_t
                 {
                     const auto* bytes = reinterpret_cast<const char*>(xcb_randr_get_output_info_name(info));
                     const std::string name(bytes, xcb_randr_get_output_info_name_length(info));
-                    if (enabled && (name == main_screen))
+                    if (primary_screen && (name == main_screen))
                     {
                         wanted = output;
                     }
@@ -245,6 +259,39 @@ class plugin_t : public wf::plugin_interface_t
         }
     }
 
+    // X11 programs read it from the root window's RESOURCE_MANAGER, as xrdb
+    // leaves it; nothing else is kept there under Xwayland.
+    void write_dpi()
+    {
+        if ((x11 == nullptr) || (step == step_t::randr))
+        {
+            return;
+        }
+        wf::output_t* screen = main_screen.empty() ? nullptr : wf::get_core().output_layout->find_output(main_screen);
+        const int wanted = (dpi && screen) ? int(std::lround(96 * screen->handle->scale)) : 0;
+        if (wanted == written_dpi)
+        {
+            return;
+        }
+        if (wanted > 0)
+        {
+            const std::string resources = "Xft.dpi:\t" + std::to_string(wanted) + "\n";
+            xcb_change_property(x11, XCB_PROP_MODE_REPLACE, root, XCB_ATOM_RESOURCE_MANAGER, XCB_ATOM_STRING, 8,
+                uint32_t(resources.size()), resources.data());
+        }
+        else
+        {
+            xcb_delete_property(x11, root, XCB_ATOM_RESOURCE_MANAGER);
+        }
+        xcb_flush(x11);
+        written_dpi = wanted;
+    }
+
+    // A screen's scale may have changed.
+    wf::signal::connection_t<wf::output_layout_configuration_changed_signal> on_layout_changed = [this](auto) {
+        write_dpi();
+    };
+
     void finish()
     {
         step = step_t::none;
@@ -264,10 +311,11 @@ class plugin_t : public wf::plugin_interface_t
     wf::ipc::method_callback on_main_screen = [this](const wf::json_t& data) {
         if (!data.has_member("name") || !data["name"].is_string())
         {
-            return wf::ipc::json_error("x11-primary/main-screen needs a \"name\"");
+            return wf::ipc::json_error("x11-settings/main-screen needs a \"name\"");
         }
         main_screen = data["name"].as_string();
         apply();
+        write_dpi();
         return wf::ipc::json_ok();
     };
 
@@ -276,7 +324,9 @@ class plugin_t : public wf::plugin_interface_t
     {
         repo->register_method(READY_METHOD, on_ready);
         repo->register_method(MAIN_SCREEN_METHOD, on_main_screen);
-        enabled.set_callback([this] { apply(); });
+        primary_screen.set_callback([this] { apply(); });
+        dpi.set_callback([this] { write_dpi(); });
+        wf::get_core().output_layout->connect(&on_layout_changed);
     }
 
     void fini() override
@@ -286,6 +336,6 @@ class plugin_t : public wf::plugin_interface_t
         disconnect();
     }
 };
-} // namespace x11_primary
+} // namespace x11_settings
 
-DECLARE_WAYFIRE_PLUGIN(x11_primary::plugin_t);
+DECLARE_WAYFIRE_PLUGIN(x11_settings::plugin_t);
