@@ -5,6 +5,9 @@
 
 .pragma library
 
+// "steam_app_N" -> { count: how many entries there were, entry }.
+const steamGames = {}
+
 // `entries` is Quickshell's DesktopEntries; null if nothing matches.
 function of(entries, appId) {
     if (!appId) {
@@ -32,5 +35,3 @@ function of(entries, appId) {
     return launcher
 }
 
-// "steam_app_N" -> { count: how many entries there were, entry }.
-const steamGames = {}
