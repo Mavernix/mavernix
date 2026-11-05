@@ -234,6 +234,13 @@ Item {
             return
         }
         if (running) {
+            // [dock] click_minimizes: a click on the icon of the program in
+            // front minimizes its front window.
+            const front = windows.find(window => window.activated && !window.minimized)
+            if (front !== undefined && (choices?.value("dock", "click_minimizes") ?? false)) {
+                front.minimized = true
+                return
+            }
             const inView = windows.find(window => !window.minimized)
             if (inView !== undefined) {
                 inView.activate()

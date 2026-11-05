@@ -69,6 +69,13 @@ DockPane::DockPane(Choices& choices, QWidget* parent) : QWidget(parent), choices
         with_end_words(magnified_size, word("dock_magnification_min", "Min"), word("dock_magnification_max", "Max")));
     form->addRow(QString(), hides);
 
+    auto* click_minimizes =
+        new QCheckBox(word("dock_click_minimizes", "Click the front program's icon to minimize its window"));
+    click_minimizes->setChecked(choices.value(QStringLiteral("dock"), QStringLiteral("click_minimizes")).toBool());
+    connect(click_minimizes, &QCheckBox::toggled, this,
+        [this](bool on) { this->choices.set(QStringLiteral("dock"), QStringLiteral("click_minimizes"), on); });
+    form->addRow(QString(), click_minimizes);
+
     // Effects the original didn't have, or had otherwise; all off at first.
     // The compositor follows at once (the shell restarts for them).
     auto* reflections = new QCheckBox(word("dock_window_reflections", "Reflect windows in the Dock's glass"));

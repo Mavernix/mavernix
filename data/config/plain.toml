@@ -332,6 +332,9 @@ new_folder_view = "list"
 # running, to start it straight into one.
 actions_when_closed = true
 
+# A click on the icon of the program in front minimizes its front window.
+click_minimizes = false
+
 [dock.trash_empty]
 command = ["gio", "trash", "--empty"]
 confirm = { title = "Delete everything in the wastebasket for good?", text = "This cannot be undone.", button = "Delete", cancel = "Cancel", icon = "user-trash-full" }
@@ -553,6 +556,7 @@ dock_size_small = "Small"
 dock_size_large = "Large"
 dock_magnification = "Enlarge under the pointer:"
 dock_autohide = "Hide the dock until the pointer is at the screen's edge"
+dock_click_minimizes = "Click the front program's icon to minimize its window"
 dock_window_reflections = "Reflect windows in the Dock's glass"
 dock_blur = "Blur behind the Dock"
 dock_magnification_min = "A little"
