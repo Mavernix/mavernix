@@ -85,6 +85,11 @@ class picture_node_t : public wf::scene::node_t
     /** False if the surface has nothing to show. */
     bool take(wayfire_view view)
     {
+        // Wayfire's take_snapshot() needs the surface's output.
+        if (view->get_output() == nullptr)
+        {
+            return false;
+        }
         view->take_snapshot(contents);
         const auto size = contents.get_size();
         if ((size.width <= 0) || (size.height <= 0))

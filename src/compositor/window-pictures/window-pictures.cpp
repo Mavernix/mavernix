@@ -51,6 +51,12 @@ static bool write_plain(const std::string& path, const picture_t& picture)
 static picture_t contents_of(wayfire_view view)
 {
     picture_t contents;
+    // Wayfire's take_snapshot() needs the window's output, which a window
+    // being taken away, or one on no screen, does not have.
+    if (!view->is_mapped() || (view->get_output() == nullptr))
+    {
+        return contents;
+    }
 
     wf::auxilliary_buffer_t snapshot;
     view->take_snapshot(snapshot);
