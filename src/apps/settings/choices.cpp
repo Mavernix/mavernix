@@ -40,17 +40,88 @@ Choices::Choices()
     }
 
     settings = QJsonDocument::fromJson(file.readAll()).object().toVariantMap();
+    reload();
+}
 
-    // The session's file is as old as the session; the user's later changes
-    // are laid over it here, as at a session's start.
-    QFile choices_file(settings.value(QStringLiteral("user_choices_file")).toString());
+void Choices::reload()
+{
+    // The session's file is as old as the session; the user's changes as
+    // they are now are laid over the desktop's own config, as at a session's
+    // start. A session from before default_config was written has only the
+    // config with the changes of its start.
+    const QVariant defaults = settings.value(QStringLiteral("default_config"));
+    QVariantMap config = defaults.isValid() ? defaults.toMap() : settings.value(QStringLiteral("config")).toMap();
+    QFile choices_file(userChoicesFile());
     if (choices_file.open(QIODevice::ReadOnly))
     {
-        const QVariantMap held = QJsonDocument::fromJson(choices_file.readAll()).object().toVariantMap();
-        QVariantMap config = settings.value(QStringLiteral("config")).toMap();
-        config = laid_over(config, held);
-        settings.insert(QStringLiteral("config"), config);
+        config = laid_over(config, QJsonDocument::fromJson(choices_file.readAll()).object().toVariantMap());
     }
+    settings.insert(QStringLiteral("config"), config);
+    changed.clear();
+}
+
+QString Choices::write(const QJsonObject& held)
+{
+    // So that a reader never finds half a file.
+    const QString path = userChoicesFile();
+    QSaveFile file(path);
+    if (!file.open(QIODevice::WriteOnly) || file.write(QJsonDocument(held).toJson()) < 0 || !file.commit())
+    {
+        return QStringLiteral("Could not write %1: %2").arg(path, file.errorString());
+    }
+    return QString();
+}
+
+QString Choices::remove(const QList<Key>& keys)
+{
+    QJsonObject held;
+    QFile existing(userChoicesFile());
+    if (existing.open(QIODevice::ReadOnly))
+    {
+        held = QJsonDocument::fromJson(existing.readAll()).object();
+    }
+    for (const Key& one : keys)
+    {
+        if (one.key.isEmpty())
+        {
+            held.remove(one.table);
+            continue;
+        }
+        QJsonObject table = held.value(one.table).toObject();
+        table.remove(one.key);
+        if (table.isEmpty())
+        {
+            held.remove(one.table);
+        }
+        else
+        {
+            held.insert(one.table, table);
+        }
+    }
+    const QString problem = write(held);
+    reload();
+    return problem;
+}
+
+QString Choices::backupFile() const
+{
+    return userChoicesFile() + QStringLiteral(".backup");
+}
+
+QString Choices::removeAll()
+{
+    const QString path = userChoicesFile();
+    if (QFile::exists(path))
+    {
+        QFile::remove(backupFile());
+        if (!QFile::copy(path, backupFile()))
+        {
+            return QStringLiteral("Could not keep a copy of %1 as %2").arg(path, backupFile());
+        }
+    }
+    const QString problem = write(QJsonObject());
+    reload();
+    return problem;
 }
 
 QVariant Choices::value(const QString& table, const QString& key) const
@@ -98,15 +169,7 @@ QString Choices::set(const QString& table, const QString& key, const QVariant& v
     QJsonObject held_table = held.value(table).toObject();
     held_table.insert(key, QJsonValue::fromVariant(value));
     held.insert(table, held_table);
-
-    // So that a reader never finds half a file.
-    QSaveFile file(path);
-    if (!file.open(QIODevice::WriteOnly) || file.write(QJsonDocument(held).toJson()) < 0 || !file.commit())
-    {
-        return QStringLiteral("Could not write %1: %2").arg(path, file.errorString());
-    }
-
-    return QString();
+    return write(held);
 }
 
 QStringList Choices::names(const QString& table) const

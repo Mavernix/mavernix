@@ -7,6 +7,7 @@ this resolves both and writes one JSON file:
 
     {
       "config": { ... the desktop config ... },
+      "default_config": { ... the same without the user's changes, for Settings' resets ... },
       "shortcut_defaults": { "shortcuts": { ... }, "commands": { ... } },
       "system_keyboard": { "layout": "us", "variant": "intl", ... },
       "theme": { ... the theme's theme.toml, unchanged ... },
@@ -127,6 +128,7 @@ def main():
 
     settings = {
         "config": config,
+        "default_config": default_config,
         "shortcut_defaults": {
             "shortcuts": default_config.get("shortcuts", {}),
             "commands": default_config.get("commands", {}),

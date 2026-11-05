@@ -49,6 +49,15 @@ class SettingsWindow : public QMainWindow
     QWidget* makeKeyboardPane();
     void makeMenus(const QVariantMap& words);
 
+    // Restore Defaults… on a pane, and Reset All Settings… under the
+    // overview: each asks first (pane-resets.hpp lists what a pane takes
+    // back), then makes the panes anew, so they show the desktop's values.
+    void restoreDefaults(const QString& name);
+    void resetAll();
+    void remakePane(const QString& name);
+    bool askFirst(const QString& question, const QString& note, const QString& button);
+    QString word(const char* key, const char* fallback) const;
+
     Choices& choices;
     QString program_name;
     // [animation.settings_page]: { kind: "resize" | "none", duration_ms }.
@@ -59,6 +68,10 @@ class SettingsWindow : public QMainWindow
     QStackedWidget* pages = nullptr;
     QMap<QString, int> pane_pages;
     QMap<QString, QString> pane_titles;
+    // The pane in each page, to be made anew after a reset.
+    QMap<QString, QPointer<QWidget>> pane_widgets;
+    // [settings.words].
+    QVariantMap words;
 
     // "" is the overview.
     void visit(const QString& name);

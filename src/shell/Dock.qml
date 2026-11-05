@@ -1430,6 +1430,7 @@ PanelWindow {
         magnificationWanted: dock.magnificationWanted
         trashIsEmpty: dock.trashIsEmpty
         addableFolders: dock.addableFolders
+        resizedByUser: (dock.choices.changed.dock ?? ({})).icon_size !== undefined
     }
 
     function openMenu(index) {
@@ -1518,6 +1519,9 @@ PanelWindow {
             emptyTrash()
         } else if (id === menus.magnificationId) {
             choices.set("dock", "magnification", !magnificationWanted)
+        } else if (id === menus.originalSizeId) {
+            // Left out of the user's file, the size is the desktop's again.
+            choices.set("dock", "icon_size", undefined)
         } else if (id === menus.settingsId) {
             Quickshell.execDetached(config.settings_command)
         } else if (id >= menus.windowBaseId) {

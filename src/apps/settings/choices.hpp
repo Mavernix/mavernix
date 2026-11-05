@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include <QJsonObject>
+#include <QList>
 #include <QString>
 #include <QVariant>
 #include <QVariantMap>
@@ -24,6 +26,20 @@ class Choices
     QVariant current(const QString& table, const QString& key) const;
     // Returns what went wrong writing the user's file, else empty.
     QString set(const QString& table, const QString& key, const QVariant& value);
+
+    // The user's own values for these back to the desktop's: each a
+    // { table, key }, or a whole table with an empty key. Returns what went
+    // wrong, else empty.
+    struct Key
+    {
+        QString table;
+        QString key;
+    };
+    QString remove(const QList<Key>& keys);
+    // Every change the user made, kept first as backupFile(). Returns what
+    // went wrong, else empty.
+    QString removeAll();
+    QString backupFile() const;
 
     // The table's names as they stand now, without those removed (set to null).
     QStringList names(const QString& table) const;
@@ -50,6 +66,10 @@ class Choices
     QString defaultDesktopFile() const;
 
   private:
+    // The config with the user's file as it is now laid over the desktop's.
+    void reload();
+    QString write(const QJsonObject& held);
+
     QVariantMap settings;
     // What has been changed since the program started: { table: { key: value } }.
     QVariantMap changed;

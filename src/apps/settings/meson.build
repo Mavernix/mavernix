@@ -40,6 +40,7 @@ executable(
         'installed-applications.cpp',
         'sound-devices.cpp',
         'pane-parts.cpp',
+        'pane-resets.cpp',
         'keyboard-pane.cpp',
         'defaults-pane.cpp',
         'installed-programs.cpp',

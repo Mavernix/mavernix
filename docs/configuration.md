@@ -24,7 +24,7 @@ You don't have to copy everything. A config that says `based_on = "NAME"` is tha
 
 Some things you change as you go: which programs are in the dock, its size, magnification, and anything you set in the Settings window. These aren't written into the config. They go into a file of your own, `~/.config/mavernix/NAME.json`, which is laid over the config every time the desktop starts.
 
-Want a desktop's defaults back? Delete that file.
+Want a desktop's defaults back? Settings has **Restore Defaults…** at the bottom of each pane, for that pane's choices, and **Reset All Settings…** under the overview, for all of them. Both ask first. Reset All keeps a copy of the file as `NAME.json.backup`; renaming it back undoes the reset. Deleting the file by hand does the same as Reset All. The Dock's own menu (right-click a separator) has **Reset to Original Size** once you've resized it.
 
 A desktop based on another one shares its file. So whatever you set under one stays when you switch to the other.
 
