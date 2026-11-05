@@ -15,6 +15,11 @@ tests = {
         'include': test_sources / 'compositor/shared-edges',
         'dependencies': [],
     },
+    'shake-to-find': {
+        'sources': [test_sources / 'compositor/shake-to-find/shake-detect.cpp'],
+        'include': test_sources / 'compositor/shake-to-find',
+        'dependencies': [],
+    },
     'theme-file': {
         'sources': [test_sources / 'compositor/decoration/theme-file.cpp'],
         'include': test_sources / 'compositor/decoration',

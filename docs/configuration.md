@@ -71,6 +71,10 @@ A screen that supports variable refresh rate (VRR, also sold as FreeSync or G-Sy
 
 By default, selecting text and pressing the middle mouse button pastes it, as on other Linux desktops. To turn that off everywhere, untick it in Settings, Mouse, or set `[input] middle_click_paste = false`. It takes effect the next time you log in. X11 programs still paste among themselves.
 
+## Shake to find the pointer
+
+As on El Capitan, shaking the pointer quickly back and forth can make it big for a moment, so it's easy to find. It's off at first: tick it in Settings, Mouse, or set `[input] shake_to_find = true`. It works with a mouse and a trackpad, but not while a button is held, or over a full-screen window or a game that has taken the pointer.
+
 ## Wayfire's own settings
 
 The session writes Wayfire's settings file anew at every login and on every change, so editing it by hand doesn't last. Put your own Wayfire settings in `~/.config/mavernix/wayfire.ini` instead. It's added after everything the session writes, and Wayfire takes the last value it reads, so yours win. For example:

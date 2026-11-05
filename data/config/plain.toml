@@ -651,6 +651,8 @@ mouse_primary_left = "Left"
 mouse_primary_right = "Right"
 mouse_middle_click_paste = "Paste the selected text with the middle button"
 mouse_middle_click_paste_note = "Takes effect the next time you log in."
+mouse_shake_to_find = "Shake the pointer to find it"
+mouse_shake_to_find_note = "Moving the pointer quickly back and forth makes it big for a moment"
 display_title = "Display"
 display_brightness = "Brightness:"
 display_arrangement_note = "Click a screen to change its settings below. Drag the screens to stand as they do on your desk, and drag the bar along the top of one to move the menu bar and dock to another screen."
@@ -767,6 +769,9 @@ natural_scroll = false
 # Pasting the selected text with the middle button, in every program; takes
 # effect at the next login. Left out: true.
 # middle_click_paste = true
+# Shaking the pointer quickly back and forth makes it big for a moment, so
+# it's easy to find, as on El Capitan. Left out: false.
+# shake_to_find = false
 
 [game_keys]
 # The function keys among the shortcuts (F3, F4, F11 on Sea Lion), pressed

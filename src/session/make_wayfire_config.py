@@ -686,6 +686,15 @@ def borderless_section(config):
     return ["[borderless-full-screen]", f"enabled = {yes_or_no(wanted)}"]
 
 
+def shake_to_find_plugins(config):
+    """[input] shake_to_find: shaking the pointer makes it big for a moment,
+    as on El Capitan. Off unless asked for; the plugin loads only then."""
+    wanted = config.get("input", {}).get("shake_to_find", False)
+    if not isinstance(wanted, bool):
+        fail("[input] shake_to_find must be true or false")
+    return ["shake-to-find"] if wanted else []
+
+
 def display_flag(config, key, default):
     value = config.get("display", {}).get(key, default)
     if not isinstance(value, bool):
@@ -1199,6 +1208,7 @@ def main():
     sections.append(window_overview_section(config, theme))
     sections.append(game_keys_section(config))
     sections.append(input_section(config, theme))
+    plugins += shake_to_find_plugins(config)
     sections.append(idle_section(config))
     sections += display_sections(config)
     vrr, vrr_plugins = game_vrr_section(config)

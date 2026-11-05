@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="shake-to-find">
+		<_short>Shake to Find</_short>
+		<_long>Shaking the pointer quickly back and forth makes it big for a moment, so it's easy to find. Loaded only when [input] shake_to_find is on.</_long>
+		<category>Input</category>
+	</plugin>
+</wayfire>

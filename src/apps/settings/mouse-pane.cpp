@@ -87,6 +87,11 @@ MousePane::MousePane(Choices& choices, QWidget* parent) : QWidget(parent), choic
     connect(
         middle_paste, &QCheckBox::toggled, this, [this](bool on) { change(QStringLiteral("middle_click_paste"), on); });
 
+    // As on El Capitan; off unless asked for.
+    auto* shake = new QCheckBox(word("mouse_shake_to_find", "Shake the pointer to find it"));
+    shake->setChecked(choices.value(table, QStringLiteral("shake_to_find")).toBool());
+    connect(shake, &QCheckBox::toggled, this, [this](bool on) { change(QStringLiteral("shake_to_find"), on); });
+
     auto* left = new QRadioButton(word("mouse_primary_left", "Left"));
     auto* right = new QRadioButton(word("mouse_primary_right", "Right"));
     auto* buttons = new QButtonGroup(this);
@@ -116,6 +121,9 @@ MousePane::MousePane(Choices& choices, QWidget* parent) : QWidget(parent), choic
     form->addRow(word("mouse_primary", "Primary mouse button:"), primary);
     form->addRow(QString(),
         with_note(middle_paste, word("mouse_middle_click_paste_note", "Takes effect the next time you log in.")));
+    form->addRow(QString(),
+        with_note(shake,
+            word("mouse_shake_to_find_note", "Moving the pointer quickly back and forth makes it big for a moment")));
     rows->addLayout(form);
     rows->addStretch();
 }

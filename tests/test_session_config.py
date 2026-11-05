@@ -769,6 +769,12 @@ class TestGameSettings(SessionTestCase):
         with self.assertRaises(SystemExit):
             self.make.workarounds_section({"input": {"middle_click_paste": "no"}})
 
+    def test_shake_to_find_loads_its_plugin_only_when_asked(self):
+        self.assertEqual(self.make.shake_to_find_plugins({}), [])
+        self.assertEqual(self.make.shake_to_find_plugins({"input": {"shake_to_find": True}}), ["shake-to-find"])
+        with self.assertRaises(SystemExit):
+            self.make.shake_to_find_plugins({"input": {"shake_to_find": "yes"}})
+
 
 class TestGameKeys(SessionTestCase):
     def test_bare_function_keys_are_let_through_but_not_full_screens(self):
