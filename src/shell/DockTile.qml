@@ -6,6 +6,7 @@ import QtQuick
 import QtQuick.Effects
 import Quickshell
 import Quickshell.Wayland
+import "ApplicationEntry.js" as ApplicationEntry
 import "ApplicationName.js" as ApplicationName
 
 Item {
@@ -80,7 +81,7 @@ Item {
     readonly property var windows: {
         if (entry !== null) {
             return ToplevelManager.toplevels.values.filter(
-                window => DesktopEntries.heuristicLookup(window.appId) === tile.entry)
+                window => ApplicationEntry.of(DesktopEntries, window.appId) === tile.entry)
         }
         if (appId !== "") {
             return ToplevelManager.toplevels.values.filter(window => window.appId === tile.appId)

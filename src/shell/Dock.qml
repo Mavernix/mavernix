@@ -10,6 +10,7 @@ import Quickshell
 import Quickshell.Wayland
 import Quickshell.Io
 import Shell.Native
+import "ApplicationEntry.js" as ApplicationEntry
 import "DockLayout.js" as DockLayout
 import "DroppedFiles.js" as DroppedFiles
 import "ThemeValues.js" as ThemeValues
@@ -308,7 +309,7 @@ PanelWindow {
         // windows' app ID; it cannot be kept, having nothing to start again.
         const listedAppIds = []
         for (const window of ToplevelManager.toplevels.values) {
-            const entry = DesktopEntries.heuristicLookup(window.appId)
+            const entry = ApplicationEntry.of(DesktopEntries, window.appId)
             if (entry !== null && !listed.includes(entry)) {
                 groups[0].push({ isSeparator: false, entry: entry, window: null, isTrash: false,
                                  kept: false, listedAs: entry.id })
@@ -341,7 +342,7 @@ PanelWindow {
         for (const window of minimizedWindows) {
             lastGroup.push({
                 isSeparator: false,
-                entry: DesktopEntries.heuristicLookup(window.appId),
+                entry: ApplicationEntry.of(DesktopEntries, window.appId),
                 window: window,
                 isTrash: false
             })

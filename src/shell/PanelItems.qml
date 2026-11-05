@@ -7,6 +7,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
+import "ApplicationEntry.js" as ApplicationEntry
 import "ApplicationName.js" as ApplicationName
 import "ThemeValues.js" as ThemeValues
 
@@ -38,7 +39,7 @@ Row {
     // The active window's desktop entry, or null.
     readonly property var activeEntry: {
         const window = ToplevelManager.activeToplevel
-        return window !== null ? DesktopEntries.heuristicLookup(window.appId) : null
+        return window !== null ? ApplicationEntry.of(DesktopEntries, window.appId) : null
     }
 
     // The active window's application name, from its desktop entry if any.

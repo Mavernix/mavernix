@@ -16,6 +16,7 @@ import QtQuick.Effects
 import Quickshell
 import Quickshell.Wayland
 import Shell.Native
+import "ApplicationEntry.js" as ApplicationEntry
 import "ApplicationName.js" as ApplicationName
 import "ThemeValues.js" as ThemeValues
 import "WindowOverviewLayout.js" as Layout
@@ -664,7 +665,7 @@ PanelWindow {
         Item {
             id: groupItem
             required property var modelData
-            readonly property var entry: DesktopEntries.heuristicLookup(modelData.appId)
+            readonly property var entry: ApplicationEntry.of(DesktopEntries, modelData.appId)
             readonly property real iconSize: overview.looks.group_icon_size ?? 32
 
             opacity: overview.shown

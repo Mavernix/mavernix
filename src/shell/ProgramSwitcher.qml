@@ -10,6 +10,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 import Shell.Native
+import "ApplicationEntry.js" as ApplicationEntry
 import "ApplicationName.js" as ApplicationName
 import "ThemeValues.js" as ThemeValues
 
@@ -227,7 +228,7 @@ PanelWindow {
                 id: programItem
                 required property var modelData
                 required property int index
-                readonly property var entry: DesktopEntries.heuristicLookup(modelData.appId)
+                readonly property var entry: ApplicationEntry.of(DesktopEntries, modelData.appId)
                 readonly property bool isMarked: index === switcher.marked
 
                 x: switcher.padding[3] + index * (switcher.iconSize + switcher.iconGap)
