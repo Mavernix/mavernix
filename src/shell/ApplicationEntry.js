@@ -18,12 +18,19 @@ function of(entries, appId) {
     if (game === null) {
         return null
     }
-    const launch = "steam://rungameid/" + game[1]
-    for (const entry of entries.applications.values) {
-        const runs = entry.execString ?? (entry.command ?? []).join(" ")
-        if (runs.split(/\s+/).includes(launch)) {
-            return entry
-        }
+    // Many bindings ask this for every window: the search through every
+    // entry is kept, until the entries change in number.
+    const all = entries.applications.values
+    const kept = steamGames[appId]
+    if (kept !== undefined && kept.count === all.length) {
+        return kept.entry
     }
-    return null
+    const launch = "steam://rungameid/" + game[1]
+    const launcher = all.find(entry =>
+        (entry.execString ?? (entry.command ?? []).join(" ")).split(/\s+/).includes(launch)) ?? null
+    steamGames[appId] = { count: all.length, entry: launcher }
+    return launcher
 }
+
+// "steam_app_N" -> { count: how many entries there were, entry }.
+const steamGames = {}

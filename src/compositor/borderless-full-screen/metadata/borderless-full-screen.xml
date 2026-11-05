@@ -2,7 +2,7 @@
 <wayfire>
 	<plugin name="borderless-full-screen">
 		<_short>Borderless Full Screen</_short>
-		<_long>Makes an X11 window without a frame that asks to cover a whole screen full screen there, as games do for "borderless full screen", instead of fitting it between the menu bar and the dock.</_long>
+		<_long>X11 games get the screen they ask for: a full-screen window goes to the screen it asked for rather than the focused one, and a window without a frame that asks to cover a whole screen (a game's "borderless full screen") is made full screen there instead of being fitted between the menu bar and the dock.</_long>
 		<category>General</category>
 		<option name="enabled" type="bool">
 			<_short>Enabled</_short>

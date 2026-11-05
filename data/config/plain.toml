@@ -30,9 +30,10 @@ shared_edges = true
 # program, as on OS X; false closes only the front one. The quit_app
 # shortcut always quits the whole program.
 quit_closes_app = false
-# An X11 window without a frame that asks to cover a whole screen, as games
-# do for "borderless full screen", is made full screen there instead of
-# being fitted between the menu bar and the dock.
+# X11 games get the screen they ask for: a full-screen one opens on that
+# screen, not the focused one, and a window without a frame that asks to
+# cover a whole screen is made full screen there instead of being fitted
+# between the menu bar and the dock.
 borderless_full_screen = true
 
 [gtk]
@@ -531,8 +532,8 @@ windows_title = "Windows"
 windows_snap = "Windows snap to the screen's sides"
 windows_snap_note = "Left or right side: that half. A corner: that quarter. The top: the whole screen."
 windows_quit_closes_app = "Quit closes all of a program's windows"
-windows_borderless = "Games without a frame fill the whole screen"
-windows_borderless_note = "An X11 window without a frame that asks to cover a screen (“borderless full screen”) is made full screen there."
+windows_borderless = "Games fill the screen they ask for"
+windows_borderless_note = "An X11 game opens full screen on the screen it asked for, also when it has no frame instead of asking to be full screen."
 windows_quit_closes_app_note = "Quit in the menu bar, and the Close Window key, close every window of the program, not only the front one."
 windows_drag_key = "Move and resize a window by holding:"
 windows_drag_key_none = "No key"

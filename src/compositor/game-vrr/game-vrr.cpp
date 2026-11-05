@@ -44,6 +44,8 @@ class screen_t : public wf::per_output_plugin_instance_t
     wf::option_wrapper_t<std::string> screens{"game-vrr/screens"};
     // Whether this plugin turned it on, to turn it off again.
     bool turned_on = false;
+    // The screen is being unplugged: its settings are no longer to be changed.
+    bool going = false;
     wf::wl_idle_call idle_update;
 
     bool full_screen_shown()
@@ -83,6 +85,10 @@ class screen_t : public wf::per_output_plugin_instance_t
 
     void update()
     {
+        if (going)
+        {
+            return;
+        }
         const bool wanted = listed(screens, output->to_string());
         if (!wanted)
         {
@@ -107,6 +113,11 @@ class screen_t : public wf::per_output_plugin_instance_t
         idle_update.run_once([this] { update(); });
     }
 
+    wf::signal::connection_t<wf::output_pre_remove_signal> on_going = [this](auto) {
+        going = true;
+        idle_update.disconnect();
+    };
+
     wf::signal::connection_t<wf::view_fullscreen_signal> on_fullscreen = [this](auto) { update_soon(); };
     wf::signal::connection_t<wf::view_minimized_signal> on_minimized = [this](auto) { update_soon(); };
     wf::signal::connection_t<wf::workspace_changed_signal> on_workspace = [this](auto) { update_soon(); };
@@ -123,6 +134,7 @@ class screen_t : public wf::per_output_plugin_instance_t
   public:
     void init() override
     {
+        output->connect(&on_going);
         output->connect(&on_fullscreen);
         output->connect(&on_minimized);
         output->connect(&on_workspace);
@@ -138,7 +150,7 @@ class screen_t : public wf::per_output_plugin_instance_t
     {
         idle_update.disconnect();
         // Unloaded perhaps because the screen is now to have it always.
-        if (turned_on && !always_on())
+        if (turned_on && !going && !always_on())
         {
             set(false);
         }

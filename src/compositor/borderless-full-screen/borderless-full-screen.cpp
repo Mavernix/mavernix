@@ -7,8 +7,18 @@
 //
 // Wayfire changes the size a window asks for before anyone else sees it, so
 // the plugin notes each X11 window's own wish: its size when made, and every
-// resize it asks for afterwards. Option "enabled".
+// resize it asks for afterwards. It looks when the window appears and at each
+// later request: a game may switch to borderless in its options, and back to
+// a window, which the plugin then undoes if the full screen was its doing.
+// The screen is the one holding the middle of what the window asked for:
+// Wayfire would put a new X11 window on the focused screen, so a game that
+// goes full screen by itself (Wine and Proton do) is moved to the screen it
+// asked for, its primary one. The size is compared in X11's units (device
+// pixels with workarounds/force_xwayland_scaling, when positions are each
+// screen's own and the window's own screen is taken).
+// Option "enabled".
 
+#include <cmath>
 #include <map>
 #include <memory>
 #include <vector>
@@ -40,6 +50,8 @@ static wf::geometry_t box(int x, int y, int width, int height)
 struct wish_t
 {
     wf::geometry_t asked;
+    // This plugin made the window full screen.
+    bool made_full_screen = false;
     wf::wl_listener_wrapper on_configure;
     wf::wl_listener_wrapper on_destroy;
 };
@@ -57,9 +69,13 @@ class plugin_t : public wf::plugin_interface_t
         wlr_xwayland_surface* surface = event->surface;
         auto wish = std::make_unique<wish_t>();
         wish->asked = box(surface->x, surface->y, surface->width, surface->height);
-        wish->on_configure.set_callback([wish = wish.get()](void* data) {
+        wish->on_configure.set_callback([this, wish = wish.get(), surface](void* data) {
             const auto* asked = static_cast<wlr_xwayland_surface_configure_event*>(data);
             wish->asked = box(asked->x, asked->y, asked->width, asked->height);
+            if (surface->surface != nullptr)
+            {
+                consider(wf::toplevel_cast(wf::wl_surface_to_wayfire_view(surface->surface->resource)));
+            }
         });
         wish->on_configure.connect(&surface->events.request_configure);
         wish->on_destroy.set_callback([this, surface](void*) {
@@ -76,34 +92,75 @@ class plugin_t : public wf::plugin_interface_t
     };
 
     wf::signal::connection_t<wf::view_mapped_signal> on_mapped = [this](wf::view_mapped_signal* event) {
-        if (!enabled)
+        consider(wf::toplevel_cast(event->view));
+    };
+
+    // The screen holding the middle of what the window asked for, else its
+    // own. X11's positions are the desktop's unless X11 programs are drawn
+    // sharp; then they are in pixels of each screen, and its own is taken.
+    static wf::output_t* asked_screen(wayfire_toplevel_view view, const wf::geometry_t& asked)
+    {
+        static wf::option_wrapper_t<bool> sharp_x11{"workarounds/force_xwayland_scaling"};
+        if (!sharp_x11)
+        {
+            const wf::pointf_t middle{asked.x + asked.width / 2, asked.y + asked.height / 2};
+            for (wf::output_t* output : wf::get_core().output_layout->get_outputs())
+            {
+                if (output->get_layout_geometry() & middle)
+                {
+                    return output;
+                }
+            }
+        }
+        return view->get_output();
+    }
+
+    // Whether the size asked for is at least the screen's, in X11's units.
+    static bool covers(wf::output_t* output, const wf::geometry_t& asked)
+    {
+        static wf::option_wrapper_t<bool> sharp_x11{"workarounds/force_xwayland_scaling"};
+        const wf::geometry_t screen = output->get_layout_geometry();
+        const double units = sharp_x11 ? output->handle->scale : 1.0;
+        return (asked.width >= std::floor(screen.width * units)) && (asked.height >= std::floor(screen.height * units));
+    }
+
+    void consider(wayfire_toplevel_view view)
+    {
+        wlr_surface* main = (view && view->is_mapped()) ? view->get_wlr_surface() : nullptr;
+        wlr_xwayland_surface* surface = main ? wlr_xwayland_surface_try_from_wlr_surface(main) : nullptr;
+        // Dialogs have a parent.
+        if (!enabled || !surface || (surface->parent != nullptr) || !wishes.count(surface))
         {
             return;
         }
-        auto view = wf::toplevel_cast(event->view);
-        wlr_surface* main = view ? view->get_wlr_surface() : nullptr;
-        wlr_xwayland_surface* surface = main ? wlr_xwayland_surface_try_from_wlr_surface(main) : nullptr;
-        // Dialogs have a parent; a frame means the window is meant to be moved.
-        if (!surface || (surface->parent != nullptr) || (surface->decorations == 0) || view->pending_fullscreen() ||
-            !wishes.count(surface))
+        wish_t& wish = *wishes[surface];
+        wf::output_t* screen = asked_screen(view, wish.asked);
+        if (screen == nullptr)
         {
             return;
         }
 
-        const wf::geometry_t asked = wishes[surface]->asked;
-        for (wf::output_t* output : wf::get_core().output_layout->get_outputs())
+        // Full screen, by itself (Wine and Proton make it so) or by this
+        // plugin: on the screen it asked for, not where the focus was.
+        if (view->pending_fullscreen() && (screen != view->get_output()) && covers(screen, wish.asked))
         {
-            const wf::geometry_t screen = output->get_layout_geometry();
-            const bool covers = (asked.x <= screen.x) && (asked.y <= screen.y) &&
-                                (asked.x + asked.width >= screen.x + screen.width) &&
-                                (asked.y + asked.height >= screen.y + screen.height);
-            if (covers)
-            {
-                wf::get_core().default_wm->fullscreen_request(view, output, true);
-                return;
-            }
+            wf::get_core().default_wm->fullscreen_request(view, screen, true);
+            return;
         }
-    };
+
+        // A frame means the window is meant to be moved about.
+        const bool borderless_cover = (surface->decorations != 0) && covers(screen, wish.asked);
+        if (borderless_cover && !view->pending_fullscreen())
+        {
+            wf::get_core().default_wm->fullscreen_request(view, screen, true);
+            wish.made_full_screen = true;
+        }
+        else if (!borderless_cover && wish.made_full_screen && view->pending_fullscreen())
+        {
+            wf::get_core().default_wm->fullscreen_request(view, view->get_output(), false);
+            wish.made_full_screen = false;
+        }
+    }
 
   public:
     void init() override

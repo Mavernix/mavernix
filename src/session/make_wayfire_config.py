@@ -621,9 +621,17 @@ def display_sections(config):
             places[name] = tuple(int(number) for number in str(written).split(","))
         except ValueError:
             continue
-    # The screens in use: those plugged in and not to be turned off.
-    off = screens_off(config, [name for name in names if name in screens])
-    plugged_in = [name for name in names if name in screens and name not in off]
+    # Plugged in: those the compositor shows, if it answers, else those the
+    # kernel reports; and those it does not show because they were turned
+    # off here (by the config, or a built-in one by the closed lid). A
+    # connector the compositor does not show otherwise (a nested session's
+    # host screens) is not one of ours.
+    turned_off_here = {name for name, own in single.items() if own.get("enabled", True) is False}
+    turned_off_here |= {name for name in screens if name.startswith(BUILT_IN_PREFIXES)}
+    plugged = [name for name in names
+               if name in (shown or screens) or (name in screens and name in turned_off_here)]
+    off = screens_off(config, plugged)
+    plugged_in = [name for name in plugged if name not in off]
     if len(plugged_in) > 1 and all(name in places and len(places[name]) == 2 and sizes[name] for name in plugged_in):
         main = wishes.get("main_screen")
         main = main if main in plugged_in else plugged_in[0]
@@ -677,9 +685,11 @@ def game_vrr_section(config):
 
 
 def borderless_section(config):
-    """[window] borderless_full_screen: a frameless X11 window that asks to
-    cover a screen (a game's "borderless full screen") is made full screen,
-    not fitted between the menu bar and the dock."""
+    """[window] borderless_full_screen: X11 games get the screen they ask
+    for. A full-screen one goes there rather than to the focused screen; a
+    frameless one that asks to cover a screen (a game's "borderless full
+    screen") is made full screen, not fitted between the menu bar and the
+    dock."""
     wanted = config.get("window", {}).get("borderless_full_screen", True)
     if not isinstance(wanted, bool):
         fail("[window] borderless_full_screen must be true or false")
@@ -912,8 +922,10 @@ def with_quit_closing_app(config):
     if not isinstance(quits, bool):
         fail("[window] quit_closes_app must be true or false")
     shortcuts = dict(config.get("shortcuts", {}))
-    if quits and "close_window" in shortcuts and not shortcuts.get("quit_app"):
-        shortcuts["quit_app"] = shortcuts.pop("close_window")
+    if quits and shortcuts.get("close_window") and not shortcuts.get("quit_app"):
+        shortcuts["quit_app"] = shortcuts["close_window"]
+        # Empty, not left out: left out, Wayfire would take its own keys for it.
+        shortcuts["close_window"] = ""
     return {**config, "shortcuts": shortcuts}
 
 

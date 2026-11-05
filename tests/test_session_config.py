@@ -742,10 +742,25 @@ class TestGameSettings(SessionTestCase):
             sections = {section[0]: section for section in self.make.display_sections(config)}
         self.assertEqual(sections["[output:HDMI-A-1]"], ["[output:HDMI-A-1]", "mode = off"])
         self.assertNotIn("mode = off", sections["[output:eDP-1]"])
+        # While the compositor shows only eDP-1 (HDMI-A-1 turned off), turning
+        # HDMI-A-1 on again writes it on; a connector the compositor never
+        # shows (a nested session's host screen) is no screen of ours.
+        shown = {"eDP-1": {"width": 1920, "height": 1080}}
+        with unittest.mock.patch.object(self.make, "connected_screens", return_value=screens), \
+                unittest.mock.patch.object(self.make, "screen_modes", return_value=shown):
+            on_again = {section[0]: section for section in self.make.display_sections({})}
+            hidden_host = self.make.display_sections({"display": {"screens": {"eDP-1": {"enabled": False}}}})
+        self.assertNotIn("mode = off", on_again["[output:HDMI-A-1]"])
+        # eDP-1 is the only one shown, so it stays on.
+        self.assertNotIn(["[output:eDP-1]", "mode = off"], hidden_host)
 
     def test_quit_can_close_the_whole_program(self):
         config = {"shortcuts": {"close_window": "<super> KEY_Q"}, "window": {"quit_closes_app": True}}
-        self.assertEqual(self.make.with_quit_closing_app(config)["shortcuts"], {"quit_app": "<super> KEY_Q"})
+        self.assertEqual(self.make.with_quit_closing_app(config)["shortcuts"],
+                         {"quit_app": "<super> KEY_Q", "close_window": ""})
+        # Wayfire's own close key ("<super> KEY_Q | <alt> KEY_F4") must not come back.
+        keys = self.make.compositor_key_sections(self.make.with_quit_closing_app(config))
+        self.assertIn("close_top_view = none", keys["core"])
         own_key = {"shortcuts": {"close_window": "KEY_W", "quit_app": "KEY_Q"}, "window": {"quit_closes_app": True}}
         self.assertEqual(self.make.with_quit_closing_app(own_key)["shortcuts"], own_key["shortcuts"])
         off = {"shortcuts": {"close_window": "<super> KEY_Q"}}

@@ -28,10 +28,11 @@ class X11Menus : public QObject
   public:
     static X11Menus& instance();
 
-    // Wayfire tells a window's process, not its X11 ID: the menu the
-    // process registered last. Empty if none.
-    X11Menu forProcess(uint pid) const;
+    // By the window's X11 ID, as registered; empty if none.
     X11Menu forWindow(uint window) const;
+    // The menu the process registered last, for a window that registered
+    // none of its own; empty if none.
+    X11Menu forProcess(uint pid) const;
 
     void add(uint window, uint pid, const X11Menu& menu);
     void remove(uint window);

@@ -111,21 +111,39 @@ void ActiveWindow::askForMenuAddress()
             {
                 return;
             }
-            setMenuAddress(service, pathAnswer.value("value").toString());
+            const QString path = pathAnswer.value("value").toString();
+            if (!service.isEmpty() && !path.isEmpty())
+            {
+                setMenuAddress(service, path);
+                return;
+            }
+            askForX11Menu(askedFor);
         });
     });
 }
 
-void ActiveWindow::setMenuAddress(const QString& wayland_service, const QString& wayland_path)
+// An X11 program registers a menu for each of its windows, by the window's
+// X11 ID; the compositor's x11-settings plugin tells it. A program that
+// registered none for this window may have one for another of its windows.
+void ActiveWindow::askForX11Menu(int askedFor)
 {
-    QString service = wayland_service;
-    QString path = wayland_path;
-    if (service.isEmpty() && windowPid > 0)
-    {
-        const X11Menu menu = X11Menus::instance().forProcess(windowPid);
-        service = menu.service;
-        path = menu.path;
-    }
+    compositor.request("x11-settings/window-id", {{"id", askedFor}}, [this, askedFor](const QJsonObject& answer) {
+        if (askedFor != windowId)
+        {
+            return;
+        }
+        const uint x11Window = uint(answer.value("window").toDouble());
+        X11Menu menu = x11Window != 0 ? X11Menus::instance().forWindow(x11Window) : X11Menu{};
+        if (menu.service.isEmpty() && windowPid > 0)
+        {
+            menu = X11Menus::instance().forProcess(windowPid);
+        }
+        setMenuAddress(menu.service, menu.path);
+    });
+}
+
+void ActiveWindow::setMenuAddress(const QString& service, const QString& path)
+{
     const bool found = !service.isEmpty() && !path.isEmpty();
     if (!found)
     {

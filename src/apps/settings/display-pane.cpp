@@ -442,9 +442,11 @@ void DisplayPane::setScreenEnabled(const QString& name, bool enabled)
 
 void DisplayPane::showOffScreens()
 {
+    // Later: the Turn On button that brought us here is still being clicked.
     while (QLayoutItem* row = off_rows->takeAt(0))
     {
-        delete row->widget();
+        row->widget()->hide();
+        row->widget()->deleteLater();
         delete row;
     }
     const QVariantMap all = choices.value(QStringLiteral("display"), QStringLiteral("screens")).toMap();

@@ -20,9 +20,11 @@
 // main_screen, else the first), so the shell tells it, and again when it
 // changes.
 //
-// IPC: x11-settings/xwayland-ready; x11-settings/main-screen { "name" }.
+// IPC: x11-settings/xwayland-ready; x11-settings/main-screen { "name" };
+// x11-settings/window-id { "id" } -> { "window" }, an X11 window's own ID.
 
 #include <cmath>
+#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -32,6 +34,7 @@
 #include <xcb/xcbext.h>
 
 #include <wayfire/core.hpp>
+#include <wayfire/nonstd/wlroots-full.hpp>
 #include <wayfire/output-layout.hpp>
 #include <wayfire/output.hpp>
 #include <wayfire/plugin.hpp>
@@ -44,6 +47,7 @@ namespace x11_settings
 {
 const std::string READY_METHOD = "x11-settings/xwayland-ready";
 const std::string MAIN_SCREEN_METHOD = "x11-settings/main-screen";
+const std::string WINDOW_ID_METHOD = "x11-settings/window-id";
 
 class plugin_t : public wf::plugin_interface_t
 {
@@ -52,6 +56,10 @@ class plugin_t : public wf::plugin_interface_t
     wf::option_wrapper_t<bool> dpi{"x11-settings/dpi"};
     // Xft.dpi as last written; 0 if this plugin has not written it.
     int written_dpi = 0;
+    // Asked for the resources, to write dpi_wanted when they come.
+    bool dpi_asked = false;
+    int dpi_wanted = 0;
+    xcb_get_property_cookie_t resources_asked;
     // As the shell last said; empty until it does.
     std::string main_screen;
 
@@ -99,6 +107,7 @@ class plugin_t : public wf::plugin_interface_t
         again = false;
         names_asked.clear();
         written_dpi = 0;
+        dpi_asked = false;
     }
 
     // Xwayland has said it is ready, so the connection's setup is answered at once.
@@ -129,7 +138,8 @@ class plugin_t : public wf::plugin_interface_t
         xcb_flush(x11);
     }
 
-    void read_events(uint32_t mask)
+    // Whether any of the events read says Xwayland's screens changed.
+    bool screens_changed()
     {
         bool changed = false;
         while (xcb_generic_event_t* event = xcb_poll_for_event(x11))
@@ -139,6 +149,12 @@ class plugin_t : public wf::plugin_interface_t
                                                       (type == randr_event_base + XCB_RANDR_NOTIFY));
             free(event);
         }
+        return changed;
+    }
+
+    void read_events(uint32_t mask)
+    {
+        bool changed = screens_changed();
         // Xwayland ended; a new one says it is ready again.
         if ((mask & (WL_EVENT_HANGUP | WL_EVENT_ERROR)) || xcb_connection_has_error(x11))
         {
@@ -146,6 +162,9 @@ class plugin_t : public wf::plugin_interface_t
             return;
         }
         read_answers();
+        // Reading answers may have read events behind them, which the socket
+        // will not tell of again.
+        changed |= screens_changed();
         if (changed)
         {
             apply();
@@ -172,6 +191,7 @@ class plugin_t : public wf::plugin_interface_t
     // Goes on as far as the answers that have come allow.
     void read_answers()
     {
+        read_resources();
         if (step == step_t::randr)
         {
             xcb_query_extension_reply_t* randr = nullptr;
@@ -261,6 +281,8 @@ class plugin_t : public wf::plugin_interface_t
 
     // X11 programs read it from the root window's RESOURCE_MANAGER, as xrdb
     // leaves it; nothing else is kept there under Xwayland.
+    // Xft.dpi is one line among the resources; others (xrdb's) stay. The
+    // resources are read first, and the line written when they have come.
     void write_dpi()
     {
         if ((x11 == nullptr) || (step == step_t::randr))
@@ -269,22 +291,66 @@ class plugin_t : public wf::plugin_interface_t
         }
         wf::output_t* screen = main_screen.empty() ? nullptr : wf::get_core().output_layout->find_output(main_screen);
         const int wanted = (dpi && screen) ? int(std::lround(96 * screen->handle->scale)) : 0;
-        if (wanted == written_dpi)
+        if ((wanted == written_dpi) && !dpi_asked)
         {
             return;
         }
-        if (wanted > 0)
+        dpi_wanted = wanted;
+        if (!dpi_asked)
         {
-            const std::string resources = "Xft.dpi:\t" + std::to_string(wanted) + "\n";
-            xcb_change_property(x11, XCB_PROP_MODE_REPLACE, root, XCB_ATOM_RESOURCE_MANAGER, XCB_ATOM_STRING, 8,
-                uint32_t(resources.size()), resources.data());
+            resources_asked = xcb_get_property(x11, 0, root, XCB_ATOM_RESOURCE_MANAGER, XCB_ATOM_STRING, 0, 1 << 20);
+            dpi_asked = true;
+            xcb_flush(x11);
         }
-        else
+    }
+
+    void read_resources()
+    {
+        xcb_get_property_reply_t* reply = nullptr;
+        if (!dpi_asked || !xcb_poll_for_reply(x11, resources_asked.sequence, reinterpret_cast<void**>(&reply), nullptr))
+        {
+            return;
+        }
+        dpi_asked = false;
+        std::string resources;
+        if (reply != nullptr)
+        {
+            resources.assign(
+                static_cast<const char*>(xcb_get_property_value(reply)), size_t(xcb_get_property_value_length(reply)));
+            free(reply);
+        }
+        if (dpi_wanted == written_dpi)
+        {
+            return;
+        }
+
+        // Without this plugin's line: replaced, or taken away if the plugin wrote it.
+        std::string kept;
+        std::istringstream lines(resources);
+        std::string line;
+        while (std::getline(lines, line))
+        {
+            const bool is_dpi = line.rfind("Xft.dpi:", 0) == 0;
+            if (!is_dpi || ((dpi_wanted == 0) && (written_dpi == 0)))
+            {
+                kept += line + "\n";
+            }
+        }
+        if (dpi_wanted > 0)
+        {
+            kept += "Xft.dpi:\t" + std::to_string(dpi_wanted) + "\n";
+        }
+        if (kept.empty())
         {
             xcb_delete_property(x11, root, XCB_ATOM_RESOURCE_MANAGER);
         }
+        else
+        {
+            xcb_change_property(x11, XCB_PROP_MODE_REPLACE, root, XCB_ATOM_RESOURCE_MANAGER, XCB_ATOM_STRING, 8,
+                uint32_t(kept.size()), kept.data());
+        }
         xcb_flush(x11);
-        written_dpi = wanted;
+        written_dpi = dpi_wanted;
     }
 
     // A screen's scale may have changed.
@@ -308,6 +374,17 @@ class plugin_t : public wf::plugin_interface_t
         return wf::ipc::json_ok();
     };
 
+    // An X11 window's own ID, which X11 programs name their menu by
+    // (the shell's menu registrar); 0 for a Wayland window.
+    wf::ipc::method_callback on_window_id = [](const wf::json_t& data) {
+        wayfire_view view = wf::ipc::json_find_view_or_throw(data);
+        wlr_surface* surface = view->get_wlr_surface();
+        wlr_xwayland_surface* x11_window = surface ? wlr_xwayland_surface_try_from_wlr_surface(surface) : nullptr;
+        wf::json_t answer = wf::ipc::json_ok();
+        answer["window"] = x11_window ? int64_t(x11_window->window_id) : int64_t(0);
+        return answer;
+    };
+
     wf::ipc::method_callback on_main_screen = [this](const wf::json_t& data) {
         if (!data.has_member("name") || !data["name"].is_string())
         {
@@ -324,6 +401,7 @@ class plugin_t : public wf::plugin_interface_t
     {
         repo->register_method(READY_METHOD, on_ready);
         repo->register_method(MAIN_SCREEN_METHOD, on_main_screen);
+        repo->register_method(WINDOW_ID_METHOD, on_window_id);
         primary_screen.set_callback([this] { apply(); });
         dpi.set_callback([this] { write_dpi(); });
         wf::get_core().output_layout->connect(&on_layout_changed);
@@ -333,6 +411,7 @@ class plugin_t : public wf::plugin_interface_t
     {
         repo->unregister_method(READY_METHOD);
         repo->unregister_method(MAIN_SCREEN_METHOD);
+        repo->unregister_method(WINDOW_ID_METHOD);
         disconnect();
     }
 };

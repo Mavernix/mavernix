@@ -2,7 +2,7 @@
 // be fetched. Wayland applications announce their menu's bus address through
 // the "kde-appmenu" protocol; Wayfire exposes it as two window properties.
 // X11 applications register it with the shell's menu registrar
-// (menu-registrar.hpp), found here by the window's process.
+// (menu-registrar.hpp), found here by the window's X11 ID, else its process.
 //
 // Usage in QML:
 //   ActiveWindow { id: activeWindow }
@@ -38,6 +38,7 @@ class ActiveWindow : public QObject
     void startWatching();
     void takeWindow(const QJsonValue& window);
     void askForMenuAddress();
+    void askForX11Menu(int askedFor);
     void setMenuAddress(const QString& service, const QString& path);
 
     CompositorSocket compositor;
