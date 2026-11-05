@@ -704,6 +704,27 @@ class TestGameSettings(SessionTestCase):
         with self.assertRaises(SystemExit):
             self.make.game_vrr_section({"display": {"screens": {"DP-1": {"vrr": "sometimes"}}}})
 
+    def test_screens_can_be_turned_off(self):
+        config = {"display": {"screens": {"HDMI-A-1": {"enabled": False}}}}
+        self.assertEqual(self.make.screens_off(config, ["eDP-1", "HDMI-A-1"]), {"HDMI-A-1"})
+        # One screen always stays on.
+        self.assertEqual(self.make.screens_off(config, ["HDMI-A-1"]), set())
+        lid = {"power": {"lid_turns_off_screen": True}}
+        with unittest.mock.patch.object(self.make, "lid_is_closed", return_value=True):
+            self.assertEqual(self.make.screens_off(lid, ["eDP-1", "HDMI-A-1"]), {"eDP-1"})
+            self.assertEqual(self.make.screens_off(lid, ["eDP-1"]), set())
+            # Shut lid, external turned off by hand: the external one stays off.
+            both = {**lid, **config}
+            self.assertEqual(self.make.screens_off(both, ["eDP-1", "HDMI-A-1"]), {"HDMI-A-1"})
+        with unittest.mock.patch.object(self.make, "lid_is_closed", return_value=False):
+            self.assertEqual(self.make.screens_off(lid, ["eDP-1", "HDMI-A-1"]), set())
+        screens = {"eDP-1": {"width": 1920, "height": 1080, "dpi": None, "sizes": {"1920x1080"}},
+                   "HDMI-A-1": {"width": 1920, "height": 1080, "dpi": None, "sizes": {"1920x1080"}}}
+        with unittest.mock.patch.object(self.make, "connected_screens", return_value=screens):
+            sections = {section[0]: section for section in self.make.display_sections(config)}
+        self.assertEqual(sections["[output:HDMI-A-1]"], ["[output:HDMI-A-1]", "mode = off"])
+        self.assertNotIn("mode = off", sections["[output:eDP-1]"])
+
     def test_quit_can_close_the_whole_program(self):
         config = {"shortcuts": {"close_window": "<super> KEY_Q"}, "window": {"quit_closes_app": True}}
         self.assertEqual(self.make.with_quit_closing_app(config)["shortcuts"], {"quit_app": "<super> KEY_Q"})

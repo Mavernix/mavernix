@@ -18,6 +18,7 @@ import re
 import shlex
 import socket
 import struct
+import subprocess
 import sys
 import tomllib
 from itertools import takewhile
@@ -358,6 +359,38 @@ def connected_screens(directory=SCREENS_DIRECTORY):
     return screens
 
 
+# Screens built into the computer, which a closed lid covers.
+BUILT_IN_PREFIXES = ("eDP", "LVDS", "DSI")
+
+
+def lid_is_closed():
+    """Whether the laptop's lid is shut, as UPower says; False without a lid
+    or without UPower."""
+    try:
+        answer = subprocess.run(["busctl", "--system", "get-property", "org.freedesktop.UPower",
+                                 "/org/freedesktop/UPower", "org.freedesktop.UPower", "LidIsClosed"],
+                                capture_output=True, text=True, timeout=2)
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return answer.stdout.strip() == "b true"
+
+
+def screens_off(config, plugged_in):
+    """The screens to turn off: those turned off in the config
+    ([display.screens.NAME] enabled = false) and, with [power]
+    lid_turns_off_screen, a built-in one while the lid is shut. One plugged
+    in screen always stays on, one the user did not turn off if they can."""
+    single = config.get("display", {}).get("screens", {})
+    chosen = {name for name, own in single.items() if own.get("enabled", True) is False}
+    off = set(chosen)
+    if config.get("power", {}).get("lid_turns_off_screen", False) and lid_is_closed():
+        off |= {name for name in plugged_in if name.startswith(BUILT_IN_PREFIXES)}
+    if plugged_in and all(name in off for name in plugged_in):
+        kept = next((name for name in plugged_in if name not in chosen), plugged_in[0])
+        off.discard(kept)
+    return off
+
+
 # CVT reduced blanking (VESA CVT 1.2, as `cvt -r` makes them): a custom mode's
 # timings. A laptop's panel keeps its own; the graphics card stretches the
 # picture to it.
@@ -553,7 +586,8 @@ def display_sections(config):
     now: rewriting the config would otherwise undo an arrangement made
     while the session runs. Once a screen is to be wider or narrower than
     it is now, those places no longer fit and Wayfire places them anew; and
-    screens the config places are moved to touch again (tidied).
+    screens the config places are moved to touch again (tidied). A screen to
+    be turned off (screens_off) gets only `mode = off`.
     """
     wishes = config.get("display", {})
     general = wishes.get("scale", "auto")
@@ -584,9 +618,9 @@ def display_sections(config):
             places[name] = tuple(int(number) for number in str(written).split(","))
         except ValueError:
             continue
-    # The screens in use: those the compositor shows, if it answers. One
-    # plugged in but switched off has no place to keep.
-    plugged_in = [name for name in names if name in (shown or screens)]
+    # The screens in use: those plugged in and not to be turned off.
+    off = screens_off(config, [name for name in names if name in screens])
+    plugged_in = [name for name in names if name in screens and name not in off]
     if len(plugged_in) > 1 and all(name in places and len(places[name]) == 2 and sizes[name] for name in plugged_in):
         main = wishes.get("main_screen")
         main = main if main in plugged_in else plugged_in[0]
@@ -594,6 +628,9 @@ def display_sections(config):
         places.update({name: screen[:2] for name, screen in placed.items()})
 
     for name in names:
+        if name in off:
+            sections.append([f"[output:{name}]", "mode = off"])
+            continue
         own = single.get(name, {})
         scale = scales[name]
         lines = [f"[output:{name}]", f"scale = {scale}"]

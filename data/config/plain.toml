@@ -648,6 +648,9 @@ display_title = "Display"
 display_brightness = "Brightness:"
 display_arrangement_note = "Click a screen to change its settings below. Drag the screens to stand as they do on your desk, and drag the bar along the top of one to move the menu bar and dock to another screen."
 display_main_here = "Show the menu bar and dock on this screen"
+display_use_here = "Use this screen"
+display_turned_off = "%1 is turned off."
+display_turn_on = "Turn On"
 display_built_in = "Built-in screen"
 display_one_screen = "Plug in another screen to arrange your screens and choose each one's settings here."
 display_brightness_low = "Dim"
@@ -685,6 +688,7 @@ energy_lid = "When the lid is closed:"
 energy_lid_sleep = "Sleep"
 energy_lid_lock = "Lock the screen"
 energy_lid_nothing = "Do nothing"
+energy_lid_screen_off = "Turn off the built-in screen while the lid is closed and another screen is connected"
 energy_lock = "Lock the screen when it switches off and before sleep"
 energy_never = "Never"
 energy_minute = "%1 minute"
@@ -724,6 +728,8 @@ scale = "auto"
 # Variable refresh rate: "off", "games" (while a window is full screen) or
 # "always"; left out: off.
 # vrr = "games"
+# Turned off, as if it were not plugged in; one screen always stays on.
+# enabled = false
 
 [input]
 # Keyboard layouts (xkeyboard-config names), comma-separated with variants
@@ -775,6 +781,9 @@ lock_before_sleep = true
 # HandleLidSwitch, usually sleep), "lock" only locks the screen, "nothing"
 # does nothing. Needs UPower to see the lid.
 lid_closed = "sleep"
+# While the lid is closed and another screen is on, turn the built-in screen
+# off; it comes back when the lid opens.
+lid_turns_off_screen = false
 
 [session]
 # Reload the shell when its files change on disk (for development).

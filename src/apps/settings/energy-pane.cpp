@@ -127,18 +127,32 @@ EnergyPane::EnergyPane(Choices& choices, QWidget* parent) : QWidget(parent), cho
         // As wide as its longest choice, not as the pane.
         lid->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
         form->addRow(word("energy_lid", "When the lid is closed:"), lid);
+
+        // As a Mac with its lid shut and a screen plugged in.
+        auto* lid_off = new QCheckBox(word("energy_lid_screen_off",
+            "Turn off the built-in screen while the lid is closed and another screen is connected"));
+        lid_off->setChecked(choices.value(QStringLiteral("power"), QStringLiteral("lid_turns_off_screen")).toBool());
+        connect(lid_off, &QCheckBox::toggled, this, [this](bool on) {
+            this->choices.set(QStringLiteral("power"), QStringLiteral("lid_turns_off_screen"), on);
+        });
+        form->addRow(QString(), lid_off);
+
         // Shown once UPower says this computer has a lid; asked aside, so
         // a slow or missing UPower does not hold the window up.
         form->setRowVisible(lid, false);
+        form->setRowVisible(lid_off, false);
         QDBusMessage ask = QDBusMessage::createMethodCall(QStringLiteral("org.freedesktop.UPower"),
             QStringLiteral("/org/freedesktop/UPower"), QStringLiteral("org.freedesktop.DBus.Properties"),
             QStringLiteral("Get"));
         ask << QStringLiteral("org.freedesktop.UPower") << QStringLiteral("LidIsPresent");
         auto* watcher = new QDBusPendingCallWatcher(QDBusConnection::systemBus().asyncCall(ask), this);
-        connect(watcher, &QDBusPendingCallWatcher::finished, this, [form, lid](QDBusPendingCallWatcher* finished) {
+        connect(
+            watcher, &QDBusPendingCallWatcher::finished, this, [form, lid, lid_off](QDBusPendingCallWatcher* finished) {
             const QDBusPendingReply<QDBusVariant> reply = *finished;
             finished->deleteLater();
-            form->setRowVisible(lid, !reply.isError() && reply.value().variant().toBool());
+            const bool has_lid = !reply.isError() && reply.value().variant().toBool();
+            form->setRowVisible(lid, has_lid);
+            form->setRowVisible(lid_off, has_lid);
         });
     }
 }

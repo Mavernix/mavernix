@@ -7,6 +7,10 @@
 // scale, "auto" (2 on a dense screen, else 1) or a number; a screen without
 // one follows [display] scale. The theme's pictures are made for 1 and 2 and
 // are less sharp between.
+//
+// A screen can be turned off ([display.screens.NAME] enabled = false), unless
+// it is the only one on. Turned off, it leaves the picture, so the screens
+// that are off are listed below it, each with a button to turn it on.
 
 #pragma once
 
@@ -27,6 +31,7 @@ class QRadioButton;
 class QScreen;
 class QSlider;
 class QTimer;
+class QVBoxLayout;
 class ScreenArrangement;
 
 class DisplayPane : public QWidget
@@ -50,6 +55,9 @@ class DisplayPane : public QWidget
     // Where the screens stand; after a change of size the session moves
     // them to touch again (make_wayfire_config.py).
     void writePositions(const QMap<QString, QPoint>& positions);
+    // [display.screens.NAME] enabled; true is the default and not written.
+    void setScreenEnabled(const QString& name, bool enabled);
+    void showOffScreens();
     QScreen* pickedScreen() const;
     QString mainName() const;
     QString word(const char* key, const char* fallback) const;
@@ -73,6 +81,10 @@ class DisplayPane : public QWidget
     QSlider* scale;
     QLabel* looks_like;
     QCheckBox* main_here;
+    QCheckBox* use_here;
+    // The screens turned off, each with a button.
+    QWidget* off_screens;
+    QVBoxLayout* off_rows;
     // Several key steps in a row make one change of the screen.
     QTimer* write_later;
     QTimer* read_later;

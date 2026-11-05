@@ -51,6 +51,8 @@ A screen built into the computer (eDP, LVDS, DSI) often reports only its own siz
 
 With more than one screen, the panel and dock go on the screen named in `[display] main_screen`, or on the first one if that isn't set.
 
+To turn a screen off, pick it in Settings, Displays and untick Use this screen. That's saved as `[display.screens.NAME] enabled = false`. Screens that are off are listed under the picture, each with a button to turn it back on. One screen always stays on.
+
 X11 programs (Steam, games under Proton or Wine, most SDL games) treat that same screen as their main one: they open on it and offer its resolutions. Without this, Xwayland names no main screen and games pick whichever one comes first. To turn it off, set `[display] x11_primary = false`.
 
 A screen that supports variable refresh rate (VRR, also sold as FreeSync or G-Sync Compatible) gets a choice in Settings, Displays. It's saved as `[display.screens.NAME] vrr`:
@@ -90,6 +92,8 @@ These lock the screen:
 - `"sleep"` follows your system's own rule (logind's `HandleLidSwitch`).
 - `"lock"` locks the screen. Like logind, it leaves a docked laptop alone, meaning one connected to a dock or a second screen, as logind counts it.
 - `"nothing"` does nothing.
+
+With `[power] lid_turns_off_screen = true` (Settings, Energy Saver), closing the lid while another screen is connected turns the built-in screen off, the way a Mac works with its lid shut. Opening the lid turns it back on. Whether the computer sleeps when the lid closes still depends on `lid_closed`, and on logind, which by default leaves a laptop with a second screen awake.
 
 `"lock"` and `"nothing"` need UPower. Settings, Energy only offers the choice on a computer that UPower reports a lid for.
 
