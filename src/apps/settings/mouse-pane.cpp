@@ -119,11 +119,9 @@ MousePane::MousePane(Choices& choices, QWidget* parent) : QWidget(parent), choic
     form->addRow(word("mouse_scroll_speed", "Scrolling speed:"), scrolling_row);
     form->addRow(QString(), with_note(acceleration, word("mouse_acceleration_note", "")));
     form->addRow(word("mouse_primary", "Primary mouse button:"), primary);
-    form->addRow(QString(),
-        with_note(middle_paste, word("mouse_middle_click_paste_note", "Takes effect the next time you log in.")));
-    form->addRow(QString(),
-        with_note(shake,
-            word("mouse_shake_to_find_note", "Moving the pointer quickly back and forth makes it big for a moment")));
+    form->addRow(
+        QString(), with_note(middle_paste, word("mouse_middle_click_paste_note", "Applies after you log in again.")));
+    form->addRow(QString(), with_note(shake, word("mouse_shake_to_find_note", "The pointer grows for a moment.")));
     rows->addLayout(form);
     rows->addStretch();
 }

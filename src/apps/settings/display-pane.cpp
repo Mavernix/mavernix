@@ -179,10 +179,8 @@ DisplayPane::DisplayPane(Choices& choices, QWidget* parent) : QWidget(parent), c
     sharp_x11->setChecked(choices.value(QStringLiteral("display"), QStringLiteral("sharp_x11")).toBool());
     connect(sharp_x11, &QCheckBox::toggled, this,
         [this](bool on) { this->choices.set(QStringLiteral("display"), QStringLiteral("sharp_x11"), on); });
-    auto* sharp_x11_row = with_note(
-        sharp_x11, word("display_sharp_x11_note",
-                       "X11 programs started from now on size themselves by the main screen's scale. Some, games among "
-                       "them, may then look small."));
+    auto* sharp_x11_row = with_note(sharp_x11,
+        word("display_sharp_x11_note", "Applies to X11 programs opened from now on. Some games may look small."));
 
     off_screens = new QWidget;
     off_rows = new QVBoxLayout(off_screens);
