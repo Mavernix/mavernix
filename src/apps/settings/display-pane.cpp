@@ -180,7 +180,8 @@ DisplayPane::DisplayPane(Choices& choices, QWidget* parent) : QWidget(parent), c
     connect(sharp_x11, &QCheckBox::toggled, this,
         [this](bool on) { this->choices.set(QStringLiteral("display"), QStringLiteral("sharp_x11"), on); });
     auto* sharp_x11_row = with_note(sharp_x11,
-        word("display_sharp_x11_note", "Applies to X11 programs opened from now on. Some games may look small."));
+        word("display_sharp_x11_note",
+            "X11 programs draw at the screen's own pixels, so they look sharp; some games may look smaller."));
 
     off_screens = new QWidget;
     off_rows = new QVBoxLayout(off_screens);

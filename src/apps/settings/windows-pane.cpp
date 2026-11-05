@@ -143,14 +143,15 @@ WindowsPane::WindowsPane(Choices& choices, QWidget* parent) : QWidget(parent), c
     // A control is as wide as what it shows, not as the window.
     form->setFieldGrowthPolicy(QFormLayout::FieldsStayAtSizeHint);
     form->addRow(QString(),
-        with_note(
-            snap, word("windows_snap_note",
-                      "Drag a window to a side, a corner or the top to fill that half, quarter or the whole screen.")));
-    form->addRow(QString(), with_note(quit_all, word("windows_quit_closes_app_note",
-                                                    "The Close Window shortcut then quits the whole program too.")));
+        with_note(snap, word("windows_snap_note", "Dragging a window to a side, a corner or the top resizes it, so it "
+                                                  "fills that half, quarter or the whole screen.")));
+    form->addRow(
+        QString(), with_note(quit_all,
+                       word("windows_quit_closes_app_note",
+                           "The Close Window shortcut quits the program too, so all of its windows close at once.")));
     form->addRow(QString(),
         with_note(borderless, word("windows_borderless_note",
-                                  "A game opens full screen on the screen it chose, also in borderless window mode.")));
+                                  "Games open full screen on the screen they chose, so borderless ones fill it too.")));
     form->addRow(word("windows_drag_key", "Move and resize a window by holding:"), drag_key);
     form->addRow(word("windows_double_click", "A double click on a title bar:"), double_click);
     form->addRow(word("windows_buttons", "Window buttons:"), button_side);
