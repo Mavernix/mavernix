@@ -105,6 +105,27 @@ class TestShakeToFind : public QObject
         QVERIFY(!detect.shaking(now));
     }
 
+    void a_harder_level_needs_longer_and_more_turns()
+    {
+        // Level 3: five turns, each after 90 px. Five legs of 100 px (four
+        // turns) shake the easiest level, not this one; seven legs do.
+        shake_detect_t easy(needs_for(1));
+        shake_detect_t middle(needs_for(3));
+        QVERIFY(easy.shaking(zigzag(easy, 5, 100, 0)));
+        QVERIFY(!middle.shaking(zigzag(middle, 5, 100, 0)));
+        middle.reset();
+        QVERIFY(middle.shaking(zigzag(middle, 7, 100, 0)));
+        // Legs of 60 px shake level 1 but are too short for level 3.
+        shake_detect_t short_legs(needs_for(3));
+        QVERIFY(!short_legs.shaking(zigzag(short_legs, 9, 60, 0)));
+    }
+
+    void levels_out_of_range_are_the_nearest()
+    {
+        QCOMPARE(needs_for(0).turn_after_px, needs_for(1).turn_after_px);
+        QCOMPARE(needs_for(9).turns, needs_for(5).turns);
+    }
+
     void the_shake_ends_soon_after_the_turns_stop()
     {
         shake_detect_t detect;

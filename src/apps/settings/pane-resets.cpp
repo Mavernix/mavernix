@@ -34,7 +34,7 @@ QList<Choices::Key> pane_choices(const QString& pane)
             {{QStringLiteral("input"), {QStringLiteral("mouse_speed"), QStringLiteral("mouse_acceleration"),
                                            QStringLiteral("mouse_natural_scroll"), QStringLiteral("mouse_scroll_speed"),
                                            QStringLiteral("left_handed"), QStringLiteral("middle_click_paste"),
-                                           QStringLiteral("shake_to_find")}}}},
+                                           QStringLiteral("shake_to_find"), QStringLiteral("shake_sensitivity")}}}},
         {QStringLiteral("energy"),
             {{QStringLiteral("idle"), {QStringLiteral("lock_before_sleep"), QStringLiteral("screen_off_after_seconds"),
                                           QStringLiteral("sleep_after_seconds")}},

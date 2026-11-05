@@ -82,6 +82,8 @@ By default, selecting text and pressing the middle mouse button pastes it, as on
 
 As on El Capitan, shaking the pointer quickly back and forth can make it big for a moment, so it's easy to find. It's off at first: tick it in Settings, Mouse, or set `[input] shake_to_find = true`. It works with a mouse and a trackpad, but not while a button is held, or over a full-screen window or a game that has taken the pointer.
 
+How hard you have to shake is up to you: Settings, Mouse, **Shake needed**, from Little to Lots, or `[input] shake_sensitivity` from 1 to 5. The default is 3: five quick turns, each after about 90 pixels. At 1 it reacts to four short turns of 40 pixels, which ordinary quick pointing can set off.
+
 ## Wayfire's own settings
 
 The session writes Wayfire's settings file anew at every login and on every change, so editing it by hand doesn't last. Put your own Wayfire settings in `~/.config/mavernix/wayfire.ini` instead. It's added after everything the session writes, and Wayfire takes the last value it reads, so yours win. For example:

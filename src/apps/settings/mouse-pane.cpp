@@ -91,6 +91,14 @@ MousePane::MousePane(Choices& choices, QWidget* parent) : QWidget(parent), choic
     auto* shake = new QCheckBox(word("mouse_shake_to_find", "Shake the pointer to find it"));
     shake->setChecked(choices.value(table, QStringLiteral("shake_to_find")).toBool());
     connect(shake, &QCheckBox::toggled, this, [this](bool on) { change(QStringLiteral("shake_to_find"), on); });
+    // How hard a shake must be: 1, a little, to 5, a lot; 3 until chosen.
+    const QVariant chosen_shake = choices.value(table, QStringLiteral("shake_sensitivity"));
+    auto* shake_needed = stops_slider({1, 2, 3, 4, 5}, chosen_shake.isValid() ? chosen_shake.toDouble() : 3,
+        [this](double value) { change(QStringLiteral("shake_sensitivity"), qRound(value)); });
+    auto* shake_row =
+        with_end_words(shake_needed, word("mouse_shake_little", "Little"), word("mouse_shake_lots", "Lots"));
+    shake_row->setEnabled(shake->isChecked());
+    connect(shake, &QCheckBox::toggled, shake_row, &QWidget::setEnabled);
 
     auto* left = new QRadioButton(word("mouse_primary_left", "Left"));
     auto* right = new QRadioButton(word("mouse_primary_right", "Right"));
@@ -130,6 +138,7 @@ MousePane::MousePane(Choices& choices, QWidget* parent) : QWidget(parent), choic
     form->addRow(QString(),
         with_note(shake, word("mouse_shake_to_find_note",
                              "Shaking the mouse quickly makes the pointer grow for a moment, so you can spot it.")));
+    form->addRow(word("mouse_shake_needed", "Shake needed:"), shake_row);
     rows->addLayout(form);
     rows->addStretch();
 }

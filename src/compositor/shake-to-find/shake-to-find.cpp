@@ -38,6 +38,8 @@ class plugin_t : public wf::plugin_interface_t
 {
     wf::option_wrapper_t<std::string> theme{"input/cursor_theme"};
     wf::option_wrapper_t<int> size{"input/cursor_size"};
+    // How hard a shake must be, 1 to 5 (shake-detect.hpp).
+    wf::option_wrapper_t<int> sensitivity{"shake-to-find/sensitivity"};
 
     // The theme at its largest, for the arrow.
     wlr_xcursor_manager* big_theme = nullptr;
@@ -202,6 +204,8 @@ class plugin_t : public wf::plugin_interface_t
         load_arrow();
         theme.set_callback([this] { load_arrow(); });
         size.set_callback([this] { load_arrow(); });
+        detect = shake_detect_t{needs_for(sensitivity)};
+        sensitivity.set_callback([this] { detect = shake_detect_t{needs_for(sensitivity)}; });
         last_at = wf::get_core().get_cursor_position();
         wf::get_core().connect(&on_motion);
         wf::get_core().connect(&on_button);

@@ -768,6 +768,12 @@ class TestGameSettings(SessionTestCase):
         command = self.make.shortcut_section(self.make.with_quit_closing_app(config), {})
         self.assertIn("binding_quit_app = <super> KEY_Q", command)
 
+    def test_shake_sensitivity(self):
+        self.assertEqual(self.make.shake_to_find_section({}), ["[shake-to-find]", "sensitivity = 3"])
+        self.assertEqual(self.make.shake_to_find_section({"input": {"shake_sensitivity": 5}})[1], "sensitivity = 5")
+        with self.assertRaises(SystemExit):
+            self.make.shake_to_find_section({"input": {"shake_sensitivity": 9}})
+
     def test_x11_primary_and_middle_click_paste(self):
         self.assertEqual(self.make.x11_windows_section({}),
                          ["[x11-windows]", "games = true", "moves_need_button = true"])

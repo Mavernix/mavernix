@@ -687,6 +687,9 @@ mouse_middle_click_paste = "Paste the selected text with the middle button"
 mouse_middle_click_paste_note = "A middle click pastes the last selected text, after you log in again."
 mouse_shake_to_find = "Shake the pointer to find it"
 mouse_shake_to_find_note = "Shaking the mouse quickly makes the pointer grow for a moment, so you can spot it."
+mouse_shake_needed = "Shake needed:"
+mouse_shake_little = "Little"
+mouse_shake_lots = "Lots"
 display_title = "Display"
 display_brightness = "Brightness:"
 display_arrangement_note = "Click a screen to change its settings below. Drag the screens to stand as they do on your desk, and drag the bar along the top of one to move the menu bar and dock to another screen."
@@ -804,6 +807,10 @@ natural_scroll = false
 # Pasting the selected text with the middle button, in every program; takes
 # effect at the next login. Left out: true.
 # middle_click_paste = true
+# Shaking the pointer makes it big for a moment; how hard a shake must be,
+# from 1 (a little) to 5 (a lot). Left out: off, and 3.
+# shake_to_find = false
+# shake_sensitivity = 3
 # Shaking the pointer quickly back and forth makes it big for a moment, so
 # it's easy to find, as on El Capitan. Left out: false.
 # shake_to_find = false

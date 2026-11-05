@@ -7,11 +7,24 @@
 
 namespace shake_to_find
 {
-// A turn counts once the pointer has gone this far each way, so the jitter
-// of a hand that holds still is no shake.
-const double TURN_AFTER_PX = 40;
-// This many turns within SHAKE_WITHIN_MS start a shake...
-const int TURNS_TO_SHAKE = 4;
+// How hard a shake must be, from 1 (the least) to 5. A turn counts once the
+// pointer has gone turn_after_px each way, so the jitter of a hand that
+// holds still is no shake; `turns` turns within SHAKE_WITHIN_MS start a
+// shake.
+struct needs_t
+{
+    double turn_after_px;
+    int turns;
+};
+const needs_t LEAST_NEEDS = {40, 4};
+// [input] shake_sensitivity; 3 when the config says nothing.
+needs_t needs_for(int level);
+
+// The values of the least that is needed, which a detector made without
+// needs uses.
+const double TURN_AFTER_PX = LEAST_NEEDS.turn_after_px;
+const int TURNS_TO_SHAKE = LEAST_NEEDS.turns;
+const int MOST_TURNS = 6;
 const int64_t SHAKE_WITHIN_MS = 1000;
 // ...which lasts while turns keep coming, at most this far apart. A pause
 // as long forgets the turns so far.
@@ -20,6 +33,8 @@ const int64_t TURNS_APART_MS = 350;
 class shake_detect_t
 {
   public:
+    explicit shake_detect_t(needs_t needs = LEAST_NEEDS);
+
     // The pointer moved by dx, dy pixels at now_ms. Only side to side counts.
     void move(double dx, double dy, int64_t now_ms);
     bool shaking(int64_t now_ms) const;
@@ -28,6 +43,8 @@ class shake_detect_t
 
   private:
     void turned(int64_t now_ms);
+
+    needs_t needs;
 
     // The way the pointer goes: -1 left, 1 right, 0 not yet known.
     int way = 0;
@@ -39,7 +56,7 @@ class shake_detect_t
     int64_t last_move_ms = -1;
 
     // The times of the latest turns, oldest first.
-    int64_t turns_ms[TURNS_TO_SHAKE] = {};
+    int64_t turns_ms[MOST_TURNS] = {};
     int turn_count = 0;
     bool shake = false;
 };

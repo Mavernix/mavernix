@@ -711,6 +711,15 @@ def shake_to_find_plugins(config):
     return ["shake-to-find"] if wanted else []
 
 
+def shake_to_find_section(config):
+    """[input] shake_sensitivity: how hard a shake must be, 1 (a little) to
+    5 (a lot); 3 when left out."""
+    level = config.get("input", {}).get("shake_sensitivity", 3)
+    if isinstance(level, bool) or not isinstance(level, int) or not 1 <= level <= 5:
+        fail("[input] shake_sensitivity must be a whole number from 1 to 5")
+    return ["[shake-to-find]", f"sensitivity = {level}"]
+
+
 def display_flag(config, key, default):
     value = config.get("display", {}).get(key, default)
     if not isinstance(value, bool):
@@ -1227,6 +1236,7 @@ def main():
     sections.append(game_keys_section(config))
     sections.append(input_section(config, theme))
     plugins += shake_to_find_plugins(config)
+    sections.append(shake_to_find_section(config))
     sections.append(idle_section(config))
     sections += display_sections(config)
     vrr, vrr_plugins = game_vrr_section(config)
