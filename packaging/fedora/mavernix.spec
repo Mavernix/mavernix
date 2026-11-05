@@ -34,6 +34,10 @@ Requires:       qt6-qtdeclarative
 Requires:       qt6-qtmultimedia
 Requires:       qt6-qtwayland
 Requires:       qt6-qtsvg
+# Reading .icns pictures chosen as application icons.
+Requires:       qt6-qtimageformats
+# Reading .icns pictures chosen as application icons.
+Requires:       qt6-qtimageformats
 Requires:       python3
 Requires:       python3-pillow
 Requires:       kvantum

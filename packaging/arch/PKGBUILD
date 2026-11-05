@@ -10,7 +10,7 @@ license=('GPL-3.0-or-later' 'MIT')
 depends=(
   'wayfire>=0.11.0' 'wayfire<0.12'
   'quickshell'
-  'qt6-base' 'qt6-declarative' 'qt6-multimedia' 'qt6-wayland' 'qt6-svg'
+  'qt6-base' 'qt6-declarative' 'qt6-multimedia' 'qt6-wayland' 'qt6-svg' 'qt6-imageformats'
   'librsvg' 'glib2' 'tomlplusplus' 'libxcb'
   'python' 'python-pillow'
   'kvantum'
