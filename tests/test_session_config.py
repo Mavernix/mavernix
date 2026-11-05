@@ -769,9 +769,12 @@ class TestGameSettings(SessionTestCase):
         self.assertIn("binding_quit_app = <super> KEY_Q", command)
 
     def test_x11_primary_and_middle_click_paste(self):
-        self.assertEqual(self.make.x11_windows_section({}), ["[x11-windows]", "games = true"])
-        self.assertEqual(self.make.x11_windows_section({"window": {"borderless_full_screen": False}}),
-                         ["[x11-windows]", "games = false"])
+        self.assertEqual(self.make.x11_windows_section({}),
+                         ["[x11-windows]", "games = true", "moves_need_button = true"])
+        self.assertEqual(self.make.x11_windows_section({"window": {"borderless_full_screen": False}})[1],
+                         "games = false")
+        self.assertEqual(self.make.x11_windows_section({"window": {"x11_moves_need_button": False}})[2],
+                         "moves_need_button = false")
         self.assertEqual(self.make.x11_settings_section({}),
                          ["[x11-settings]", "primary_screen = true", "dpi = false"])
         sharp = {"display": {"x11_primary": False, "sharp_x11": True}}

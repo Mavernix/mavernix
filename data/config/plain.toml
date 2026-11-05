@@ -35,6 +35,10 @@ quit_closes_app = false
 # cover a whole screen is made full screen there instead of being fitted
 # between the menu bar and the dock.
 borderless_full_screen = true
+# An X11 window that draws its own title bar may ask to be moved or resized
+# only while a mouse button or finger is down. Steam asks at other times,
+# and would then stick to the pointer until the next click.
+x11_moves_need_button = true
 
 [gtk]
 # Buttons in GTK header bars, which the compositor does not draw. Left out:

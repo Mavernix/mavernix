@@ -11,12 +11,22 @@
 // units: device pixels with workarounds/force_xwayland_scaling, when
 // positions are each screen's own and the window's own screen is taken.
 //
+// "moves_need_button": a window may ask to be moved or resized only while a
+// mouse button or a finger is down, as when its own title bar is dragged.
+// Wayfire's move plugin would start a move at any time, from wherever the
+// last press was, even on another screen, and hold the window until the next
+// click: Steam asks so at times as it shows itself again from its tray menu.
+// Such a request is refused by holding the move plugin's kind of activation
+// on the window's screen while Wayfire handles it; this plugin hears X11
+// windows' requests before Wayfire does.
+//
 // Wayfire changes the size a window asks for before anyone else sees it, so
 // the plugin notes each X11 window's own wish: its size when made, and every
 // resize it asks for afterwards, when it looks again: a game may switch to
 // borderless in its options, and back to a window, which the plugin then
 // undoes if the full screen was its doing.
 
+#include <algorithm>
 #include <cmath>
 #include <map>
 #include <memory>
@@ -52,12 +62,52 @@ struct wish_t
     // This plugin made the window full screen.
     bool made_full_screen = false;
     wf::wl_listener_wrapper on_configure;
+    wf::wl_listener_wrapper on_move;
+    wf::wl_listener_wrapper on_resize;
     wf::wl_listener_wrapper on_destroy;
 };
 
 class plugin_t : public wf::plugin_interface_t
 {
     wf::option_wrapper_t<bool> games{"x11-windows/games"};
+    wf::option_wrapper_t<bool> moves_need_button{"x11-windows/moves_need_button"};
+
+    // Mouse buttons and fingers down now.
+    int presses = 0;
+    wf::signal::connection_t<wf::input_event_signal<wlr_pointer_button_event>> on_button =
+        [this](wf::input_event_signal<wlr_pointer_button_event>* event) {
+        presses = std::max(0, presses + (event->event->state == WL_POINTER_BUTTON_STATE_PRESSED ? 1 : -1));
+    };
+    wf::signal::connection_t<wf::input_event_signal<wlr_touch_down_event>> on_finger_down = [this](auto) { presses++; };
+    wf::signal::connection_t<wf::input_event_signal<wlr_touch_up_event>> on_finger_up = [this](auto) {
+        presses = std::max(0, presses - 1);
+    };
+
+    // Held while Wayfire handles a move or resize asked for with nothing down.
+    wf::plugin_activation_data_t refusing{
+        .name = "x11-windows",
+        .capabilities = wf::CAPABILITY_GRAB_INPUT | wf::CAPABILITY_MANAGE_DESKTOP,
+    };
+    wf::output_t* refusing_on = nullptr;
+    wf::wl_idle_call stop_refusing;
+
+    void refuse_unless_pressed(wlr_xwayland_surface* surface)
+    {
+        if ((presses > 0) || !moves_need_button || (refusing_on != nullptr) || (surface->surface == nullptr))
+        {
+            return;
+        }
+        wayfire_view view = wf::wl_surface_to_wayfire_view(surface->surface->resource);
+        wf::output_t* output = view ? view->get_output() : nullptr;
+        if (output && output->activate_plugin(&refusing))
+        {
+            refusing_on = output;
+            stop_refusing.run_once([this] {
+                refusing_on->deactivate_plugin(&refusing);
+                refusing_on = nullptr;
+            });
+        }
+    }
     std::map<wlr_xwayland_surface*, std::unique_ptr<wish_t>> wishes;
     // A wish is freed only after its window's destroy listener has run.
     std::vector<std::unique_ptr<wish_t>> gone;
@@ -75,10 +125,16 @@ class plugin_t : public wf::plugin_interface_t
                                       : nullptr);
         });
         wish->on_configure.connect(&surface->events.request_configure);
+        wish->on_move.set_callback([this, surface](void*) { refuse_unless_pressed(surface); });
+        wish->on_move.connect(&surface->events.request_move);
+        wish->on_resize.set_callback([this, surface](void*) { refuse_unless_pressed(surface); });
+        wish->on_resize.connect(&surface->events.request_resize);
         wish->on_destroy.set_callback([this, surface](void*) {
             // wlroots requires every listener gone by the time the window is.
             auto entry = wishes.find(surface);
             entry->second->on_configure.disconnect();
+            entry->second->on_move.disconnect();
+            entry->second->on_resize.disconnect();
             entry->second->on_destroy.disconnect();
             gone.push_back(std::move(entry->second));
             wishes.erase(entry);
@@ -167,10 +223,19 @@ class plugin_t : public wf::plugin_interface_t
     {
         wf::get_core().connect(&on_new_surface);
         wf::get_core().connect(&on_mapped);
+        wf::get_core().connect(&on_button);
+        wf::get_core().connect(&on_finger_down);
+        wf::get_core().connect(&on_finger_up);
     }
 
     void fini() override
     {
+        if (refusing_on != nullptr)
+        {
+            refusing_on->deactivate_plugin(&refusing);
+            refusing_on = nullptr;
+        }
+        stop_refusing.disconnect();
         free_gone.disconnect();
         gone.clear();
         wishes.clear();

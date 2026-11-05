@@ -689,11 +689,17 @@ def x11_windows_section(config):
     for. A full-screen one goes there rather than to the focused screen; a
     frameless one that asks to cover a screen (a game's "borderless full
     screen") is made full screen, not fitted between the menu bar and the
-    dock."""
-    wanted = config.get("window", {}).get("borderless_full_screen", True)
-    if not isinstance(wanted, bool):
-        fail("[window] borderless_full_screen must be true or false")
-    return ["[x11-windows]", f"games = {yes_or_no(wanted)}"]
+    dock. [window] x11_moves_need_button: an X11 window may ask to be moved
+    or resized only while a button or finger is down (Steam asks at other
+    times, and would stick to the pointer)."""
+    window = config.get("window", {})
+    values = {}
+    for key, default in (("borderless_full_screen", True), ("x11_moves_need_button", True)):
+        values[key] = window.get(key, default)
+        if not isinstance(values[key], bool):
+            fail(f"[window] {key} must be true or false")
+    return ["[x11-windows]", f"games = {yes_or_no(values['borderless_full_screen'])}",
+            f"moves_need_button = {yes_or_no(values['x11_moves_need_button'])}"]
 
 
 def shake_to_find_plugins(config):

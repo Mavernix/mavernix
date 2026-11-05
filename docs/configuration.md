@@ -66,6 +66,8 @@ X11 games get the screen they ask for:
 
 To turn both off, untick "Games fill the screen they ask for" in Settings, Windows, or set `[window] borderless_full_screen = false`.
 
+A program that draws its own title bar, like Steam, asks the compositor to move its window when you drag that title bar. Steam sometimes asks at other moments too, for example when it shows itself again from its tray menu. The window would then stick to the pointer until the next click, perhaps pulled to the screen where you last clicked. So such a request is only followed while a mouse button or finger is down. To follow every request, set `[window] x11_moves_need_button = false`.
+
 A screen that supports variable refresh rate (VRR, also sold as FreeSync or G-Sync Compatible) gets a choice in Settings, Displays. It's saved as `[display.screens.NAME] vrr`:
 
 - `"off"`, the default
