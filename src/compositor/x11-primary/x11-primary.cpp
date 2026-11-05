@@ -8,7 +8,7 @@
 // x11-primary/xwayland-ready), since connecting earlier would wait on a server
 // that cannot start while the compositor waits. Xwayland adds and removes its
 // screens after the compositor does, so the plugin sets the primary again
-// whenever Xwayland reports a change.
+// whenever Xwayland reports a change. Nothing waits for Xwayland's answers.
 //
 // Which screen is the main one is the shell's to decide ([display]
 // main_screen, else the first), so the shell tells it, and again when it
@@ -17,9 +17,12 @@
 // IPC: x11-primary/xwayland-ready; x11-primary/main-screen { "name" }.
 
 #include <string>
+#include <utility>
+#include <vector>
 
 #include <xcb/randr.h>
 #include <xcb/xcb.h>
+#include <xcb/xcbext.h>
 
 #include <wayfire/core.hpp>
 #include <wayfire/plugin.hpp>
@@ -45,6 +48,29 @@ class plugin_t : public wf::plugin_interface_t
     uint8_t randr_event_base = 0;
     wl_event_source* readable = nullptr;
 
+    // Nothing here waits for Xwayland: a request is sent, and its answer read
+    // when it has come (read_events). Waiting could hang the desktop while
+    // Xwayland itself waits on the compositor.
+    enum class step_t
+    {
+        none,
+        // Whether Xwayland has RandR, and its event numbers.
+        randr,
+        // Its screens.
+        screens,
+        // Each screen's name, and which one is primary now.
+        names,
+    };
+    step_t step = step_t::none;
+    // Asked for while a lookup was under way: another one follows it.
+    bool again = false;
+    xcb_query_extension_cookie_t randr_asked;
+    xcb_randr_get_screen_resources_current_cookie_t screens_asked;
+    std::vector<std::pair<xcb_randr_output_t, xcb_randr_get_output_info_cookie_t>> names_asked;
+    size_t names_read = 0;
+    xcb_randr_get_output_primary_cookie_t primary_asked;
+    xcb_randr_output_t wanted = XCB_NONE;
+
     void disconnect()
     {
         if (readable != nullptr)
@@ -57,8 +83,12 @@ class plugin_t : public wf::plugin_interface_t
             xcb_disconnect(x11);
             x11 = nullptr;
         }
+        step = step_t::none;
+        again = false;
+        names_asked.clear();
     }
 
+    // Xwayland has said it is ready, so the connection's setup is answered at once.
     void connect()
     {
         disconnect();
@@ -67,37 +97,23 @@ class plugin_t : public wf::plugin_interface_t
         {
             return;
         }
-
         x11 = xcb_connect(display.c_str(), nullptr);
-        const xcb_query_extension_reply_t* randr =
-            xcb_connection_has_error(x11) ? nullptr : xcb_get_extension_data(x11, &xcb_randr_id);
-        if ((randr == nullptr) || !randr->present)
+        if (xcb_connection_has_error(x11))
         {
-            LOGE("x11-primary: cannot use RandR on Xwayland's display ", display);
+            LOGE("x11-primary: cannot connect to Xwayland's display ", display);
             disconnect();
             return;
         }
-        // RandR 1.3 has the primary screen; the server answers with what it has.
-        xcb_randr_query_version_reply_t* version =
-            xcb_randr_query_version_reply(x11, xcb_randr_query_version(x11, 1, 3), nullptr);
-        const bool new_enough = (version != nullptr) && ((version->major_version > 1) || (version->minor_version >= 3));
-        free(version);
-        if (!new_enough)
-        {
-            LOGE("x11-primary: Xwayland's RandR is older than 1.3");
-            disconnect();
-            return;
-        }
-
-        randr_event_base = randr->first_event;
         root = xcb_setup_roots_iterator(xcb_get_setup(x11)).data->root;
-        xcb_randr_select_input(x11, root, XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE | XCB_RANDR_NOTIFY_MASK_OUTPUT_CHANGE);
         readable = wl_event_loop_add_fd(wf::get_core().ev_loop, xcb_get_file_descriptor(x11), WL_EVENT_READABLE,
             [](int, uint32_t mask, void* self) {
             static_cast<plugin_t*>(self)->read_events(mask);
             return 0;
         }, this);
-        apply();
+        const char name[] = "RANDR";
+        randr_asked = xcb_query_extension(x11, sizeof(name) - 1, name);
+        step = step_t::randr;
+        xcb_flush(x11);
     }
 
     void read_events(uint32_t mask)
@@ -106,8 +122,8 @@ class plugin_t : public wf::plugin_interface_t
         while (xcb_generic_event_t* event = xcb_poll_for_event(x11))
         {
             const uint8_t type = event->response_type & ~0x80;
-            changed |= (type == randr_event_base + XCB_RANDR_SCREEN_CHANGE_NOTIFY) ||
-                       (type == randr_event_base + XCB_RANDR_NOTIFY);
+            changed |= (randr_event_base != 0) && ((type == randr_event_base + XCB_RANDR_SCREEN_CHANGE_NOTIFY) ||
+                                                      (type == randr_event_base + XCB_RANDR_NOTIFY));
             free(event);
         }
         // Xwayland ended; a new one says it is ready again.
@@ -116,65 +132,127 @@ class plugin_t : public wf::plugin_interface_t
             disconnect();
             return;
         }
+        read_answers();
         if (changed)
         {
             apply();
         }
     }
 
-    // The X11 screen named `name`, else XCB_NONE.
-    xcb_randr_output_t find_output(const std::string& name)
-    {
-        xcb_randr_get_screen_resources_current_reply_t* resources = xcb_randr_get_screen_resources_current_reply(
-            x11, xcb_randr_get_screen_resources_current(x11, root), nullptr);
-        if (resources == nullptr)
-        {
-            return XCB_NONE;
-        }
-
-        xcb_randr_output_t found = XCB_NONE;
-        const xcb_randr_output_t* outputs = xcb_randr_get_screen_resources_current_outputs(resources);
-        const int count = xcb_randr_get_screen_resources_current_outputs_length(resources);
-        for (int i = 0; (i < count) && (found == XCB_NONE); ++i)
-        {
-            xcb_randr_get_output_info_reply_t* info = xcb_randr_get_output_info_reply(
-                x11, xcb_randr_get_output_info(x11, outputs[i], resources->config_timestamp), nullptr);
-            if (info != nullptr)
-            {
-                const auto* bytes = reinterpret_cast<const char*>(xcb_randr_get_output_info_name(info));
-                const std::string output_name(bytes, xcb_randr_get_output_info_name_length(info));
-                if (output_name == name)
-                {
-                    found = outputs[i];
-                }
-                free(info);
-            }
-        }
-        free(resources);
-        return found;
-    }
-
+    // Starts finding the main screen among Xwayland's and making it primary.
     void apply()
     {
-        if (x11 == nullptr)
+        if ((x11 == nullptr) || (step == step_t::randr))
         {
             return;
         }
-
-        xcb_randr_output_t wanted = XCB_NONE;
-        if (enabled && !main_screen.empty())
+        if (step != step_t::none)
         {
-            wanted = find_output(main_screen);
+            again = true;
+            return;
+        }
+        screens_asked = xcb_randr_get_screen_resources_current(x11, root);
+        step = step_t::screens;
+        xcb_flush(x11);
+    }
+
+    // Goes on as far as the answers that have come allow.
+    void read_answers()
+    {
+        if (step == step_t::randr)
+        {
+            xcb_query_extension_reply_t* randr = nullptr;
+            if (!xcb_poll_for_reply(x11, randr_asked.sequence, reinterpret_cast<void**>(&randr), nullptr))
+            {
+                return;
+            }
+            const bool present = (randr != nullptr) && randr->present;
+            randr_event_base = present ? randr->first_event : 0;
+            free(randr);
+            if (!present)
+            {
+                LOGE("x11-primary: Xwayland has no RandR");
+                disconnect();
+                return;
+            }
+            xcb_randr_select_input(
+                x11, root, XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE | XCB_RANDR_NOTIFY_MASK_OUTPUT_CHANGE);
+            step = step_t::none;
+            apply();
         }
 
-        xcb_randr_get_output_primary_reply_t* primary =
-            xcb_randr_get_output_primary_reply(x11, xcb_randr_get_output_primary(x11, root), nullptr);
-        const bool same = (primary != nullptr) && (primary->output == wanted);
-        free(primary);
-        if (!same)
+        if (step == step_t::screens)
         {
-            xcb_randr_set_output_primary(x11, root, wanted);
+            xcb_randr_get_screen_resources_current_reply_t* screens = nullptr;
+            if (!xcb_poll_for_reply(x11, screens_asked.sequence, reinterpret_cast<void**>(&screens), nullptr))
+            {
+                return;
+            }
+            if (screens == nullptr)
+            {
+                finish();
+                return;
+            }
+            names_asked.clear();
+            names_read = 0;
+            wanted = XCB_NONE;
+            const xcb_randr_output_t* outputs = xcb_randr_get_screen_resources_current_outputs(screens);
+            const int count = xcb_randr_get_screen_resources_current_outputs_length(screens);
+            for (int i = 0; i < count; ++i)
+            {
+                names_asked.emplace_back(
+                    outputs[i], xcb_randr_get_output_info(x11, outputs[i], screens->config_timestamp));
+            }
+            free(screens);
+            primary_asked = xcb_randr_get_output_primary(x11, root);
+            step = step_t::names;
             xcb_flush(x11);
+        }
+
+        if (step == step_t::names)
+        {
+            for (; names_read < names_asked.size(); ++names_read)
+            {
+                const auto& [output, asked] = names_asked[names_read];
+                xcb_randr_get_output_info_reply_t* info = nullptr;
+                if (!xcb_poll_for_reply(x11, asked.sequence, reinterpret_cast<void**>(&info), nullptr))
+                {
+                    return;
+                }
+                if (info != nullptr)
+                {
+                    const auto* bytes = reinterpret_cast<const char*>(xcb_randr_get_output_info_name(info));
+                    const std::string name(bytes, xcb_randr_get_output_info_name_length(info));
+                    if (enabled && (name == main_screen))
+                    {
+                        wanted = output;
+                    }
+                    free(info);
+                }
+            }
+            xcb_randr_get_output_primary_reply_t* primary = nullptr;
+            if (!xcb_poll_for_reply(x11, primary_asked.sequence, reinterpret_cast<void**>(&primary), nullptr))
+            {
+                return;
+            }
+            if ((primary == nullptr) || (primary->output != wanted))
+            {
+                xcb_randr_set_output_primary(x11, root, wanted);
+                xcb_flush(x11);
+            }
+            free(primary);
+            finish();
+        }
+    }
+
+    void finish()
+    {
+        step = step_t::none;
+        names_asked.clear();
+        if (again)
+        {
+            again = false;
+            apply();
         }
     }
 
