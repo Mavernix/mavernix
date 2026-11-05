@@ -3,7 +3,7 @@
 %global wayfire_version 0.11.0
 
 Name:           mavernix
-Version:        0.5.9
+Version:        0.6.0
 Release:        1%{?dist}
 Summary:        A lightweight Wayland desktop session with a classic look
 
@@ -23,6 +23,7 @@ BuildRequires:  pkgconfig(wayfire) = %{wayfire_version}
 BuildRequires:  pkgconfig(tomlplusplus)
 BuildRequires:  pkgconfig(gio-unix-2.0)
 BuildRequires:  pkgconfig(librsvg-2.0)
+BuildRequires:  pkgconfig(xcb-randr)
 BuildRequires:  qt6-qtbase-devel
 BuildRequires:  qt6-qtbase-private-devel
 BuildRequires:  qt6-qtdeclarative-devel
@@ -33,6 +34,10 @@ Requires:       qt6-qtdeclarative
 Requires:       qt6-qtmultimedia
 Requires:       qt6-qtwayland
 Requires:       qt6-qtsvg
+# Reading .icns pictures chosen as application icons.
+Requires:       qt6-qtimageformats
+# Reading .icns pictures chosen as application icons.
+Requires:       qt6-qtimageformats
 Requires:       python3
 Requires:       python3-pillow
 Requires:       kvantum

@@ -95,6 +95,16 @@ class TestWrittenSettings(SessionTestCase):
                 self.assertIn("themed-decoration", settings["core"]["plugins"].split())
                 self.assertEqual(Path(settings["themed-decoration"]["theme"]).name, desktop)
 
+    def test_the_users_own_wayfire_settings_come_last(self):
+        own = self.home / ".config" / "mavernix" / "wayfire.ini"
+        own.parent.mkdir(parents=True)
+        own.write_text("[workarounds]\ndisable_primary_selection = true\n")
+        written = self.home / "plain.ini"
+        self.run_script("make_wayfire_config.py", CONFIG_DIR / "plain.toml", written)
+        text = written.read_text()
+        self.assertIn("disable_primary_selection = false", text)
+        self.assertTrue(text.rstrip().endswith("disable_primary_selection = true"))
+
     def test_shell_settings(self):
         for desktop in DESKTOPS:
             with self.subTest(desktop=desktop):
@@ -314,6 +324,8 @@ class TestWindowAnimations(SessionTestCase):
         sections, plugins = make_wayfire_config.animation_sections(theme)
         self.assertIn("themed-open-close", plugins)
         self.assertIn("open_animation = pop", sections[0])
+        # Not X11 menus, which Wayland menus are not either.
+        self.assertIn('enabled_for = type equals "toplevel"', sections[0])
         self.assertIn(["[themed-open-close]", "pop_duration = 200ms circle"], sections)
 
         # A desktop's [window] quick_open_close_ms keeps the curve.
@@ -671,6 +683,124 @@ class TestPointerSettings(SessionTestCase):
             make_wayfire_config.input_section({"input": {"mouse_speed": 2}}, {})
 
 
+class TestGtkSettingsFile(SessionTestCase):
+    def test_x11_gtk_programs_get_the_font_and_pointer(self):
+        sys.path[:0] = [self.folder.name, str(SESSION_SOURCE_DIR)]
+        try:
+            import make_app_theme
+        finally:
+            del sys.path[:2]
+        theme = {"controls": {}, "fonts": {"interface": {"family": "Lucida Grande", "size": 13}},
+                 "cursors": {"theme": "Aqua", "size": 32}}
+        make_app_theme.write_gtk_settings(theme, self.home)
+        written = (self.home / "xdg" / "gtk-3.0" / "settings.ini").read_text().splitlines()
+        self.assertIn("gtk-font-name=Lucida Grande 9.75", written)
+        self.assertIn("gtk-cursor-theme-name=Aqua", written)
+        self.assertIn("gtk-cursor-theme-size=32", written)
+
+
+class TestGameSettings(SessionTestCase):
+    def setUp(self):
+        super().setUp()
+        sys.path[:0] = [self.folder.name, str(SESSION_SOURCE_DIR)]
+        try:
+            import make_wayfire_config
+        finally:
+            del sys.path[:2]
+        self.make = make_wayfire_config
+
+    def test_variable_refresh_rate_per_screen(self):
+        screens = {"DP-1": {"vrr": "always"}, "DP-2": {"vrr": "games"}, "HDMI-A-1": {}}
+        config = {"display": {"screens": screens}}
+        with unittest.mock.patch.object(self.make, "connected_screens", return_value={}):
+            sections = {section[0]: section for section in self.make.display_sections(config)}
+        self.assertIn("vrr = true", sections["[output:DP-1]"])
+        self.assertNotIn("vrr = true", sections["[output:DP-2]"])
+        self.assertNotIn("vrr = true", sections["[output:HDMI-A-1]"])
+        self.assertEqual(self.make.game_vrr_section(config), (["[game-vrr]", "screens = DP-2"], ["game-vrr"]))
+        self.assertEqual(self.make.game_vrr_section({}), (None, []))
+        with self.assertRaises(SystemExit):
+            self.make.game_vrr_section({"display": {"screens": {"DP-1": {"vrr": "sometimes"}}}})
+
+    def test_screens_can_be_turned_off(self):
+        config = {"display": {"screens": {"HDMI-A-1": {"enabled": False}}}}
+        self.assertEqual(self.make.screens_off(config, ["eDP-1", "HDMI-A-1"]), {"HDMI-A-1"})
+        # One screen always stays on.
+        self.assertEqual(self.make.screens_off(config, ["HDMI-A-1"]), set())
+        lid = {"power": {"lid_turns_off_screen": True}}
+        with unittest.mock.patch.object(self.make, "lid_is_closed", return_value=True):
+            self.assertEqual(self.make.screens_off(lid, ["eDP-1", "HDMI-A-1"]), {"eDP-1"})
+            self.assertEqual(self.make.screens_off(lid, ["eDP-1"]), set())
+            # Shut lid, external turned off by hand: the external one stays off.
+            both = {**lid, **config}
+            self.assertEqual(self.make.screens_off(both, ["eDP-1", "HDMI-A-1"]), {"HDMI-A-1"})
+        with unittest.mock.patch.object(self.make, "lid_is_closed", return_value=False):
+            self.assertEqual(self.make.screens_off(lid, ["eDP-1", "HDMI-A-1"]), set())
+        screens = {"eDP-1": {"width": 1920, "height": 1080, "dpi": None, "sizes": {"1920x1080"}},
+                   "HDMI-A-1": {"width": 1920, "height": 1080, "dpi": None, "sizes": {"1920x1080"}}}
+        with unittest.mock.patch.object(self.make, "connected_screens", return_value=screens):
+            sections = {section[0]: section for section in self.make.display_sections(config)}
+        self.assertEqual(sections["[output:HDMI-A-1]"], ["[output:HDMI-A-1]", "mode = off"])
+        self.assertNotIn("mode = off", sections["[output:eDP-1]"])
+        # While the compositor shows only eDP-1 (HDMI-A-1 turned off), turning
+        # HDMI-A-1 on again writes it on; a connector the compositor never
+        # shows (a nested session's host screen) is no screen of ours.
+        shown = {"eDP-1": {"width": 1920, "height": 1080}}
+        with unittest.mock.patch.object(self.make, "connected_screens", return_value=screens), \
+                unittest.mock.patch.object(self.make, "screen_modes", return_value=shown):
+            on_again = {section[0]: section for section in self.make.display_sections({})}
+            hidden_host = self.make.display_sections({"display": {"screens": {"eDP-1": {"enabled": False}}}})
+        self.assertNotIn("mode = off", on_again["[output:HDMI-A-1]"])
+        # eDP-1 is the only one shown, so it stays on.
+        self.assertNotIn(["[output:eDP-1]", "mode = off"], hidden_host)
+
+    def test_quit_can_close_the_whole_program(self):
+        config = {"shortcuts": {"close_window": "<super> KEY_Q"}, "window": {"quit_closes_app": True}}
+        self.assertEqual(self.make.with_quit_closing_app(config)["shortcuts"],
+                         {"quit_app": "<super> KEY_Q", "close_window": ""})
+        # Wayfire's own close key ("<super> KEY_Q | <alt> KEY_F4") must not come back.
+        keys = self.make.compositor_key_sections(self.make.with_quit_closing_app(config))
+        self.assertIn("close_top_view = none", keys["core"])
+        own_key = {"shortcuts": {"close_window": "KEY_W", "quit_app": "KEY_Q"}, "window": {"quit_closes_app": True}}
+        self.assertEqual(self.make.with_quit_closing_app(own_key)["shortcuts"], own_key["shortcuts"])
+        off = {"shortcuts": {"close_window": "<super> KEY_Q"}}
+        self.assertEqual(self.make.with_quit_closing_app(off)["shortcuts"], off["shortcuts"])
+        command = self.make.shortcut_section(self.make.with_quit_closing_app(config), {})
+        self.assertIn("binding_quit_app = <super> KEY_Q", command)
+
+    def test_shake_sensitivity(self):
+        self.assertEqual(self.make.shake_to_find_section({}), ["[shake-to-find]", "sensitivity = 3"])
+        self.assertEqual(self.make.shake_to_find_section({"input": {"shake_sensitivity": 5}})[1], "sensitivity = 5")
+        with self.assertRaises(SystemExit):
+            self.make.shake_to_find_section({"input": {"shake_sensitivity": 9}})
+
+    def test_x11_primary_and_middle_click_paste(self):
+        self.assertEqual(self.make.x11_windows_section({}),
+                         ["[x11-windows]", "games = true", "moves_need_button = true"])
+        self.assertEqual(self.make.x11_windows_section({"window": {"borderless_full_screen": False}})[1],
+                         "games = false")
+        self.assertEqual(self.make.x11_windows_section({"window": {"x11_moves_need_button": False}})[2],
+                         "moves_need_button = false")
+        self.assertEqual(self.make.x11_settings_section({}),
+                         ["[x11-settings]", "primary_screen = true", "dpi = false"])
+        sharp = {"display": {"x11_primary": False, "sharp_x11": True}}
+        self.assertEqual(self.make.x11_settings_section(sharp),
+                         ["[x11-settings]", "primary_screen = false", "dpi = true"])
+        self.assertIn("force_xwayland_scaling = true", self.make.workarounds_section(sharp))
+        self.assertIn("force_xwayland_scaling = false", self.make.workarounds_section({}))
+        self.assertIn("disable_primary_selection = false", self.make.workarounds_section({}))
+        self.assertIn("disable_primary_selection = true",
+                      self.make.workarounds_section({"input": {"middle_click_paste": False}}))
+        with self.assertRaises(SystemExit):
+            self.make.workarounds_section({"input": {"middle_click_paste": "no"}})
+
+    def test_shake_to_find_loads_its_plugin_only_when_asked(self):
+        self.assertEqual(self.make.shake_to_find_plugins({}), [])
+        self.assertEqual(self.make.shake_to_find_plugins({"input": {"shake_to_find": True}}), ["shake-to-find"])
+        with self.assertRaises(SystemExit):
+            self.make.shake_to_find_plugins({"input": {"shake_to_find": "yes"}})
+
+
 class TestGameKeys(SessionTestCase):
     def test_bare_function_keys_are_let_through_but_not_full_screens(self):
         sys.path[:0] = [self.folder.name, str(SESSION_SOURCE_DIR)]
@@ -688,7 +818,12 @@ class TestGameKeys(SessionTestCase):
             },
             "commands": {"terminal": {"key": "KEY_F12", "run": ["foot"]}, "gone": None},
         })
-        self.assertEqual(section, ["[game-keys]", "keys = KEY_F3 KEY_F4 KEY_F12"])
+        self.assertEqual(section, ["[game-keys]", "keys = KEY_F3 KEY_F4 KEY_F12",
+                                   "programs = steam_app_* Minecraft*", "all_x11 = false"])
+        own = make_wayfire_config.game_keys_section({"game_keys": {"games": ["osu!"], "all_x11": True}})
+        self.assertEqual(own[2:], ["programs = osu!", "all_x11 = true"])
+        with self.assertRaises(SystemExit):
+            make_wayfire_config.game_keys_section({"game_keys": {"games": "steam_app_*"}})
 
 
 class TestShellBlur(SessionTestCase):
@@ -785,6 +920,59 @@ class TestKdeColours(SessionTestCase):
         for name in ("BreezeLight", "BreezeDark"):
             with self.subTest(scheme=name):
                 self.assertEqual(colours(schemes / f"{name}.colors"), theme)
+
+
+class TestLogGuard(unittest.TestCase):
+    """The shell's log keeps repeated lines short, and a shell stuck saying
+    one line over and over is ended so keep-running starts it again."""
+
+    def setUp(self):
+        self.folder = tempfile.TemporaryDirectory()
+        self.addCleanup(self.folder.cleanup)
+        self.log = Path(self.folder.name) / "login.log"
+        self.pid_file = Path(self.folder.name) / "shell.pid"
+
+    def guard(self, text):
+        subprocess.run([sys.executable, SESSION_SOURCE_DIR / "log_guard.py", self.log, self.pid_file],
+                       input=text.encode(), check=True, timeout=30)
+        return self.log.read_text()
+
+    def test_repeated_lines_are_counted(self):
+        log = self.guard("starting\n" + "same\n" * 4 + "done\n")
+        self.assertEqual(log, "starting\nsame\nlog_guard: the line above came 3 more times\ndone\n")
+
+    def test_count_comes_at_the_end_too(self):
+        log = self.guard("same\n" * 3)
+        self.assertEqual(log, "same\nlog_guard: the line above came 2 more times\n")
+
+    def test_stuck_shell_is_ended(self):
+        # A stand-in shell: a program named qs, as the real one is.
+        shell_program = Path(self.folder.name) / "qs"
+        shutil.copy(shutil.which("sleep"), shell_program)
+        shell = subprocess.Popen([shell_program, "60"])
+        self.addCleanup(shell.kill)
+        self.pid_file.write_text(f"{shell.pid}\n")
+        log = self.guard("Invalid socket 285\n" * 6000)
+        self.assertEqual(shell.wait(timeout=10), -15)
+        self.assertIn("seems stuck; starting it again", log)
+        self.assertLess(len(log), 1000)
+
+    def test_stuck_shell_saying_two_things_is_ended(self):
+        shell_program = Path(self.folder.name) / "qs"
+        shutil.copy(shutil.which("sleep"), shell_program)
+        shell = subprocess.Popen([shell_program, "60"])
+        self.addCleanup(shell.kill)
+        self.pid_file.write_text(f"{shell.pid}\n")
+        log = self.guard("Invalid socket 285\nInvalid socket 286\n" * 3000)
+        self.assertEqual(shell.wait(timeout=10), -15)
+        self.assertIn("seems stuck; starting it again", log)
+
+    def test_other_program_is_left_alone(self):
+        other = subprocess.Popen(["sleep", "60"])
+        self.addCleanup(other.kill)
+        self.pid_file.write_text(f"{other.pid}\n")
+        self.guard("Invalid socket 285\n" * 6000)
+        self.assertIsNone(other.poll())
 
 
 if __name__ == "__main__":

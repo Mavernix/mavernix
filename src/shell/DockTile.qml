@@ -6,6 +6,7 @@ import QtQuick
 import QtQuick.Effects
 import Quickshell
 import Quickshell.Wayland
+import "ApplicationEntry.js" as ApplicationEntry
 import "ApplicationName.js" as ApplicationName
 
 Item {
@@ -80,7 +81,7 @@ Item {
     readonly property var windows: {
         if (entry !== null) {
             return ToplevelManager.toplevels.values.filter(
-                window => DesktopEntries.heuristicLookup(window.appId) === tile.entry)
+                window => ApplicationEntry.of(DesktopEntries, window.appId) === tile.entry)
         }
         if (appId !== "") {
             return ToplevelManager.toplevels.values.filter(window => window.appId === tile.appId)
@@ -88,6 +89,9 @@ Item {
         return []
     }
     readonly property bool running: minimizedWindow === null && windows.length > 0
+    // The program's window in front as the pointer came onto the icon; a
+    // press on the dock takes the focus from it before the press is handled.
+    property var frontWindow: null
 
     // In pixels; the dock moves the tile up by this and the reflection down.
     property real lift: 0
@@ -193,6 +197,26 @@ Item {
     // magnification; a hover handler here would hide it from the dock.
     property bool pointerOver: false
     readonly property bool hovered: pointerOver && press.enabled
+    onHoveredChanged: {
+        if (hovered) {
+            noteFrontWindow()
+        }
+    }
+    function noteFrontWindow() {
+        const active = ToplevelManager.activeToplevel
+        frontWindow = active !== null && windows.includes(active) ? active : null
+    }
+    // Another window may come forward (Alt-Tab) while the pointer rests here.
+    // A press takes the focus from the window before the click is seen, so a
+    // window losing it to none is not noted.
+    Connections {
+        target: ToplevelManager
+        function onActiveToplevelChanged() {
+            if (tile.hovered && ToplevelManager.activeToplevel !== null) {
+                tile.noteFrontWindow()
+            }
+        }
+    }
 
     signal menuWanted()
     // A press held this long opens the menu too, as on a Mac (on 10.9, about
@@ -234,12 +258,21 @@ Item {
             return
         }
         if (running) {
+            // [dock] click_minimizes: a click on the icon of the program in
+            // front minimizes its front window.
+            if (frontWindow !== null && !frontWindow.minimized && windows.includes(frontWindow)
+                    && (choices?.value("dock", "click_minimizes") ?? false)) {
+                frontWindow.minimized = true
+                return
+            }
             const inView = windows.find(window => !window.minimized)
             if (inView !== undefined) {
                 inView.activate()
             } else {
                 minimizedWindowWanted(windows[0])
             }
+            // In front now, for a second click without leaving the icon.
+            frontWindow = inView ?? windows[0]
             return
         }
         if (entry === null) {

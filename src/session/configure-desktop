@@ -81,8 +81,8 @@ write_shell_settings() {
 write_compositor_settings() {
     local -a arguments=(
         "$config" "$compositor_settings"
-        # The shell, restarted if it dies.
-        --autostart "shell=$session_dir/keep-running $session_dir/run-shell >> $login_log 2>&1"
+        # The shell, restarted if it dies or gets stuck (log_guard.py).
+        --autostart "shell=$session_dir/keep-running $session_dir/run-shell 2>&1 | python3 $session_dir/log_guard.py $login_log $state_dir/shell.pid"
         --autostart "at_login=python3 $session_dir/at_login.py $shell_settings >> $login_log 2>&1"
     )
     if [[ -n "$extra_ini" ]]; then

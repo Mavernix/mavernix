@@ -7,6 +7,7 @@
 
 import QtQml
 import QtQuick
+import Quickshell
 import Quickshell.Wayland
 import Shell.Native
 
@@ -69,6 +70,11 @@ Item {
     LidWatch {
         handlesLid: idle.lidClosed === "lock" || idle.lidClosed === "nothing"
         onClosedChanged: {
+            // [power] lid_turns_off_screen: the session writes the built-in
+            // screen off while the lid is shut and another screen is on.
+            if (choices.value("power", "lid_turns_off_screen") ?? false) {
+                Quickshell.execDetached(["mavernix-reconfigure"])
+            }
             // Docked, the lid is left alone, as logind leaves it.
             if (closed && !docked && idle.lidClosed === "lock") {
                 idle.lockScreen.lock()

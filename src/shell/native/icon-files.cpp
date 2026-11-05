@@ -4,6 +4,7 @@
 #include <QGuiApplication>
 #include <QIcon>
 #include <QImage>
+#include <QImageReader>
 #include <QMutex>
 #include <QtMath>
 #include <QPainter>
@@ -138,10 +139,37 @@ std::optional<IconFile> best_file(const QString& name, int side)
 
 // A picture file at `wanted` size, keeping its proportions. QImage, not
 // QPixmap: QPixmap::load goes through QPixmapCache, which is for the main
-// thread only.
+// thread only. An .icns or .ico file holds the icon at several sizes, the
+// first often the smallest: the smallest at least as large as wanted is
+// taken, else the largest.
 QImage read_scaled(const QString& path, const QSize& wanted)
 {
-    const QImage read(path);
+    const int side = qMax(wanted.width(), wanted.height());
+    QImageReader reader(path);
+    const int count = qMax(1, reader.imageCount());
+    QImage read;
+    for (int index = 0; index < count; index++)
+    {
+        if ((index > 0) && !reader.jumpToImage(index))
+        {
+            break;
+        }
+        const QImage picture = reader.read();
+        if (picture.isNull())
+        {
+            continue;
+        }
+        const int picture_side = qMax(picture.width(), picture.height());
+        const int read_side = qMax(read.width(), read.height());
+        // Large enough and smaller than the one so far, or larger while none is large enough.
+        const bool better = read.isNull() || ((picture_side >= side) ? (read_side < side || picture_side < read_side)
+                                                                     : (read_side < side && picture_side > read_side));
+        if (better)
+        {
+            read = picture;
+        }
+    }
+
     if (read.isNull() || read.size() == wanted)
     {
         return read;

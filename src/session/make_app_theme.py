@@ -30,6 +30,7 @@ import xml.etree.ElementTree as ElementTree
 from pathlib import Path
 
 from themes import usable_icon_theme
+from write_interface_settings import wanted_interface_values
 
 try:
     from PIL import Image
@@ -875,11 +876,20 @@ def write_kde_settings(theme, output_directory):
 
 
 def write_gtk_settings(theme, output_directory):
-    """Writes GTK's settings.ini (read from every XDG config dir)."""
+    """Writes GTK's settings.ini (read from every XDG config dir).
+
+    GTK on Wayland reads font and pointer from dconf
+    (write_interface_settings.py); on X11, with no XSETTINGS service, only
+    from here, so they are written here too, the same."""
     lines = ["[Settings]"]
     icon_theme = theme.get("icons", {}).get("theme")
     if icon_theme is not None:
         lines.append(f"gtk-icon-theme-name={icon_theme}")
+    interface = wanted_interface_values(theme)
+    for key, setting in (("font-name", "gtk-font-name"), ("cursor-theme", "gtk-cursor-theme-name"),
+                         ("cursor-size", "gtk-cursor-theme-size")):
+        if key in interface:
+            lines.append(f"{setting}={interface[key]}")
     if theme["controls"].get("dark", False):
         # Editors and terminals pick their own colours from this.
         lines.append("gtk-application-prefer-dark-theme=true")

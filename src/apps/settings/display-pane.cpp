@@ -8,7 +8,9 @@
 #include <QFile>
 #include <QFormLayout>
 #include <QGuiApplication>
+#include <QHBoxLayout>
 #include <QLabel>
+#include <QPushButton>
 #include <QRadioButton>
 #include <QScreen>
 #include <QSignalBlocker>
@@ -163,6 +165,28 @@ DisplayPane::DisplayPane(Choices& choices, QWidget* parent) : QWidget(parent), c
         }
     });
 
+    use_here = new QCheckBox(word("display_use_here", "Use this screen"));
+    connect(use_here, &QCheckBox::toggled, this, [this](bool on) {
+        if (!on)
+        {
+            setScreenEnabled(picked, false);
+        }
+    });
+
+    // For every screen: X11 programs at the screen's own pixels instead of
+    // stretched, sizing themselves by the main screen's scale ([display] sharp_x11).
+    auto* sharp_x11 = new QCheckBox(word("display_sharp_x11", "Draw X11 programs sharply on scaled screens"));
+    sharp_x11->setChecked(choices.value(QStringLiteral("display"), QStringLiteral("sharp_x11")).toBool());
+    connect(sharp_x11, &QCheckBox::toggled, this,
+        [this](bool on) { this->choices.set(QStringLiteral("display"), QStringLiteral("sharp_x11"), on); });
+    auto* sharp_x11_row = with_note(sharp_x11,
+        word("display_sharp_x11_note",
+            "X11 programs draw at the screen's own pixels, so they look sharp; some games may look smaller."));
+
+    off_screens = new QWidget;
+    off_rows = new QVBoxLayout(off_screens);
+    off_rows->setContentsMargins(0, 0, 0, 0);
+
     auto* rows = new QVBoxLayout(this);
     rows->setContentsMargins(0, 0, 0, 0);
     rows->setSpacing(pane_spacing_px);
@@ -174,6 +198,8 @@ DisplayPane::DisplayPane(Choices& choices, QWidget* parent) : QWidget(parent), c
     form->setFormAlignment(Qt::AlignHCenter | Qt::AlignTop);
     rows->addLayout(form);
     rows->addWidget(one_screen_note, 0, Qt::AlignHCenter);
+    rows->addWidget(off_screens, 0, Qt::AlignHCenter);
+    rows->addWidget(sharp_x11_row, 0, Qt::AlignHCenter);
     rows->addStretch();
 
     // The screen's resolution and refresh rate come first: what is drawn
@@ -189,6 +215,7 @@ DisplayPane::DisplayPane(Choices& choices, QWidget* parent) : QWidget(parent), c
     });
     form->addRow(word("display_size", "Size of text and pictures:"), choice);
     form->addRow(QString(), main_here);
+    form->addRow(QString(), use_here);
 
     // Brightness, for a screen with a backlight; the brightness keys change it too.
     backlight = backlight_name();
@@ -316,6 +343,8 @@ void DisplayPane::readScreens()
     picked_title->setVisible(several);
     one_screen_note->setVisible(!several);
     form->setRowVisible(main_here, several);
+    form->setRowVisible(use_here, several);
+    showOffScreens();
 
     // Afresh even if the picked screen stays: the main screen, a name told
     // apart from a new one's, or the brightness row may have changed. If it
@@ -382,12 +411,61 @@ void DisplayPane::pick(const QString& name)
         const bool is_main = name == mainName();
         main_here->setChecked(is_main);
         main_here->setEnabled(!is_main);
+        const QSignalBlocker quiet_use(use_here);
+        use_here->setChecked(true);
     }
     // The backlight is the built-in panel's.
     if (brightness_row != nullptr)
     {
         form->setRowVisible(brightness_row, QGuiApplication::screens().size() < 2 || is_built_in(name));
     }
+}
+
+void DisplayPane::setScreenEnabled(const QString& name, bool enabled)
+{
+    // The whole table is written: a screen's other keys stay as they are.
+    QVariantMap all = choices.value(QStringLiteral("display"), QStringLiteral("screens")).toMap();
+    QVariantMap own = all.value(name).toMap();
+    if (enabled)
+    {
+        own.remove(QStringLiteral("enabled"));
+    }
+    else
+    {
+        own.insert(QStringLiteral("enabled"), false);
+    }
+    all.insert(name, own);
+    choices.set(QStringLiteral("display"), QStringLiteral("screens"), all);
+    showOffScreens();
+}
+
+void DisplayPane::showOffScreens()
+{
+    // Later: the Turn On button that brought us here is still being clicked.
+    while (QLayoutItem* row = off_rows->takeAt(0))
+    {
+        row->widget()->hide();
+        row->widget()->deleteLater();
+        delete row;
+    }
+    const QVariantMap all = choices.value(QStringLiteral("display"), QStringLiteral("screens")).toMap();
+    for (auto screen = all.begin(); screen != all.end(); ++screen)
+    {
+        if (screen.value().toMap().value(QStringLiteral("enabled"), true).toBool())
+        {
+            continue;
+        }
+        const QString name = screen.key();
+        auto* row = new QWidget;
+        auto* parts = new QHBoxLayout(row);
+        parts->setContentsMargins(0, 0, 0, 0);
+        parts->addWidget(new QLabel(word("display_turned_off", "%1 is turned off.").arg(name)));
+        auto* turn_on = new QPushButton(word("display_turn_on", "Turn On"));
+        connect(turn_on, &QPushButton::clicked, this, [this, name]() { setScreenEnabled(name, true); });
+        parts->addWidget(turn_on);
+        off_rows->addWidget(row);
+    }
+    off_screens->setVisible(off_rows->count() > 0);
 }
 
 void DisplayPane::write()

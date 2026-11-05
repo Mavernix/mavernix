@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="shake-to-find">
+		<_short>Shake to Find</_short>
+		<_long>Shaking the pointer quickly back and forth makes it big for a moment, so it's easy to find. Loaded only when [input] shake_to_find is on.</_long>
+		<category>Input</category>
+		<option name="sensitivity" type="int">
+			<_short>Shake needed</_short>
+			<_long>How hard a shake must be, from 1 (a little) to 5 (a lot).</_long>
+			<default>3</default>
+			<min>1</min>
+			<max>5</max>
+		</option>
+	</plugin>
+</wayfire>

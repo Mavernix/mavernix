@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="x11-windows">
+		<_short>X11 Windows</_short>
+		<_long>X11 windows where and as their programs ask: games on the screen they ask for, borderless full screen made full screen, and no moves the pointer did not start.</_long>
+		<category>General</category>
+		<option name="games" type="bool">
+			<_short>Games get the screen they ask for</_short>
+			<_long>A full-screen X11 window goes to the screen it asked for rather than the focused one, and a window without a frame that asks to cover a whole screen (a game's "borderless full screen") is made full screen there instead of being fitted between the menu bar and the dock.</_long>
+			<default>true</default>
+		</option>
+		<option name="moves_need_button" type="bool">
+			<_short>Moves need a button held</_short>
+			<_long>An X11 window may ask to be moved or resized only while a mouse button or a finger is down, as when its own title bar is dragged; otherwise Wayfire would hold it to the pointer until the next click.</_long>
+			<default>true</default>
+		</option>
+	</plugin>
+</wayfire>

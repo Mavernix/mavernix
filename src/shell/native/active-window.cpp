@@ -2,6 +2,8 @@
 
 #include <QJsonArray>
 
+#include "menu-registrar.hpp"
+
 namespace
 {
 // Undocumented property names of Wayfire's kde-appmenu plugin (0.11.0).
@@ -26,6 +28,9 @@ ActiveWindow::ActiveWindow(QObject* parent) : QObject(parent)
             takeWindow(event.value("view"));
         }
     });
+
+    // An X11 application registers its menu when it likes.
+    connect(&X11Menus::instance(), &X11Menus::changed, this, &ActiveWindow::askForMenuAddress);
 
     compositor.open();
 }
@@ -74,6 +79,7 @@ void ActiveWindow::takeWindow(const QJsonValue& window)
     }
 
     windowId = newId;
+    windowPid = uint(qMax(0, description.value("pid").toInt()));
     currentAppId = description.value("app-id").toString();
     currentMenuService.clear();
     currentMenuPath.clear();
@@ -105,8 +111,34 @@ void ActiveWindow::askForMenuAddress()
             {
                 return;
             }
-            setMenuAddress(service, pathAnswer.value("value").toString());
+            const QString path = pathAnswer.value("value").toString();
+            if (!service.isEmpty() && !path.isEmpty())
+            {
+                setMenuAddress(service, path);
+                return;
+            }
+            askForX11Menu(askedFor);
         });
+    });
+}
+
+// An X11 program registers a menu for each of its windows, by the window's
+// X11 ID; the compositor's x11-settings plugin tells it. A program that
+// registered none for this window may have one for another of its windows.
+void ActiveWindow::askForX11Menu(int askedFor)
+{
+    compositor.request("x11-settings/window-id", {{"id", askedFor}}, [this, askedFor](const QJsonObject& answer) {
+        if (askedFor != windowId)
+        {
+            return;
+        }
+        const uint x11Window = uint(answer.value("window").toDouble());
+        X11Menu menu = x11Window != 0 ? X11Menus::instance().forWindow(x11Window) : X11Menu{};
+        if (menu.service.isEmpty() && windowPid > 0)
+        {
+            menu = X11Menus::instance().forProcess(windowPid);
+        }
+        setMenuAddress(menu.service, menu.path);
     });
 }
 

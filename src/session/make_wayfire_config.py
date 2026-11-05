@@ -6,6 +6,9 @@ Joins the config (behaviour and layout) and the theme (looks) into Wayfire's
 one ini file. `--extra FILE` appends sections unchanged, `--extra-plugins`
 adds plugin names (both for dev/run-in-container), and `--autostart
 NAME=COMMAND` (repeatable) starts a program with the session.
+
+The user's own Wayfire settings, in ~/.config/mavernix/wayfire.ini, come
+last: Wayfire takes the last value given for an option, so they win.
 """
 
 import argparse
@@ -15,6 +18,7 @@ import re
 import shlex
 import socket
 import struct
+import subprocess
 import sys
 import tomllib
 from itertools import takewhile
@@ -22,7 +26,7 @@ from pathlib import Path
 
 from paths import SESSION_DIR, SHELL_DIR
 from themes import find_theme
-from user_choices import load_desktop_config, with_user_choices
+from user_choices import load_desktop_config, settings_home, with_user_choices
 
 # Plugins every session loads; the order has no meaning to Wayfire.
 BASE_PLUGINS = [
@@ -48,6 +52,8 @@ BASE_PLUGINS = [
     "desktop-aside",
     "window-attention",
     "game-keys",
+    "x11-settings",
+    "x11-windows",
 ]
 
 
@@ -156,7 +162,9 @@ def animation_sections(theme):
     switched off: a theme never gets an effect it did not ask for.
     """
     animations = theme.get("animation", {})
-    animate = ["[animate]"]
+    # Windows only. Wayfire's default also takes X11 menus ("x-or"), which
+    # then pop in and out like windows while Wayland menus simply appear.
+    animate = ["[animate]", 'enabled_for = type equals "toplevel"']
     sections = [animate]
     plugins = []
 
@@ -240,7 +248,7 @@ def resize_animation_section(animations):
 
 # Actions of the shell's run() (shell.qml).
 SHELL_ACTIONS = ["app_grid", "volume_up", "volume_down", "volume_mute", "lock", "notification_list", "search",
-                 "switch_program", "switch_program_back"]
+                 "switch_program", "switch_program_back", "quit_app"]
 # Repeated while the key is held.
 REPEATING_ACTIONS = ["volume_up", "volume_down"]
 
@@ -352,6 +360,43 @@ def connected_screens(directory=SCREENS_DIRECTORY):
         dpi = width / (width_cm / 2.54) if width_cm > 0 else None
         screens[name] = {"width": width, "height": height, "dpi": dpi, "sizes": set(sizes)}
     return screens
+
+
+# Screens built into the computer, which a closed lid covers.
+BUILT_IN_PREFIXES = ("eDP", "LVDS", "DSI")
+
+
+def lid_is_closed():
+    """Whether the laptop's lid is shut, as UPower says; False without a lid
+    or without UPower."""
+    try:
+        answer = subprocess.run(["busctl", "--system", "get-property", "org.freedesktop.UPower",
+                                 "/org/freedesktop/UPower", "org.freedesktop.UPower", "LidIsClosed"],
+                                capture_output=True, text=True, timeout=2)
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return answer.stdout.strip() == "b true"
+
+
+def turned_off_in_config(config):
+    """The screens turned off in the config: [display.screens.NAME] enabled = false."""
+    single = config.get("display", {}).get("screens", {})
+    return {name for name, own in single.items() if own.get("enabled", True) is False}
+
+
+def screens_off(config, plugged_in):
+    """The screens to turn off: those turned off in the config
+    ([display.screens.NAME] enabled = false) and, with [power]
+    lid_turns_off_screen, a built-in one while the lid is shut. One plugged
+    in screen always stays on, one the user did not turn off if they can."""
+    chosen = turned_off_in_config(config)
+    off = set(chosen)
+    if config.get("power", {}).get("lid_turns_off_screen", False) and lid_is_closed():
+        off |= {name for name in plugged_in if name.startswith(BUILT_IN_PREFIXES)}
+    if plugged_in and all(name in off for name in plugged_in):
+        kept = next((name for name in plugged_in if name not in chosen), plugged_in[0])
+        off.discard(kept)
+    return off
 
 
 # CVT reduced blanking (VESA CVT 1.2, as `cvt -r` makes them): a custom mode's
@@ -549,7 +594,8 @@ def display_sections(config):
     now: rewriting the config would otherwise undo an arrangement made
     while the session runs. Once a screen is to be wider or narrower than
     it is now, those places no longer fit and Wayfire places them anew; and
-    screens the config places are moved to touch again (tidied).
+    screens the config places are moved to touch again (tidied). A screen to
+    be turned off (screens_off) gets only `mode = off`.
     """
     wishes = config.get("display", {})
     general = wishes.get("scale", "auto")
@@ -580,9 +626,18 @@ def display_sections(config):
             places[name] = tuple(int(number) for number in str(written).split(","))
         except ValueError:
             continue
-    # The screens in use: those the compositor shows, if it answers. One
-    # plugged in but switched off has no place to keep.
-    plugged_in = [name for name in names if name in (shown or screens)]
+    # Plugged in: those the compositor shows, if it answers, else those the
+    # kernel reports; and those it does not show because they were turned
+    # off here (by the config, or a built-in one by the closed lid, if the
+    # user wants that). A connector the compositor does not show otherwise (a
+    # nested session's host screens) is not one of ours.
+    turned_off_here = turned_off_in_config(config)
+    if config.get("power", {}).get("lid_turns_off_screen", False):
+        turned_off_here |= {name for name in screens if name.startswith(BUILT_IN_PREFIXES)}
+    plugged = [name for name in names
+               if name in (shown or screens) or (name in screens and name in turned_off_here)]
+    off = screens_off(config, plugged)
+    plugged_in = [name for name in plugged if name not in off]
     if len(plugged_in) > 1 and all(name in places and len(places[name]) == 2 and sizes[name] for name in plugged_in):
         main = wishes.get("main_screen")
         main = main if main in plugged_in else plugged_in[0]
@@ -590,12 +645,17 @@ def display_sections(config):
         places.update({name: screen[:2] for name, screen in placed.items()})
 
     for name in names:
+        if name in off:
+            sections.append([f"[output:{name}]", "mode = off"])
+            continue
         own = single.get(name, {})
         scale = scales[name]
         lines = [f"[output:{name}]", f"scale = {scale}"]
         for key in ("mode", "transform"):
             if key in own:
                 lines.append(f"{key} = {own[key]}")
+        if screen_vrr(name, own) == "always":
+            lines.append("vrr = true")
         if name in places and len(places[name]) == 2:
             lines.append(f"position = {places[name][0]},{places[name][1]}")
         elif "position" in own:
@@ -605,6 +665,97 @@ def display_sections(config):
             lines.append(f"custom_mode = {modeline}")
         sections.append(lines)
     return sections
+
+
+# [display.screens.NAME] vrr: never, while a full-screen window shows (the
+# game-vrr plugin), or always (Wayfire's own).
+VRR_CHOICES = ("off", "games", "always")
+
+
+def screen_vrr(name, own):
+    """One screen's variable refresh rate choice, "off" if it has none."""
+    vrr = own.get("vrr", "off")
+    if vrr not in VRR_CHOICES:
+        fail(f'[display.screens.{name}] vrr is "{vrr}"; it must be one of {", ".join(VRR_CHOICES)}')
+    return vrr
+
+
+def game_vrr_section(config):
+    """The screens with variable refresh rate only for full-screen windows.
+    Returns (section or None, plugins)."""
+    single = config.get("display", {}).get("screens", {})
+    names = sorted(name for name, own in single.items() if screen_vrr(name, own) == "games")
+    if not names:
+        return None, []
+    return ["[game-vrr]", f"screens = {' '.join(names)}"], ["game-vrr"]
+
+
+def x11_windows_section(config):
+    """[window] borderless_full_screen: X11 games get the screen they ask
+    for. A full-screen one goes there rather than to the focused screen; a
+    frameless one that asks to cover a screen (a game's "borderless full
+    screen") is made full screen, not fitted between the menu bar and the
+    dock. [window] x11_moves_need_button: an X11 window may ask to be moved
+    or resized only while a button or finger is down (Steam asks at other
+    times, and would stick to the pointer)."""
+    window = config.get("window", {})
+    values = {}
+    for key, default in (("borderless_full_screen", True), ("x11_moves_need_button", True)):
+        values[key] = window.get(key, default)
+        if not isinstance(values[key], bool):
+            fail(f"[window] {key} must be true or false")
+    return ["[x11-windows]", f"games = {yes_or_no(values['borderless_full_screen'])}",
+            f"moves_need_button = {yes_or_no(values['x11_moves_need_button'])}"]
+
+
+def shake_to_find_plugins(config):
+    """[input] shake_to_find: shaking the pointer makes it big for a moment,
+    as on El Capitan. Off unless asked for; the plugin loads only then."""
+    wanted = config.get("input", {}).get("shake_to_find", False)
+    if not isinstance(wanted, bool):
+        fail("[input] shake_to_find must be true or false")
+    return ["shake-to-find"] if wanted else []
+
+
+def shake_to_find_section(config):
+    """[input] shake_sensitivity: how hard a shake must be, 1 (a little) to
+    5 (a lot); 3 when left out."""
+    level = config.get("input", {}).get("shake_sensitivity", 3)
+    if isinstance(level, bool) or not isinstance(level, int) or not 1 <= level <= 5:
+        fail("[input] shake_sensitivity must be a whole number from 1 to 5")
+    return ["[shake-to-find]", f"sensitivity = {level}"]
+
+
+def display_flag(config, key, default):
+    value = config.get("display", {}).get(key, default)
+    if not isinstance(value, bool):
+        fail(f"[display] {key} must be true or false")
+    return value
+
+
+def x11_settings_section(config):
+    """The x11-settings plugin makes the main screen Xwayland's primary one,
+    unless [display] x11_primary is false, and with [display] sharp_x11 sets
+    Xft.dpi from its scale. It is told when Xwayland is ready (the [core]
+    line xwayland_ready_line())."""
+    return ["[x11-settings]", f"primary_screen = {yes_or_no(display_flag(config, 'x11_primary', True))}",
+            f"dpi = {yes_or_no(display_flag(config, 'sharp_x11', False))}"]
+
+
+def xwayland_ready_line():
+    return f"xwayland_startup_script = python3 {SESSION_DIR / 'compositor_call.py'} x11-settings/xwayland-ready"
+
+
+def workarounds_section(config):
+    """[input] middle_click_paste: false takes the primary selection away,
+    which Wayfire reads only when it starts. [display] sharp_x11: X11
+    programs are drawn at the screen's own pixels instead of stretched,
+    sizing themselves by Xft.dpi (x11_settings_section)."""
+    paste = config.get("input", {}).get("middle_click_paste", True)
+    if not isinstance(paste, bool):
+        fail("[input] middle_click_paste must be true or false")
+    return ["[workarounds]", f"disable_primary_selection = {yes_or_no(not paste)}",
+            f"force_xwayland_scaling = {yes_or_no(display_flag(config, 'sharp_x11', False))}"]
 
 
 def yes_or_no(value):
@@ -746,7 +897,8 @@ def compositor_key_sections(config):
 
 def game_keys_section(config):
     """The function keys among the shortcuts, alone and without a modifier,
-    which the game-keys plugin hands to games instead.
+    which the game-keys plugin hands to games instead: full-screen windows,
+    and those [game_keys] games names (or every X11 program, with all_x11).
 
     Not the full screen key: a window put full screen by the compositor
     may not know it, and could not be brought back.
@@ -761,7 +913,17 @@ def game_keys_section(config):
             key = alternative.strip()
             if re.fullmatch(r"KEY_F([1-9]|1[0-2])", key) and key not in keys:
                 keys.append(key)
-    return ["[game-keys]", f"keys = {' '.join(keys)}"]
+    # [game_keys]: which windows besides full-screen ones get the keys.
+    wishes = config.get("game_keys", {})
+    games = wishes.get("games", ["steam_app_*", "Minecraft*"])
+    all_x11 = wishes.get("all_x11", False)
+    if not isinstance(games, list) or not all(isinstance(game, str) and game.strip() and " " not in game
+                                              for game in games):
+        fail("[game_keys] games must be a list of app IDs or patterns without spaces, such as \"steam_app_*\"")
+    if not isinstance(all_x11, bool):
+        fail("[game_keys] all_x11 must be true or false")
+    return ["[game-keys]", f"keys = {' '.join(keys)}", f"programs = {' '.join(games)}",
+            f"all_x11 = {yes_or_no(all_x11)}"]
 
 
 def shell_actions(theme):
@@ -771,6 +933,21 @@ def shell_actions(theme):
     if drawn_by not in ("compositor", "shell"):
         fail(f'window_overview.drawn_by is "{drawn_by}"; it must be "compositor" or "shell"')
     return SHELL_ACTIONS + (["window_overview"] if drawn_by == "shell" else [])
+
+
+def with_quit_closing_app(config):
+    """[window] quit_closes_app: the close_window key quits the whole
+    program (the shell's quit_app), as on OS X, unless quit_app has a key of
+    its own."""
+    quits = config.get("window", {}).get("quit_closes_app", False)
+    if not isinstance(quits, bool):
+        fail("[window] quit_closes_app must be true or false")
+    shortcuts = dict(config.get("shortcuts", {}))
+    if quits and shortcuts.get("close_window") and not shortcuts.get("quit_app"):
+        shortcuts["quit_app"] = shortcuts["close_window"]
+        # Empty, not left out: left out, Wayfire would take its own keys for it.
+        shortcuts["close_window"] = ""
+    return {**config, "shortcuts": shortcuts}
 
 
 def shell_command(action):
@@ -1038,7 +1215,7 @@ def main():
     )
     arguments = parser.parse_args()
 
-    config = with_user_choices(load_desktop_config(arguments.config), arguments.config)
+    config = with_quit_closing_app(with_user_choices(load_desktop_config(arguments.config), arguments.config))
     if "theme" not in config:
         fail(f"{arguments.config} does not name a theme")
     theme_dir = find_theme(config["theme"])
@@ -1064,8 +1241,17 @@ def main():
     sections.append(window_overview_section(config, theme))
     sections.append(game_keys_section(config))
     sections.append(input_section(config, theme))
+    plugins += shake_to_find_plugins(config)
+    sections.append(shake_to_find_section(config))
     sections.append(idle_section(config))
     sections += display_sections(config)
+    vrr, vrr_plugins = game_vrr_section(config)
+    if vrr:
+        sections.append(vrr)
+    plugins += vrr_plugins
+    sections.append(x11_settings_section(config))
+    sections.append(x11_windows_section(config))
+    sections.append(workarounds_section(config))
     gestures, gesture_plugins = gesture_section(config, theme)
     if gestures:
         sections.append(gestures)
@@ -1073,7 +1259,7 @@ def main():
     compositor_keys = compositor_key_sections(config)
     desktop_core, desktop_parts, desktop_plugins = desktop_sections(
         config, theme, compositor_keys.pop("vswitch", []))
-    compositor_keys.setdefault("core", []).extend(desktop_core + uncovered_color_lines(theme))
+    compositor_keys.setdefault("core", []).extend(desktop_core + uncovered_color_lines(theme) + [xwayland_ready_line()])
     sections += desktop_parts
     plugins += desktop_plugins
     grid_section = next(section for section in sections if section[0] == "[grid]")
@@ -1113,6 +1299,13 @@ def main():
     text = "\n".join(lines) + "\n"
     if arguments.extra is not None:
         text += "\n" + arguments.extra.read_text()
+    own = settings_home() / "wayfire.ini"
+    try:
+        text += f"\n# The user's own, from {own}\n" + own.read_text()
+    except FileNotFoundError:
+        pass
+    except (OSError, UnicodeDecodeError) as error:
+        print(f"make_wayfire_config: left out {own}: {error}", file=sys.stderr)
 
     arguments.output.parent.mkdir(parents=True, exist_ok=True)
     # Wayfire reloads the file as soon as it changes; written in place, it

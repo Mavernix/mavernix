@@ -24,13 +24,20 @@ You don't have to copy everything. A config that says `based_on = "NAME"` is tha
 
 Some things you change as you go: which programs are in the dock, its size, magnification, and anything you set in the Settings window. These aren't written into the config. They go into a file of your own, `~/.config/mavernix/NAME.json`, which is laid over the config every time the desktop starts.
 
-Want a desktop's defaults back? Delete that file.
+Want a desktop's defaults back? Settings has **Restore Defaults…** at the bottom of each pane, for that pane's choices, and **Reset All Settings…** under the overview, for all of them. Both ask first. Reset All keeps a copy of the file as `NAME.json.backup`; renaming it back undoes the reset. Deleting the file by hand does the same as Reset All. The Dock's own menu (right-click a separator) has **Reset to Original Size** once you've resized it.
 
 A desktop based on another one shares its file. So whatever you set under one stays when you switch to the other.
 
 ## Keys and gestures
 
 In the config, keys are under `[shortcuts]` and `[commands]`, touchpad gestures under `[gestures]`, and the touchpad itself under `[input]`. The Keyboard pane in Settings changes keys without you having to edit any files.
+
+Some games need the function keys that are also the desktop's shortcuts, like Sea Lion's F3, F4 and F11. Pressed alone, these keys go to the game instead when its window is full screen, or when its app ID (an X11 program's WM_CLASS) matches `[game_keys] games`. By default that list is Steam's games (`"steam_app_*"`) and Minecraft. `[game_keys] all_x11 = true` (Settings, Keyboard) sends them to every X11 program, which suits games run under Wine.
+
+Closing and quitting work like this:
+- `close_window` closes the front window.
+- `quit_app` closes every window of the front program. It has no key unless you give it one.
+- With `[window] quit_closes_app = true` (Settings, Windows), the `close_window` key and Quit in the menu bar close all of the program's windows, as on OS X.
 
 Two keys belong to the compositor, so they work even when nothing else does: Super+Enter opens a terminal, and Ctrl+Alt+Backspace ends the session right away. [Using the desktop](usage.md) lists the keys for each desktop.
 
@@ -45,6 +52,48 @@ Settings, Displays also picks each screen's resolution and refresh rate. It save
 A screen built into the computer (eDP, LVDS, DSI) often reports only its own size. For those, Settings also offers the usual smaller sizes of the same shape, at the screen's own refresh rates. The graphics card stretches them to fill the screen, so they look a bit less sharp, but programs and games have fewer pixels to draw. Wayfire sets such a size from timings the session writes next to it (`custom_mode`, the way `cvt -r` makes them).
 
 With more than one screen, the panel and dock go on the screen named in `[display] main_screen`, or on the first one if that isn't set.
+
+On a screen drawn at more than 100%, X11 programs look blurry by default: they draw at 100% and the compositor stretches the result. With `[display] sharp_x11 = true` (Settings, Displays), they're drawn at the screen's own pixels instead, and told the main screen's scale through `Xft.dpi` so they can size themselves. Qt, Chromium, Electron and GTK's text follow it, but only in programs started after the change. Some programs, games among them, ignore it and look small.
+
+To turn a screen off, pick it in Settings, Displays and untick Use this screen. That's saved as `[display.screens.NAME] enabled = false`. Screens that are off are listed under the picture, each with a button to turn it back on. One screen always stays on.
+
+X11 programs (Steam, games under Proton or Wine, most SDL games) treat that same screen as their main one: they open on it and offer its resolutions. Without this, Xwayland names no main screen and games pick whichever one comes first. To turn it off, set `[display] x11_primary = false`.
+
+X11 games get the screen they ask for:
+
+- A full-screen game (Wine and Proton games go full screen themselves) opens on the screen it asked for, normally the main one. Otherwise the compositor would put it on whichever screen had the focus, perhaps not the one whose resolution it chose.
+- Some native games open a window without a frame that covers the whole screen, instead of asking to be full screen. Mavernix makes such a window full screen, as KWin and GNOME do; otherwise the compositor would fit it between the menu bar and the Dock, and the game would be cut short.
+
+To turn both off, untick "Games fill the screen they ask for" in Settings, Windows, or set `[window] borderless_full_screen = false`.
+
+A program that draws its own title bar, like Steam, asks the compositor to move its window when you drag that title bar. Steam sometimes asks at other moments too, for example when it shows itself again from its tray menu. The window would then stick to the pointer until the next click, perhaps pulled to the screen where you last clicked. So such a request is only followed while a mouse button or finger is down. To follow every request, set `[window] x11_moves_need_button = false`.
+
+A screen that supports variable refresh rate (VRR, also sold as FreeSync or G-Sync Compatible) gets a choice in Settings, Displays. It's saved as `[display.screens.NAME] vrr`:
+
+- `"off"`, the default
+- `"games"`: on only while a full-screen window shows on that screen. That's how games run, and the desktop doesn't flicker on screens that do so when their refresh rate drops.
+- `"always"`
+
+## Middle-click paste
+
+By default, selecting text and pressing the middle mouse button pastes it, as on other Linux desktops. To turn that off everywhere, untick it in Settings, Mouse, or set `[input] middle_click_paste = false`. It takes effect the next time you log in. X11 programs still paste among themselves.
+
+## Shake to find the pointer
+
+As on El Capitan, shaking the pointer quickly back and forth can make it big for a moment, so it's easy to find. It's off at first: tick it in Settings, Mouse, or set `[input] shake_to_find = true`. It works with a mouse and a trackpad, but not while a button is held, or over a full-screen window or a game that has taken the pointer.
+
+How hard you have to shake is up to you: Settings, Mouse, **Shake needed**, from Little to Lots, or `[input] shake_sensitivity` from 1 to 5. The default is 3: five quick turns, each after about 90 pixels. At 1 it reacts to four short turns of 40 pixels, which ordinary quick pointing can set off.
+
+## Wayfire's own settings
+
+The session writes Wayfire's settings file anew at every login and on every change, so editing it by hand doesn't last. Put your own Wayfire settings in `~/.config/mavernix/wayfire.ini` instead. It's added after everything the session writes, and Wayfire takes the last value it reads, so yours win. For example:
+
+```ini
+[output:DP-1]
+vrr = true
+```
+
+A mistake there can break the session, and these settings aren't supported the way the desktop's own are. If something goes wrong, move the file away first.
 
 ## Locking
 
@@ -62,6 +111,8 @@ These lock the screen:
 - `"sleep"` follows your system's own rule (logind's `HandleLidSwitch`).
 - `"lock"` locks the screen. Like logind, it leaves a docked laptop alone, meaning one connected to a dock or a second screen, as logind counts it.
 - `"nothing"` does nothing.
+
+With `[power] lid_turns_off_screen = true` (Settings, Energy Saver), closing the lid while another screen is connected turns the built-in screen off, the way a Mac works with its lid shut. Opening the lid turns it back on. Whether the computer sleeps when the lid closes still depends on `lid_closed`, and on logind, which by default leaves a laptop with a second screen awake.
 
 `"lock"` and `"nothing"` need UPower. Settings, Energy only offers the choice on a computer that UPower reports a lid for.
 
@@ -109,6 +160,8 @@ Once you've changed the dock by hand, your own groups in `NAME.json` replace the
 
 Right-clicking a program in the dock also lists the program's own entries from its launcher, such as New Window or New Private Window. `[dock] actions_when_closed = false` shows them only while the program runs.
 
+A click on a program's icon brings it to the front, as on OS X. With `[dock] click_minimizes = true` (Settings, Dock & Menu Bar), a click on the icon of the program already in front minimizes its front window instead.
+
 ## Applications' icons and names
 
 Settings, App Icons & Names, gives an application another icon or another name, for example Bandstand the name "iTunes". The desktop then shows them instead of the application's own: in the dock, the menu bar, the app grid, the program switcher, the window overview and the search. The search still finds it by its own name too. What the application shows itself, like its window title or its About box, stays its own.
@@ -124,6 +177,8 @@ Both are kept by desktop entry ID, so they belong to a desktop like everything e
 ```
 
 An empty value, or Use Original, brings back the application's own.
+
+To take an application out of the app grid, right-click it there and choose Hide from the App Grid, or untick Show in the app grid in Settings, App Icons & Names. That's also where you bring it back. The search and the dock's Programs folder still list it. It's saved as `[app_grid] hidden = ["htop", ...]`, by desktop entry ID.
 
 ## The desktop's menus
 

@@ -3,6 +3,7 @@
 #pragma once
 
 #include <QFont>
+#include <QList>
 #include <QFontMetrics>
 #include <QSize>
 #include <QString>
@@ -20,6 +21,12 @@ QWidget* with_end_words(QSlider* slider, const QString& low, const QString& high
 // `every_ms` and always with where it stops: for a setting that is felt at
 // once (volume, brightness), each step would be a command of its own.
 void follow_slider(QSlider* slider, int every_ms, const std::function<void(int)>& apply);
+
+// A slider over fixed `stops`, at the one nearest to `current`. It calls
+// `write` with the stop it rests on: when let go, or a moment after a key
+// moved it, so a setting the session must rewrite its files for is written
+// once, not at every step.
+QSlider* stops_slider(const QList<double>& stops, double current, const std::function<void(double)>& write);
 
 // A checkbox with a line of smaller text under it that says what it means.
 QWidget* with_note(QCheckBox* box, const QString& note);

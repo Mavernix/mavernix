@@ -2,12 +2,22 @@
 <wayfire>
 	<plugin name="game-keys">
 		<_short>Game Keys</_short>
-		<_long>Lets the function keys among the desktop's shortcuts through to games: pressed alone while an X11 program or a full screen window is focused, such a key goes to that window instead of doing the shortcut.</_long>
+		<_long>Lets the function keys among the desktop's shortcuts through to games: pressed alone while a full screen window or a game is focused, such a key goes to that window instead of doing the shortcut.</_long>
 		<category>Input</category>
 		<option name="keys" type="string">
 			<_short>Keys</_short>
 			<_long>The function keys to let through, such as "KEY_F3 KEY_F11".</_long>
 			<default></default>
+		</option>
+		<option name="programs" type="string">
+			<_short>Games</_short>
+			<_long>App IDs (an X11 program's WM_CLASS) of games that get the keys while not full screen, separated by spaces; * matches anything.</_long>
+			<default>steam_app_* Minecraft*</default>
+		</option>
+		<option name="all_x11" type="bool">
+			<_short>Every X11 program</_short>
+			<_long>Every X11 program gets the keys, as games run under Wine do.</_long>
+			<default>false</default>
 		</option>
 	</plugin>
 </wayfire>

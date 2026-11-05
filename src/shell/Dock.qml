@@ -10,6 +10,7 @@ import Quickshell
 import Quickshell.Wayland
 import Quickshell.Io
 import Shell.Native
+import "ApplicationEntry.js" as ApplicationEntry
 import "DockLayout.js" as DockLayout
 import "DroppedFiles.js" as DroppedFiles
 import "ThemeValues.js" as ThemeValues
@@ -308,7 +309,7 @@ PanelWindow {
         // windows' app ID; it cannot be kept, having nothing to start again.
         const listedAppIds = []
         for (const window of ToplevelManager.toplevels.values) {
-            const entry = DesktopEntries.heuristicLookup(window.appId)
+            const entry = ApplicationEntry.of(DesktopEntries, window.appId)
             if (entry !== null && !listed.includes(entry)) {
                 groups[0].push({ isSeparator: false, entry: entry, window: null, isTrash: false,
                                  kept: false, listedAs: entry.id })
@@ -341,7 +342,7 @@ PanelWindow {
         for (const window of minimizedWindows) {
             lastGroup.push({
                 isSeparator: false,
-                entry: DesktopEntries.heuristicLookup(window.appId),
+                entry: ApplicationEntry.of(DesktopEntries, window.appId),
                 window: window,
                 isTrash: false
             })
@@ -1051,10 +1052,10 @@ PanelWindow {
         visible: !dock.windowReflections
         // The shelf's finish is independent of the menu bar's translucency.
         opacity: (dock.choices.value("blur", "dock_shelf") ?? false)
-                 && (dock.choices.value("blur", "dock") ?? dock.settings.config.blur?.dock
+                 && (dock.choices.value("blur", "dock")
                   ?? dock.settings.theme.blur?.dock ?? false)
                  ? Math.max(0, Math.min(1, dock.choices.value("blur", "dock_opacity")
-                    ?? dock.settings.config.blur?.dock_opacity ?? dock.settings.theme.blur?.dock_opacity ?? 1)) : 1
+                    ?? dock.settings.theme.blur?.dock_opacity ?? 1)) : 1
         x: dock.shelfEdges.left
         width: dock.shelfEdges.right - dock.shelfEdges.left
         height: dock.shelfHeight
@@ -1429,6 +1430,7 @@ PanelWindow {
         magnificationWanted: dock.magnificationWanted
         trashIsEmpty: dock.trashIsEmpty
         addableFolders: dock.addableFolders
+        resizedByUser: (dock.choices.changed.dock ?? ({})).icon_size !== undefined
     }
 
     function openMenu(index) {
@@ -1517,6 +1519,9 @@ PanelWindow {
             emptyTrash()
         } else if (id === menus.magnificationId) {
             choices.set("dock", "magnification", !magnificationWanted)
+        } else if (id === menus.originalSizeId) {
+            // Left out of the user's file, the size is the desktop's again.
+            choices.set("dock", "icon_size", undefined)
         } else if (id === menus.settingsId) {
             Quickshell.execDetached(config.settings_command)
         } else if (id >= menus.windowBaseId) {

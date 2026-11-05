@@ -3,13 +3,16 @@
 //
 // A press of one of the keys in "keys", with no modifier held, reaches the
 // focused window rather than the compositor's bindings when that window is
-// an X11 program (Minecraft, Wine and Proton games) or full screen. Over
-// any other window, or the desktop, the key does what the shortcut says.
+// full screen, or a game: its app ID (an X11 program's WM_CLASS) matches one
+// of "programs", such as "steam_app_*" for Steam's games, or, with
+// "all_x11", any X11 program. Over any other window, or the desktop, the key
+// does what the shortcut says.
 //
 // For the length of that one key event, the bindings are switched off
 // (they are counted, as shortcut-capture's are), so core finds no binding
 // and hands the key to the window, as it would any other.
 
+#include <fnmatch.h>
 #include <sstream>
 #include <string>
 
@@ -42,16 +45,23 @@ static int function_key_code(const std::string& name)
     return -1;
 }
 
-static bool is_game(wayfire_view view)
+// `patterns`, separated by spaces, as the shell matches file names ("steam_app_*").
+static bool matches_any(const std::string& patterns, const std::string& app_id)
 {
-    if (!view)
+    std::istringstream words(patterns);
+    std::string pattern;
+    while (words >> pattern)
     {
-        return false;
+        if (fnmatch(pattern.c_str(), app_id.c_str(), FNM_CASEFOLD) == 0)
+        {
+            return true;
+        }
     }
-    if (auto toplevel = wf::toplevel_cast(view); toplevel && toplevel->pending_fullscreen())
-    {
-        return true;
-    }
+    return false;
+}
+
+static bool is_x11(wayfire_view view)
+{
 #if WF_HAS_XWAYLAND
     wlr_surface* surface = view->get_wlr_surface();
     return surface && wlr_xwayland_surface_try_from_wlr_surface(surface);
@@ -64,7 +74,22 @@ class plugin_t : public wf::plugin_interface_t
 {
     // "KEY_F3 KEY_F4 KEY_F11", written by make_wayfire_config.py.
     wf::option_wrapper_t<std::string> keys{"game-keys/keys"};
+    wf::option_wrapper_t<std::string> programs{"game-keys/programs"};
+    wf::option_wrapper_t<bool> all_x11{"game-keys/all_x11"};
     bool switched_off = false;
+
+    bool is_game(wayfire_view view)
+    {
+        if (!view)
+        {
+            return false;
+        }
+        if (auto toplevel = wf::toplevel_cast(view); toplevel && toplevel->pending_fullscreen())
+        {
+            return true;
+        }
+        return matches_any(programs, view->get_app_id()) || (all_x11 && is_x11(view));
+    }
 
     bool is_listed(uint32_t code)
     {

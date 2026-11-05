@@ -78,6 +78,28 @@ MousePane::MousePane(Choices& choices, QWidget* parent) : QWidget(parent), choic
     connect(
         acceleration, &QCheckBox::toggled, this, [this](bool on) { change(QStringLiteral("mouse_acceleration"), on); });
 
+    // Pasting what was last selected with the middle button. The compositor
+    // reads it only when it starts.
+    const QVariant pastes = choices.value(table, QStringLiteral("middle_click_paste"));
+    auto* middle_paste =
+        new QCheckBox(word("mouse_middle_click_paste", "Paste the selected text with the middle button"));
+    middle_paste->setChecked(!pastes.isValid() || pastes.toBool());
+    connect(
+        middle_paste, &QCheckBox::toggled, this, [this](bool on) { change(QStringLiteral("middle_click_paste"), on); });
+
+    // As on El Capitan; off unless asked for.
+    auto* shake = new QCheckBox(word("mouse_shake_to_find", "Shake the pointer to find it"));
+    shake->setChecked(choices.value(table, QStringLiteral("shake_to_find")).toBool());
+    connect(shake, &QCheckBox::toggled, this, [this](bool on) { change(QStringLiteral("shake_to_find"), on); });
+    // How hard a shake must be: 1, a little, to 5, a lot; 3 until chosen.
+    const QVariant chosen_shake = choices.value(table, QStringLiteral("shake_sensitivity"));
+    auto* shake_needed = stops_slider({1, 2, 3, 4, 5}, chosen_shake.isValid() ? chosen_shake.toDouble() : 3,
+        [this](double value) { change(QStringLiteral("shake_sensitivity"), qRound(value)); });
+    auto* shake_row =
+        with_end_words(shake_needed, word("mouse_shake_little", "Little"), word("mouse_shake_lots", "Lots"));
+    shake_row->setEnabled(shake->isChecked());
+    connect(shake, &QCheckBox::toggled, shake_row, &QWidget::setEnabled);
+
     auto* left = new QRadioButton(word("mouse_primary_left", "Left"));
     auto* right = new QRadioButton(word("mouse_primary_right", "Right"));
     auto* buttons = new QButtonGroup(this);
@@ -95,7 +117,9 @@ MousePane::MousePane(Choices& choices, QWidget* parent) : QWidget(parent), choic
     // As on the original: the scroll direction across the top, the rest below.
     auto* rows = new QVBoxLayout(this);
     rows->setSpacing(pane_spacing_px);
-    rows->addWidget(with_note(natural, word("mouse_natural_scroll_note", "")), 0, Qt::AlignHCenter);
+    rows->addWidget(with_note(natural, word("mouse_natural_scroll_note",
+                                           "The page moves the way you turn the wheel, as on a touchscreen.")),
+        0, Qt::AlignHCenter);
 
     auto* form = new QFormLayout;
     form->setLabelAlignment(Qt::AlignRight | Qt::AlignTop);
@@ -103,8 +127,18 @@ MousePane::MousePane(Choices& choices, QWidget* parent) : QWidget(parent), choic
     form->setVerticalSpacing(pane_spacing_px);
     form->addRow(word("mouse_speed", "Tracking speed:"), speed_row);
     form->addRow(word("mouse_scroll_speed", "Scrolling speed:"), scrolling_row);
-    form->addRow(QString(), with_note(acceleration, word("mouse_acceleration_note", "")));
+    form->addRow(
+        QString(), with_note(acceleration,
+                       word("mouse_acceleration_note",
+                           "Faster movements move the pointer further, so you can cross the screen quickly.")));
     form->addRow(word("mouse_primary", "Primary mouse button:"), primary);
+    form->addRow(QString(),
+        with_note(middle_paste, word("mouse_middle_click_paste_note",
+                                    "A middle click pastes the last selected text, after you log in again.")));
+    form->addRow(QString(),
+        with_note(shake, word("mouse_shake_to_find_note",
+                             "Shaking the mouse quickly makes the pointer grow for a moment, so you can spot it.")));
+    form->addRow(word("mouse_shake_needed", "Shake needed:"), shake_row);
     rows->addLayout(form);
     rows->addStretch();
 }

@@ -151,8 +151,10 @@ PanelWindow {
     readonly property var applications: {
         const wanted = searchField.text.trim().toLowerCase()
         const list = []
+        // [app_grid] hidden: programs the user took out of the grid.
+        const hidden = grid.choices?.value("app_grid", "hidden") ?? []
         for (const entry of DesktopEntries.applications.values) {
-            if (entry.noDisplay) {
+            if (entry.noDisplay || hidden.includes(entry.id)) {
                 continue
             }
             let strength = 0
@@ -656,6 +658,7 @@ PanelWindow {
     property var menuEntry: null
     readonly property int openId: 1
     readonly property int keepId: 2
+    readonly property int hideId: 3
 
     function openMenu(entry, screenX, screenY) {
         menuEntry = entry
@@ -671,6 +674,10 @@ PanelWindow {
             items.push({ id: keepId, label: words.keep_in_dock_label ?? "Keep in Dock", enabled: true,
                          separator: false, checkable: true, checked: dock.keeps(entry.id), shortcut: [], children: [] })
         }
+        items.push({ id: 0, label: "", enabled: false, separator: true,
+                     checkable: false, checked: false, shortcut: [], children: [] })
+        items.push({ id: hideId, label: words.hide_label ?? "Hide from the App Grid", enabled: true,
+                     separator: false, checkable: false, checked: false, shortcut: [], children: [] })
         programMenu.items = items
         programMenu.open = true
     }
@@ -691,6 +698,10 @@ PanelWindow {
                 grid.close()
             } else if (id === grid.keepId) {
                 grid.dock.setKept(entry.id, !grid.dock.keeps(entry.id))
+            } else if (id === grid.hideId) {
+                // Settings, App Icons shows it again.
+                const hidden = grid.choices.value("app_grid", "hidden") ?? []
+                grid.choices.set("app_grid", "hidden", hidden.concat([entry.id]))
             }
         }
     }

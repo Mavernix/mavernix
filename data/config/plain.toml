@@ -26,6 +26,19 @@ quick_resize_ms = 120
 # Tiled windows that touch share their edge: resizing one resizes the
 # others along it. With `false`, only the dragged window changes.
 shared_edges = true
+# Quit in the menu bar, and the close_window key, close every window of the
+# program, as on OS X; false closes only the front one. The quit_app
+# shortcut always quits the whole program.
+quit_closes_app = false
+# X11 games get the screen they ask for: a full-screen one opens on that
+# screen, not the focused one, and a window without a frame that asks to
+# cover a whole screen is made full screen there instead of being fitted
+# between the menu bar and the dock.
+borderless_full_screen = true
+# An X11 window that draws its own title bar may ask to be moved or resized
+# only while a mouse button or finger is down. Steam asks at other times,
+# and would then stick to the pointer until the next click.
+x11_moves_need_button = true
 
 [gtk]
 # Buttons in GTK header bars, which the compositor does not draw. Left out:
@@ -227,6 +240,8 @@ app_grid = "<super> KEY_A"
 window_overview = "<super> KEY_W"
 show_desktop = "<super> KEY_D"
 close_window = "<alt> KEY_F4"
+# Closes every window of the front program; unbound by default:
+# quit_app = "<super> KEY_Q"
 switch_window = "<alt> KEY_TAB"
 # The program switcher; both must use the same held modifier.
 switch_program = "<super> KEY_TAB"
@@ -296,6 +311,10 @@ web = [
 # A program's menu (secondary click).
 open_label = "Open"
 keep_in_dock_label = "Keep in Dock"
+hide_label = "Hide from the App Grid"
+# Desktop entry IDs the grid leaves out, such as "htop"; Settings, App
+# Icons shows them again.
+# hidden = []
 
 [notifications]
 clear_all_label = "Clear All"
@@ -326,6 +345,9 @@ new_folder_view = "list"
 # running, to start it straight into one.
 actions_when_closed = true
 
+# A click on the icon of the program in front minimizes its front window.
+click_minimizes = false
+
 [dock.trash_empty]
 command = ["gio", "trash", "--empty"]
 confirm = { title = "Delete everything in the wastebasket for good?", text = "This cannot be undone.", button = "Delete", cancel = "Cancel", icon = "user-trash-full" }
@@ -341,6 +363,7 @@ quit = "Quit"
 empty_trash = "Empty wastebasket"
 magnification_on = "Enlarge icons under the pointer"
 magnification_off = "Do not enlarge icons"
+original_size = "Reset to Original Size"
 settings = "Dock settings…"
 sort_by = "Sort by"
 sort_name = "Name"
@@ -474,6 +497,8 @@ icons_file_kind = "Pictures"
 icons_unreadable = "This file is not a picture that can be shown as an icon."
 icons_name_label = "Name:"
 icons_name_use_original = "Use original"
+icons_in_app_grid = "Show in the app grid"
+icons_hidden_in_app_grid = "Not in the app grid"
 bluetooth_title = "Bluetooth"
 bluetooth_on = "Bluetooth on"
 bluetooth_connected = "Connected"
@@ -510,7 +535,17 @@ desktops_swipe_four = "Four fingers"
 desktops_drag_to_edge = "A window held at the screen's side goes to the next desktop"
 windows_title = "Windows"
 windows_snap = "Windows snap to the screen's sides"
-windows_snap_note = "Left or right side: that half. A corner: that quarter. The top: the whole screen."
+windows_snap_note = "Dragging a window to a side, a corner or the top resizes it, so it fills that half, quarter or the whole screen."
+windows_snap_distance = "Snap when this close:"
+windows_snap_near = "Close"
+windows_snap_far = "Far"
+windows_resize_reach = "Edge to resize by:"
+windows_reach_narrow = "Narrow"
+windows_reach_wide = "Wide"
+windows_quit_closes_app = "Quit closes all of a program's windows"
+windows_borderless = "Games fill the screen they ask for"
+windows_borderless_note = "Games open full screen on the screen they chose, so borderless ones fill it too."
+windows_quit_closes_app_note = "The Close Window shortcut quits the program too, so all of its windows close at once."
 windows_drag_key = "Move and resize a window by holding:"
 windows_drag_key_none = "No key"
 windows_drag_key_super = "Super"
@@ -521,10 +556,10 @@ windows_buttons_right = "At the right"
 toolkits_title = "App Style"
 toolkits_gtk = "GTK programs:"
 toolkits_gtk_theme = "Drawn in the desktop's look"
-toolkits_gtk_theme_note = "Programs started after the next login. Off leaves them as GTK draws them."
+toolkits_gtk_theme_note = "These programs use the desktop's look after you log in again, so they match the rest."
 toolkits_qt = "Qt programs:"
 toolkits_qt_theme = "Drawn in the desktop's look"
-toolkits_qt_theme_note = "Programs started after the next login. Off leaves them as Qt draws them."
+toolkits_qt_theme_note = "These programs use the desktop's look after you log in again, so they match the rest."
 show_all = "All settings"
 menu_view = "View"
 menu_back = "Back"
@@ -539,13 +574,32 @@ menu_bar_show = "Show in the menu bar:"
 menu_bar_24_hours = "Show the time with 24 hours"
 menu_bar_seconds = "Show seconds"
 menu_bar_blur = "Blur menu bar"
+blur_amount = "Blur:"
+blur_light = "Light"
+blur_strong = "Strong"
+banner_time = "Notification banners stay:"
+banner_time_short = "Briefly"
+banner_time_long = "Long"
+restore_defaults = "Restore Defaults…"
+restore_defaults_question = "Restore the defaults of %1?"
+restore_defaults_note = "Your choices in this pane are replaced by the desktop's own. This can't be undone."
+restore_defaults_button = "Restore Defaults"
+reset_all = "Reset All Settings…"
+reset_all_question = "Reset all settings?"
+reset_all_note = "Every choice you made is replaced by the desktop's own, including the Dock's contents, app icons and names, and keyboard shortcuts. A copy is kept as %1. Some changes take effect the next time you log in."
+reset_all_button = "Reset All"
+cancel = "Cancel"
 menu_bar_items = { tray = "Icons of running programs", load = "Computer load", bluetooth = "Bluetooth", network = "Wi-Fi", volume = "Volume", battery = "Battery", clock = "Clock", search = "Search", notifications = "Notifications", session = "Session menu" }
 dock_size = "Icon size:"
 dock_size_small = "Small"
 dock_size_large = "Large"
 dock_magnification = "Enlarge under the pointer:"
 dock_autohide = "Hide the dock until the pointer is at the screen's edge"
+dock_click_minimizes = "Click the front program's icon to minimize its window"
 dock_window_reflections = "Reflect windows in the Dock's glass"
+dock_reflection_strength = "Reflections:"
+dock_reflection_faint = "Faint"
+dock_reflection_strong = "Strong"
 dock_blur = "Blur behind the Dock"
 dock_magnification_min = "A little"
 dock_magnification_max = "A lot"
@@ -562,13 +616,17 @@ desktop_picture = "Picture:"
 desktop_name = "Name in the menu bar:"
 desktop_name_note = "Shown at the top left while no window is active."
 translucent_menu_bar = "Translucent menu bar"
+menu_bar_transparency = "Transparency:"
+menu_bar_transparency_low = "Opaque"
+menu_bar_transparency_high = "Clear"
 desktop_show_files = "Show the files of the Desktop folder"
 desktop_picture_choose = "Choose a picture…"
 desktop_picture_default = "Use the default"
 trackpad_title = "Touchpad"
 trackpad_tap = "Tap to click"
+trackpad_tap_note = "A light tap on the trackpad clicks, so you don't have to press it down."
 trackpad_natural_scroll = "Natural scrolling"
-trackpad_natural_scroll_note = "The page moves with the fingers"
+trackpad_natural_scroll_note = "The page moves the way your fingers move, as on a touchscreen."
 trackpad_speed = "Tracking speed:"
 trackpad_speed_slow = "Slow"
 trackpad_speed_fast = "Fast"
@@ -612,22 +670,35 @@ network_password_for = "The Wi-Fi network “%1” requires a password."
 network_enterprise = "“%1” signs in with a user name or a certificate. Set it up with NetworkManager's connection editor (nm-connection-editor)."
 network_address = "IP Address:"
 network_router = "Router:"
+keyboard_game_keys_all_x11 = "Function keys go to every X11 program, as to games"
 mouse_title = "Mouse"
 mouse_speed = "Tracking speed:"
 mouse_speed_slow = "Slow"
 mouse_speed_fast = "Fast"
 mouse_acceleration = "Acceleration"
-mouse_acceleration_note = "A faster movement takes the pointer further"
+mouse_acceleration_note = "Faster movements move the pointer further, so you can cross the screen quickly."
 mouse_natural_scroll = "Natural scrolling"
-mouse_natural_scroll_note = "The page moves with the wheel"
+mouse_natural_scroll_note = "The page moves the way you turn the wheel, as on a touchscreen."
 mouse_scroll_speed = "Scrolling speed:"
 mouse_primary = "Primary mouse button:"
 mouse_primary_left = "Left"
 mouse_primary_right = "Right"
+mouse_middle_click_paste = "Paste the selected text with the middle button"
+mouse_middle_click_paste_note = "A middle click pastes the last selected text, after you log in again."
+mouse_shake_to_find = "Shake the pointer to find it"
+mouse_shake_to_find_note = "Shaking the mouse quickly makes the pointer grow for a moment, so you can spot it."
+mouse_shake_needed = "Shake needed:"
+mouse_shake_little = "Little"
+mouse_shake_lots = "Lots"
 display_title = "Display"
 display_brightness = "Brightness:"
 display_arrangement_note = "Click a screen to change its settings below. Drag the screens to stand as they do on your desk, and drag the bar along the top of one to move the menu bar and dock to another screen."
 display_main_here = "Show the menu bar and dock on this screen"
+display_use_here = "Use this screen"
+display_sharp_x11 = "Draw X11 programs sharply on scaled screens"
+display_sharp_x11_note = "X11 programs draw at the screen's own pixels, so they look sharp; some games may look smaller."
+display_turned_off = "%1 is turned off."
+display_turn_on = "Turn On"
 display_built_in = "Built-in screen"
 display_one_screen = "Plug in another screen to arrange your screens and choose each one's settings here."
 display_brightness_low = "Dim"
@@ -636,6 +707,10 @@ display_resolution = "Resolution:"
 display_refresh = "Refresh rate:"
 display_recommended = "%1 (recommended)"
 display_hertz = "%1 Hz"
+display_vrr = "Variable refresh rate:"
+display_vrr_off = "Off"
+display_vrr_games = "For full-screen games"
+display_vrr_always = "Always"
 display_keep = "Keep this resolution?"
 display_keep_countdown = "The screen goes back to the earlier resolution in %1 seconds."
 display_keep_button = "Keep"
@@ -661,7 +736,9 @@ energy_lid = "When the lid is closed:"
 energy_lid_sleep = "Sleep"
 energy_lid_lock = "Lock the screen"
 energy_lid_nothing = "Do nothing"
+energy_lid_screen_off = "Turn off the built-in screen while the lid is closed and another screen is connected"
 energy_lock = "Lock the screen when it switches off and before sleep"
+energy_lock_note = "Waking the computer or the screen asks for your password, so nobody else can use it."
 energy_never = "Never"
 energy_minute = "%1 minute"
 energy_minutes = "%1 minutes"
@@ -690,10 +767,22 @@ volume_step = 0.0625
 scale = "auto"
 # The screen for the panel and dock (default: the first listed):
 # main_screen = "eDP-1"
+# X11 programs (games under Xwayland, Steam, Wine) take that screen as their
+# primary one; false leaves X11 without one.
+# x11_primary = true
+# X11 programs drawn at the screen's own pixels instead of stretched (sharp
+# on a scaled screen), told the main screen's scale through Xft.dpi to size
+# themselves; some may look small. Left out: false.
+# sharp_x11 = false
 # Per-screen settings, by name (`wlr-randr` lists them):
 # [display.screens."HDMI-A-1"]
 # scale = 1
 # position = "2560,0"
+# Variable refresh rate: "off", "games" (while a window is full screen) or
+# "always"; left out: off.
+# vrr = "games"
+# Turned off, as if it were not plugged in; one screen always stays on.
+# enabled = false
 
 [input]
 # Keyboard layouts (xkeyboard-config names), comma-separated with variants
@@ -715,6 +804,24 @@ natural_scroll = false
 # mouse_scroll_speed = 1.0
 # The primary button on the right, for the left hand; left out: false.
 # left_handed = false
+# Pasting the selected text with the middle button, in every program; takes
+# effect at the next login. Left out: true.
+# middle_click_paste = true
+# Shaking the pointer makes it big for a moment; how hard a shake must be,
+# from 1 (a little) to 5 (a lot). Left out: off, and 3.
+# shake_to_find = false
+# shake_sensitivity = 3
+# Shaking the pointer quickly back and forth makes it big for a moment, so
+# it's easy to find, as on El Capitan. Left out: false.
+# shake_to_find = false
+
+[game_keys]
+# The function keys among the shortcuts (F3, F4, F11 on Sea Lion), pressed
+# alone, go to a full-screen window instead, and to the games named here by
+# app ID (an X11 program's WM_CLASS); * matches anything. With all_x11, every
+# X11 program gets them, as games under Wine do.
+games = ["steam_app_*", "Minecraft*"]
+all_x11 = false
 
 [lock]
 # The lock screen checks the password with PAM, using this /etc/pam.d/
@@ -742,6 +849,9 @@ lock_before_sleep = true
 # HandleLidSwitch, usually sleep), "lock" only locks the screen, "nothing"
 # does nothing. Needs UPower to see the lid.
 lid_closed = "sleep"
+# While the lid is closed and another screen is on, turn the built-in screen
+# off; it comes back when the lid opens.
+lid_turns_off_screen = false
 
 [session]
 # Reload the shell when its files change on disk (for development).

@@ -18,6 +18,8 @@ QtObject {
     // is empty.
     property bool magnificationWanted: false
     property bool trashIsEmpty: true
+    // The user has given the dock a size of their own.
+    property bool resizedByUser: false
     // Folders the dock's own menu offers to add ([{ label, kept }], see
     // Dock.qml, addableFolders); one already kept is greyed.
     property var addableFolders: []
@@ -32,6 +34,7 @@ QtObject {
     readonly property int magnificationId: 7
     readonly property int openFolderId: 8
     readonly property int settingsId: 9
+    readonly property int originalSizeId: 10
     // Ranges of ids, kept in ascending order: the dock tests them from the
     // highest down. A program's windows, a folder's orders and views, a
     // program's own entries (its desktop entry's actions), a listed folder's
@@ -90,6 +93,9 @@ QtObject {
         const items = [entry(magnificationId, magnificationWanted
             ? (words.magnification_off ?? "Turn magnification off")
             : (words.magnification_on ?? "Turn magnification on"))]
+        if (resizedByUser) {
+            items.push(entry(originalSizeId, words.original_size ?? "Reset to Original Size"))
+        }
         if (addableFolders.length > 0) {
             items.push(separator())
             items.push(entry(-1, words.add_to_dock ?? "Add to Dock", false))

@@ -24,6 +24,47 @@ QFont scaled_font(const QFont& font, double scale)
     return scaled;
 }
 
+// As wide as the panes' other sliders.
+static const int stops_slider_width_px = 220;
+// Several key steps in a row make one change.
+static const int stops_slider_rest_ms = 500;
+
+QSlider* stops_slider(const QList<double>& stops, double current, const std::function<void(double)>& write)
+{
+    auto* slider = new QSlider(Qt::Horizontal);
+    slider->setRange(0, int(stops.size()) - 1);
+    slider->setPageStep(1);
+    slider->setTickPosition(QSlider::TicksBelow);
+    slider->setTickInterval(1);
+    slider->setFixedWidth(stops_slider_width_px);
+    int nearest = 0;
+    for (int index = 1; index < stops.size(); index++)
+    {
+        if (qAbs(stops[index] - current) < qAbs(stops[nearest] - current))
+        {
+            nearest = index;
+        }
+    }
+    slider->setValue(nearest);
+
+    auto* rest = new QTimer(slider);
+    rest->setSingleShot(true);
+    rest->setInterval(stops_slider_rest_ms);
+    const auto write_now = [slider, stops, write, rest]() {
+        rest->stop();
+        write(stops[slider->value()]);
+    };
+    QObject::connect(rest, &QTimer::timeout, slider, write_now);
+    QObject::connect(slider, &QSlider::valueChanged, slider, [slider, rest]() {
+        if (!slider->isSliderDown())
+        {
+            rest->start();
+        }
+    });
+    QObject::connect(slider, &QSlider::sliderReleased, slider, write_now);
+    return slider;
+}
+
 QWidget* with_end_words(QSlider* slider, const QString& low, const QString& high)
 {
     auto* box = new QWidget;
@@ -43,6 +84,12 @@ QWidget* with_end_words(QSlider* slider, const QString& low, const QString& high
     words->addStretch();
     words->addWidget(high_word);
     rows->addLayout(words);
+    // A slider of a fixed width keeps its words at its own ends, not at the
+    // ends of a wider column.
+    if (slider->minimumWidth() == slider->maximumWidth())
+    {
+        box->setFixedWidth(slider->maximumWidth());
+    }
     return box;
 }
 

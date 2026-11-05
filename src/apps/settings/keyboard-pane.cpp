@@ -1,5 +1,6 @@
 #include "keyboard-pane.hpp"
 
+#include <QCheckBox>
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QLabel>
@@ -34,6 +35,7 @@ static const QList<Category>& categories()
         {"windows", "Windows",
             {
                 {"close_window", "Close Window"},
+                {"quit_app", "Quit the Program"},
                 {"minimize_window", "Minimize Window"},
                 {"fullscreen_window", "Full Screen"},
                 {"switch_window", "Next Window of the Program"},
@@ -153,10 +155,19 @@ KeyboardPane::KeyboardPane(Choices& choices, QWidget* parent) : QWidget(parent),
     note_label->setWordWrap(true);
     note_label->setMinimumHeight(note_label->fontMetrics().lineSpacing() * 2);
 
+    // Function keys that are shortcuts go to games instead (src/compositor/game-keys):
+    // to full-screen windows and Steam's games always, to every X11 program with this.
+    auto* all_x11 = new QCheckBox(word(words, QStringLiteral("keyboard_game_keys_all_x11"),
+        QStringLiteral("Function keys go to every X11 program, as to games")));
+    all_x11->setChecked(choices.value(QStringLiteral("game_keys"), QStringLiteral("all_x11")).toBool());
+    connect(all_x11, &QCheckBox::toggled, this,
+        [this](bool on) { this->choices.set(QStringLiteral("game_keys"), QStringLiteral("all_x11"), on); });
+
     auto* right = new QVBoxLayout;
     right->addWidget(table);
     right->addLayout(buttons);
     right->addWidget(note_label);
+    right->addWidget(all_x11);
 
     auto* columns = new QHBoxLayout(this);
     columns->addWidget(category_list, 0, Qt::AlignTop);

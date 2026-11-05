@@ -1,16 +1,21 @@
 #include "settings-window.hpp"
 
+#include <QHBoxLayout>
 #include <QIcon>
 #include <QLineEdit>
+#include <QDir>
 #include <QEvent>
 #include <QGraphicsOpacityEffect>
 #include <QLabel>
 #include <QMenu>
 #include <QMenuBar>
+#include <QMessageBox>
 #include <QPainter>
 #include <QPixmap>
 #include <QStackedWidget>
 #include <QPropertyAnimation>
+#include <QPushButton>
+#include <QRegularExpression>
 #include <QScreen>
 #include <QTimer>
 #include <QTabWidget>
@@ -35,6 +40,7 @@
 #include "display-pane.hpp"
 #include "energy-pane.hpp"
 #include "overview.hpp"
+#include "pane-resets.hpp"
 #include "extensions-pane.hpp"
 #include "theme-pane.hpp"
 #include "icons-pane.hpp"
@@ -107,7 +113,7 @@ static const KnownPane known_panes[] = {
 SettingsWindow::SettingsWindow(Choices& choices) : choices(choices)
 {
     const QVariantMap wishes = choices.configTable(QStringLiteral("settings"));
-    const QVariantMap words = wishes.value(QStringLiteral("words")).toMap();
+    words = wishes.value(QStringLiteral("words")).toMap();
     program_name = wishes.value(QStringLiteral("name"), QStringLiteral("Settings")).toString();
 
     page_motion = choices.themeTable(QStringLiteral("animation")).value(QStringLiteral("settings_page")).toMap();
@@ -232,6 +238,13 @@ SettingsWindow::SettingsWindow(Choices& choices) : choices(choices)
             page_rows->setContentsMargins(page_margin, page_margin, page_margin, page_margin);
             page_rows->addWidget(pane, 0, Qt::AlignHCenter | Qt::AlignTop);
             page_rows->addStretch();
+            pane_widgets.insert(name, pane);
+            if (!pane_choices(name).isEmpty())
+            {
+                auto* restore = new QPushButton(word("restore_defaults", "Restore Defaults…"));
+                connect(restore, &QPushButton::clicked, this, [this, name]() { restoreDefaults(name); });
+                page_rows->addWidget(restore, 0, Qt::AlignRight);
+            }
             pane_pages.insert(name, pages->addWidget(page));
             page->installEventFilter(this);
             // A title may be broken in two lines for the overview.
@@ -267,13 +280,109 @@ SettingsWindow::SettingsWindow(Choices& choices) : choices(choices)
     QWidget* placeholder = pages->widget(0);
     pages->removeWidget(placeholder);
     delete placeholder;
-    pages->insertWidget(0, overview);
+    auto* front = new QWidget;
+    auto* front_rows = new QVBoxLayout(front);
+    front_rows->setContentsMargins(0, 0, 0, 0);
+    front_rows->addWidget(overview);
+    // The window is as wide as the overview: the button's room is its own row's.
+    auto* reset_all = new QPushButton(word("reset_all", "Reset All Settings…"));
+    connect(reset_all, &QPushButton::clicked, this, &SettingsWindow::resetAll);
+    auto* reset_row = new QHBoxLayout;
+    const int reset_margin = 12;
+    reset_row->setContentsMargins(0, 0, reset_margin, reset_margin);
+    reset_row->addStretch();
+    reset_row->addWidget(reset_all);
+    front_rows->addLayout(reset_row);
+    pages->insertWidget(0, front);
 
     makeMenus(words);
 
     // Not resizable by hand: it takes each page's own height.
     setFixedWidth(overview->sizeHint().width());
     showOverview();
+}
+
+QString SettingsWindow::word(const char* key, const char* fallback) const
+{
+    return words.value(QLatin1String(key), QString::fromUtf8(fallback)).toString();
+}
+
+bool SettingsWindow::askFirst(const QString& question, const QString& note, const QString& button)
+{
+    QMessageBox asking(this);
+    asking.setWindowTitle(windowTitle());
+    asking.setIcon(QMessageBox::Warning);
+    asking.setText(question);
+    asking.setInformativeText(note);
+    QPushButton* go = asking.addButton(button, QMessageBox::DestructiveRole);
+    QPushButton* cancel = asking.addButton(word("cancel", "Cancel"), QMessageBox::RejectRole);
+    // Return and Escape leave everything as it is.
+    asking.setDefaultButton(cancel);
+    asking.setEscapeButton(cancel);
+    asking.exec();
+    return asking.clickedButton() == go;
+}
+
+void SettingsWindow::restoreDefaults(const QString& name)
+{
+    const QString title = pane_titles.value(name);
+    if (!askFirst(word("restore_defaults_question", "Restore the defaults of %1?").arg(title),
+            word("restore_defaults_note", "Your choices in this pane are replaced by the desktop's own. This can't be "
+                                          "undone."),
+            word("restore_defaults_button", "Restore Defaults")))
+    {
+        return;
+    }
+    const QString problem = choices.remove(pane_choices(name));
+    if (!problem.isEmpty())
+    {
+        QMessageBox::warning(this, windowTitle(), problem);
+    }
+    remakePane(name);
+}
+
+void SettingsWindow::resetAll()
+{
+    if (!askFirst(word("reset_all_question", "Reset all settings?"),
+            word("reset_all_note", "Every choice you made is replaced by the desktop's own, including the Dock's "
+                                   "contents, app icons and names, and keyboard shortcuts. A copy is kept as %1. Some "
+                                   "changes take effect the next time you log in.")
+                .arg(QString(choices.backupFile())
+                        .replace(QRegularExpression(QStringLiteral("^") + QRegularExpression::escape(QDir::homePath())),
+                            QStringLiteral("~"))),
+            word("reset_all_button", "Reset All")))
+    {
+        return;
+    }
+    const QString problem = choices.removeAll();
+    if (!problem.isEmpty())
+    {
+        QMessageBox::warning(this, windowTitle(), problem);
+    }
+    for (const QString& name : pane_widgets.keys())
+    {
+        remakePane(name);
+    }
+}
+
+void SettingsWindow::remakePane(const QString& name)
+{
+    QWidget* old_pane = pane_widgets.value(name);
+    QWidget* page = pages->widget(pane_pages.value(name));
+    QWidget* new_pane = makePane(name);
+    if (old_pane == nullptr || page == nullptr || new_pane == nullptr)
+    {
+        delete new_pane;
+        return;
+    }
+    delete page->layout()->replaceWidget(old_pane, new_pane);
+    old_pane->hide();
+    old_pane->deleteLater();
+    // A widget put into a window already shown stays hidden until told.
+    new_pane->show();
+    pane_widgets.insert(name, new_pane);
+    // Once the layout has taken the new pane's size.
+    QTimer::singleShot(0, this, &SettingsWindow::fitHeight);
 }
 
 // In the desktop's menu bar, as a Mac's System Preferences has them: View
