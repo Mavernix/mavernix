@@ -94,6 +94,7 @@ ShellRoot {
         screen: shell.mainScreen
         settings: shell.settings
         sounds: sounds
+        onMinimizedWindowWanted: window => dock.bringBack(window)
     }
 
     readonly property bool searchOpen: searchBox.open

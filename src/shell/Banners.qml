@@ -7,6 +7,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 import Quickshell.Services.Notifications
+import "ApplicationEntry.js" as ApplicationEntry
 import "ThemeValues.js" as ThemeValues
 
 Scope {
@@ -50,12 +51,39 @@ Scope {
         kept = [notification].concat(kept)
     }
 
+    // A minimised window of the program a pressed notification came from;
+    // shell.qml has the dock bring it back, perhaps from another desktop.
+    signal minimizedWindowWanted(var window)
+
+    // Tells the program its notification was pressed and brings its window
+    // to the front: on Wayland, a program cannot raise itself on its own.
     function answer(notification) {
         for (const action of notification.actions) {
             if (action.identifier === "default") {
                 action.invoke()
             }
         }
+        bringForward(notification)
+    }
+
+    // The program's window in view, or else a minimised one; a program
+    // without windows is left alone.
+    function bringForward(notification) {
+        const names = [notification.desktopEntry, notification.appName].filter(name => name !== "")
+        const entry = names.map(name => DesktopEntries.heuristicLookup(name)).find(found => found) ?? null
+        const windows = ToplevelManager.toplevels.values.filter(window =>
+            names.includes(window.appId)
+            || (entry !== null && ApplicationEntry.of(DesktopEntries, window.appId) === entry))
+        const inView = windows.find(window => !window.minimized)
+        if (inView !== undefined) {
+            inView.activate()
+        } else if (windows.length > 0) {
+            minimizedWindowWanted(windows[0])
+        }
+    }
+
+    function answerKept(notification) {
+        answer(notification)
         dismiss(notification)
     }
 
@@ -168,7 +196,7 @@ Scope {
                     // `come` runs from 0 to 1 as the banner arrives, `gone` as it leaves.
                     property bool present: false
                     Component.onCompleted: present = true
-                    property real come: present || gone > 0 ? 1 : 0
+                    property real come: present || gone > 0 || throwing.running ? 1 : 0
                     property real gone: 0
                     Behavior on come {
                         NumberAnimation {
@@ -194,7 +222,7 @@ Scope {
                     opacity: (fades(root.arriving) ? come : 1) * (fades(root.leaving) ? 1 - gone : 1)
                     transform: Translate {
                         x: (banner.share(root.arriving, "slide", 1 - banner.come) + banner.share(root.leaving, "slide", banner.gone))
-                           * (banner.width + stackWindow.margin[1])
+                           * (banner.width + stackWindow.margin[1]) + banner.swiped
                         // Up past the window's top, so the banner comes out from under the panel.
                         y: -(banner.share(root.arriving, "drop", 1 - banner.come) + banner.share(root.leaving, "drop", banner.gone))
                            * (banner.y + banner.height + stackWindow.margin[0])
@@ -212,11 +240,46 @@ Scope {
                         going.start()
                         goodbye.start()
                         if (tellProgram) {
-                            for (const action of notification.actions) {
-                                if (action.identifier === "default") {
-                                    action.invoke()
-                                }
-                            }
+                            root.answer(notification)
+                        }
+                    }
+
+                    // Swiped to the right, a banner follows the pointer or the fingers on
+                    // a touchpad; let go far or fast enough, it is thrown off the screen
+                    // into the notification list, as if its time had run out.
+                    property real swiped: 0
+                    readonly property real throwDistance: width / 3
+                    readonly property real throwSpeed: 800
+                    readonly property bool swiping: swipeDrag.active || swipeQuiet.running
+                    Behavior on swiped {
+                        enabled: !banner.swiping && !throwing.running
+                        NumberAnimation { duration: 150; easing.type: Easing.OutCubic }
+                    }
+                    // Pixels a second to the right, as the pointer last moved.
+                    property real swipeSpeed: 0
+                    onSwipingChanged: {
+                        if (swiping) {
+                            stay.stop()
+                            swipeSpeed = 0
+                        } else if (present && (swiped > throwDistance || swipeSpeed > throwSpeed)) {
+                            present = false
+                            throwing.start()
+                        } else if (present) {
+                            swiped = 0
+                            stay.restart()
+                        }
+                    }
+                    NumberAnimation {
+                        id: throwing
+                        target: banner
+                        property: "swiped"
+                        to: banner.width + stackWindow.margin[1]
+                        duration: 150
+                        easing.type: Easing.InCubic
+                        onFinished: {
+                            root.keep(banner.notification)
+                            // Last: this removes the banner.
+                            root.remove(banner.notification)
                         }
                     }
 
@@ -302,9 +365,41 @@ Scope {
                         lineHeight: root.looks.text_line_height ?? 14
                     }
 
-                    MouseArea {
-                        anchors.fill: parent
-                        onClicked: banner.leave(true)
+                    // A press; once the pointer moves, the swipe below takes over and it
+                    // is not one.
+                    TapHandler {
+                        onTapped: banner.leave(true)
+                    }
+                    DragHandler {
+                        id: swipeDrag
+                        target: null
+                        yAxis.enabled: false
+                        enabled: banner.present
+                        onTranslationChanged: {
+                            banner.swiped = Math.max(0, translation.x)
+                            banner.swipeSpeed = centroid.velocity.x
+                        }
+                    }
+                    WheelHandler {
+                        enabled: banner.present
+                        acceptedDevices: PointerDevice.TouchPad
+                        onWheel: event => {
+                            if (Math.abs(event.pixelDelta.x) < Math.abs(event.pixelDelta.y)) {
+                                return
+                            }
+                            banner.swiped = Math.max(0, banner.swiped + event.pixelDelta.x)
+                            if (event.phase === Qt.ScrollEnd) {
+                                // Ends the swipe.
+                                swipeQuiet.stop()
+                            } else {
+                                swipeQuiet.restart()
+                            }
+                        }
+                    }
+                    // A touchpad does not always say when the fingers have left it.
+                    Timer {
+                        id: swipeQuiet
+                        interval: 150
                     }
                 }
             }

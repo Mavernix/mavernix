@@ -316,7 +316,7 @@ PanelWindow {
                                     }
                                     MouseArea {
                                         anchors.fill: parent
-                                        onClicked: list.banners.answer(entry.modelData)
+                                        onClicked: list.banners.answerKept(entry.modelData)
                                     }
                                     ListText {
                                         visible: entryHover.hovered
