@@ -2,13 +2,13 @@
 # games do for "borderless full screen".
 
 # Wayfire looks for lib<name>.so, so the name must match the plugin's
-# name in metadata/borderless-full-screen.xml.
+# name in metadata/x11-windows.xml.
 shared_module(
-    'borderless-full-screen',
-    ['borderless-full-screen.cpp'],
+    'x11-windows',
+    ['x11-windows.cpp'],
     dependencies: [wayfire],
     cpp_args: wayfire_plugin_args,
     install: true,
     install_dir: wayfire_plugin_dir,
 )
-install_data('metadata/borderless-full-screen.xml', install_dir: wayfire_metadata_dir)
+install_data('metadata/x11-windows.xml', install_dir: wayfire_metadata_dir)

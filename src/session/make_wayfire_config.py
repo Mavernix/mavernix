@@ -53,7 +53,7 @@ BASE_PLUGINS = [
     "window-attention",
     "game-keys",
     "x11-settings",
-    "borderless-full-screen",
+    "x11-windows",
 ]
 
 
@@ -684,7 +684,7 @@ def game_vrr_section(config):
     return ["[game-vrr]", f"screens = {' '.join(names)}"], ["game-vrr"]
 
 
-def borderless_section(config):
+def x11_windows_section(config):
     """[window] borderless_full_screen: X11 games get the screen they ask
     for. A full-screen one goes there rather than to the focused screen; a
     frameless one that asks to cover a screen (a game's "borderless full
@@ -693,7 +693,7 @@ def borderless_section(config):
     wanted = config.get("window", {}).get("borderless_full_screen", True)
     if not isinstance(wanted, bool):
         fail("[window] borderless_full_screen must be true or false")
-    return ["[borderless-full-screen]", f"enabled = {yes_or_no(wanted)}"]
+    return ["[x11-windows]", f"games = {yes_or_no(wanted)}"]
 
 
 def shake_to_find_plugins(config):
@@ -1228,7 +1228,7 @@ def main():
         sections.append(vrr)
     plugins += vrr_plugins
     sections.append(x11_settings_section(config))
-    sections.append(borderless_section(config))
+    sections.append(x11_windows_section(config))
     sections.append(workarounds_section(config))
     gestures, gesture_plugins = gesture_section(config, theme)
     if gestures:

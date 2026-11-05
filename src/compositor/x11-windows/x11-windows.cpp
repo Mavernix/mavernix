@@ -1,22 +1,21 @@
-// The plugin "borderless-full-screen": an X11 window without a frame that
-// asks to cover a whole screen is made full screen there. Games do this for
-// "borderless" or "windowed full screen" (Wine and Proton among them)
-// instead of asking to be full screen. Wayfire otherwise fits the window
-// into the room between the menu bar and the dock, cutting the game short.
-// KWin and Mutter treat such windows the same way.
+// The plugin "x11-windows": X11 windows where and as their programs ask.
+//
+// "games": X11 games get the screen they ask for. Wayfire puts a new X11
+// window on the focused screen, so a game that goes full screen by itself
+// (Wine and Proton do) is moved to the screen holding the middle of what it
+// asked for, its primary one. And a window without a frame that asks to
+// cover a whole screen (a game's "borderless full screen") is made full
+// screen there; Wayfire would fit it between the menu bar and the dock.
+// KWin and Mutter treat such windows the same way. A maximized window without
+// a frame (Steam draws its own) stays a window. The size is compared in X11's
+// units: device pixels with workarounds/force_xwayland_scaling, when
+// positions are each screen's own and the window's own screen is taken.
 //
 // Wayfire changes the size a window asks for before anyone else sees it, so
 // the plugin notes each X11 window's own wish: its size when made, and every
-// resize it asks for afterwards. It looks when the window appears and at each
-// later request: a game may switch to borderless in its options, and back to
-// a window, which the plugin then undoes if the full screen was its doing.
-// The screen is the one holding the middle of what the window asked for:
-// Wayfire would put a new X11 window on the focused screen, so a game that
-// goes full screen by itself (Wine and Proton do) is moved to the screen it
-// asked for, its primary one. The size is compared in X11's units (device
-// pixels with workarounds/force_xwayland_scaling, when positions are each
-// screen's own and the window's own screen is taken).
-// Option "enabled".
+// resize it asks for afterwards, when it looks again: a game may switch to
+// borderless in its options, and back to a window, which the plugin then
+// undoes if the full screen was its doing.
 
 #include <cmath>
 #include <map>
@@ -37,7 +36,7 @@ struct wlr_xdg_surface;
 #include <wayfire/view.hpp>
 #include <wayfire/window-manager.hpp>
 
-namespace borderless_full_screen
+namespace x11_windows
 {
 #if WF_HAS_XWAYLAND
 // What one X11 window last asked for, in X11's coordinates, which are the
@@ -58,7 +57,7 @@ struct wish_t
 
 class plugin_t : public wf::plugin_interface_t
 {
-    wf::option_wrapper_t<bool> enabled{"borderless-full-screen/enabled"};
+    wf::option_wrapper_t<bool> games{"x11-windows/games"};
     std::map<wlr_xwayland_surface*, std::unique_ptr<wish_t>> wishes;
     // A wish is freed only after its window's destroy listener has run.
     std::vector<std::unique_ptr<wish_t>> gone;
@@ -72,10 +71,8 @@ class plugin_t : public wf::plugin_interface_t
         wish->on_configure.set_callback([this, wish = wish.get(), surface](void* data) {
             const auto* asked = static_cast<wlr_xwayland_surface_configure_event*>(data);
             wish->asked = box(asked->x, asked->y, asked->width, asked->height);
-            if (surface->surface != nullptr)
-            {
-                consider(wf::toplevel_cast(wf::wl_surface_to_wayfire_view(surface->surface->resource)));
-            }
+            consider(surface->surface ? wf::toplevel_cast(wf::wl_surface_to_wayfire_view(surface->surface->resource))
+                                      : nullptr);
         });
         wish->on_configure.connect(&surface->events.request_configure);
         wish->on_destroy.set_callback([this, surface](void*) {
@@ -129,7 +126,7 @@ class plugin_t : public wf::plugin_interface_t
         wlr_surface* main = (view && view->is_mapped()) ? view->get_wlr_surface() : nullptr;
         wlr_xwayland_surface* surface = main ? wlr_xwayland_surface_try_from_wlr_surface(main) : nullptr;
         // Dialogs have a parent.
-        if (!enabled || !surface || (surface->parent != nullptr) || !wishes.count(surface))
+        if (!games || !surface || (surface->parent != nullptr) || !wishes.count(surface))
         {
             return;
         }
@@ -148,8 +145,11 @@ class plugin_t : public wf::plugin_interface_t
             return;
         }
 
-        // A frame means the window is meant to be moved about.
-        const bool borderless_cover = (surface->decorations != 0) && covers(screen, wish.asked);
+        // A frame means the window is meant to be moved about. A maximized
+        // window without one (Steam draws its own) fills a screen without a
+        // menu bar or dock, and is meant to stay a window.
+        const bool maximized = surface->maximized_horz || surface->maximized_vert || view->pending_tiled_edges();
+        const bool borderless_cover = (surface->decorations != 0) && !maximized && covers(screen, wish.asked);
         if (borderless_cover && !view->pending_fullscreen())
         {
             wf::get_core().default_wm->fullscreen_request(view, screen, true);
@@ -184,6 +184,6 @@ class plugin_t : public wf::plugin_interface_t
     void init() override {}
 };
 #endif
-} // namespace borderless_full_screen
+} // namespace x11_windows
 
-DECLARE_WAYFIRE_PLUGIN(borderless_full_screen::plugin_t);
+DECLARE_WAYFIRE_PLUGIN(x11_windows::plugin_t);
