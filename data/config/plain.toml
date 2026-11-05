@@ -302,6 +302,10 @@ web = [
 # A program's menu (secondary click).
 open_label = "Open"
 keep_in_dock_label = "Keep in Dock"
+hide_label = "Hide from the App Grid"
+# Desktop entry IDs the grid leaves out, such as "htop"; Settings, App
+# Icons shows them again.
+# hidden = []
 
 [notifications]
 clear_all_label = "Clear All"
@@ -483,6 +487,8 @@ icons_file_kind = "Pictures"
 icons_unreadable = "This file is not a picture that can be shown as an icon."
 icons_name_label = "Name:"
 icons_name_use_original = "Use original"
+icons_in_app_grid = "Show in the app grid"
+icons_hidden_in_app_grid = "Not in the app grid"
 bluetooth_title = "Bluetooth"
 bluetooth_on = "Bluetooth on"
 bluetooth_connected = "Connected"

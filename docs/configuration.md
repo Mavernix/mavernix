@@ -155,6 +155,8 @@ Both are kept by desktop entry ID, so they belong to a desktop like everything e
 
 An empty value, or Use Original, brings back the application's own.
 
+To take an application out of the app grid, right-click it there and choose Hide from the App Grid, or untick Show in the app grid in Settings, App Icons & Names. That's also where you bring it back. The search and the dock's Programs folder still list it. It's saved as `[app_grid] hidden = ["htop", ...]`, by desktop entry ID.
+
 ## The desktop's menus
 
 When no window is active, the panel shows the desktop's own name and menus, just like a program would. That's where things like New Folder, Go to Home or Downloads, and Empty Wastebasket live. They're set up under `[desktop_menus]`:

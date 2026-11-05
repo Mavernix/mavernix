@@ -5,7 +5,8 @@
 // The config's [app_icons] maps a desktop entry ID to a picture file's path
 // (beginning with "/") or an icon theme name, and [app_names] to the name the
 // desktop shows; the shell follows both (src/shell/IconSource.qml,
-// src/shell/ApplicationName.js).
+// src/shell/ApplicationName.js). [app_grid] hidden lists the IDs the app
+// grid leaves out.
 
 #pragma once
 
@@ -16,6 +17,7 @@
 #include "installed-applications.hpp"
 
 class Choices;
+class QCheckBox;
 class QLabel;
 class QLineEdit;
 class QListWidget;
@@ -48,6 +50,8 @@ class IconsPane : public QWidget
     QString chosenNameOf(const QString& id) const;
     // The name the desktop shows: the chosen one, else its own.
     QString shownNameOf(const InstalledApplication& application) const;
+    bool hiddenInGrid(const QString& id) const;
+    void showInGrid(const QString& id, bool shown);
     const InstalledApplication* applicationWithId(const QString& id) const;
 
     void askForIcon();
@@ -73,5 +77,6 @@ class IconsPane : public QWidget
     QPushButton* default_button = nullptr;
     QLineEdit* name_field = nullptr;
     QPushButton* original_name_button = nullptr;
+    QCheckBox* in_grid = nullptr;
     QString shown_id;
 };

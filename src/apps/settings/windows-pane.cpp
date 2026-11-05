@@ -138,10 +138,9 @@ WindowsPane::WindowsPane(Choices& choices, QWidget* parent) : QWidget(parent), c
         with_note(snap,
             word("windows_snap_note",
                 "At the left or right side: that half. In a corner: that quarter. At the top: the whole screen.")));
-    form->addRow(QString(),
-        with_note(quit_all,
-            word("windows_quit_closes_app_note",
-                "Quit in the menu bar, and the Close Window key, close every window of the program, not only the front one.")));
+    form->addRow(QString(), with_note(quit_all, word("windows_quit_closes_app_note",
+                                                    "Quit in the menu bar, and the Close Window key, close every "
+                                                    "window of the program, not only the front one.")));
     form->addRow(word("windows_drag_key", "Move and resize a window by holding:"), drag_key);
     form->addRow(word("windows_double_click", "A double click on a title bar:"), double_click);
     form->addRow(word("windows_buttons", "Window buttons:"), button_side);

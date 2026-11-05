@@ -1,5 +1,6 @@
 #include "icons-pane.hpp"
 
+#include <QCheckBox>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QFrame>
@@ -11,6 +12,7 @@
 #include <QListWidget>
 #include <QMessageBox>
 #include <QPushButton>
+#include <QSignalBlocker>
 #include <QStandardPaths>
 #include <QTimer>
 #include <QVBoxLayout>
@@ -176,6 +178,10 @@ QWidget* IconsPane::buildDetail()
     name_row->addWidget(original_name_button);
     rows->addLayout(name_row);
 
+    in_grid = new QCheckBox(word("icons_in_app_grid", "Show in the app grid"));
+    connect(in_grid, &QCheckBox::toggled, this, [this](bool on) { showInGrid(shown_id, on); });
+    rows->addWidget(in_grid, 0, Qt::AlignHCenter);
+
     rows->addStretch(1);
     return box;
 }
@@ -226,6 +232,23 @@ QString IconsPane::shownNameOf(const InstalledApplication& application) const
     return chosen.isEmpty() ? application.name : chosen;
 }
 
+bool IconsPane::hiddenInGrid(const QString& id) const
+{
+    return choices.value(QStringLiteral("app_grid"), QStringLiteral("hidden")).toStringList().contains(id);
+}
+
+void IconsPane::showInGrid(const QString& id, bool shown)
+{
+    QStringList hidden = choices.value(QStringLiteral("app_grid"), QStringLiteral("hidden")).toStringList();
+    hidden.removeAll(id);
+    if (!shown)
+    {
+        hidden.append(id);
+    }
+    choices.set(QStringLiteral("app_grid"), QStringLiteral("hidden"), hidden);
+    fillList(id);
+}
+
 QIcon IconsPane::iconOf(const InstalledApplication& application) const
 {
     const QString choice = ownChoiceOf(application.id);
@@ -245,7 +268,8 @@ void IconsPane::fillList(const QString& chosen_id)
         {
             continue;
         }
-        const bool own = !ownChoiceOf(application.id).isEmpty() || !chosenNameOf(application.id).isEmpty();
+        const bool own = !ownChoiceOf(application.id).isEmpty() || !chosenNameOf(application.id).isEmpty() ||
+                         hiddenInGrid(application.id);
         (own ? changed : others).append(&application);
     }
 
@@ -275,6 +299,10 @@ void IconsPane::fillList(const QString& chosen_id)
             if (!ownChoiceOf(application->id).isEmpty())
             {
                 details << label_of_choice(ownChoiceOf(application->id));
+            }
+            if (hiddenInGrid(application->id))
+            {
+                details << word("icons_hidden_in_app_grid", "Not in the app grid");
             }
             item->setData(SourceListDelegate::detail_role, details.join(QStringLiteral(" · ")));
             if (!to_choose || application->id == chosen_id)
@@ -316,6 +344,8 @@ void IconsPane::showApplication(const QString& id)
         iconOf(*application).pixmap(QSize(detail_icon_size_px, detail_icon_size_px), devicePixelRatioF()));
     detail_name->setText(shownNameOf(*application));
     detail_id->setText(application->id);
+    const QSignalBlocker quiet(in_grid);
+    in_grid->setChecked(!hiddenInGrid(id));
 
     const QString choice = ownChoiceOf(id);
     QString state;
