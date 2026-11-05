@@ -14,10 +14,13 @@ import Quickshell.Io
 Item {
     id: choices
 
-    // Its config already has the user file overlaid.
     required property var settings
+    // The desktop config without the user's file: what holds for a key the
+    // file leaves out, also after a reset took it out. (settings.config has
+    // the file as it was at session start overlaid.)
+    readonly property var defaults: settings.default_config ?? settings.config
 
-    // Changes since the session started: { table: { key: value } }.
+    // The user's file as it is now: { table: { key: value } }.
     property var changed: ({})
 
     function value(table, key) {
@@ -25,7 +28,7 @@ Item {
         if (changedTable !== undefined && changedTable[key] !== undefined) {
             return changedTable[key]
         }
-        return (settings.config[table] ?? ({}))[key]
+        return (defaults[table] ?? ({}))[key]
     }
 
     function set(table, key, newValue) {
@@ -96,11 +99,11 @@ Item {
         }
         // Unset in the user's file, these are the desktop config's.
         part.panel_translucency = held.panel?.translucent_menu_bar
-            ?? settings.config.panel?.translucent_menu_bar ?? false
+            ?? defaults.panel?.translucent_menu_bar ?? false
         // Reflections load a compositor plugin and move the shelf to a surface
         // of its own, which the blur and the still surfaces match by name.
         part.dock_reflections = held.dock?.window_reflections
-            ?? settings.config.dock?.window_reflections ?? false
+            ?? defaults.dock?.window_reflections ?? false
         const text = JSON.stringify(part)
         if (givenToCompositor !== undefined && text !== givenToCompositor) {
             const before = JSON.parse(givenToCompositor)

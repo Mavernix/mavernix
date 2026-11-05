@@ -162,6 +162,11 @@ class plugin_t : public wf::plugin_interface_t
             return;
         }
         read_answers();
+        // An answer may have shown Xwayland unusable, and disconnected.
+        if (x11 == nullptr)
+        {
+            return;
+        }
         // Reading answers may have read events behind them, which the socket
         // will not tell of again.
         changed |= screens_changed();
@@ -330,8 +335,7 @@ class plugin_t : public wf::plugin_interface_t
         std::string line;
         while (std::getline(lines, line))
         {
-            const bool is_dpi = line.rfind("Xft.dpi:", 0) == 0;
-            if (!is_dpi || ((dpi_wanted == 0) && (written_dpi == 0)))
+            if (line.rfind("Xft.dpi:", 0) != 0)
             {
                 kept += line + "\n";
             }

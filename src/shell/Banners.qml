@@ -292,8 +292,7 @@ Scope {
                         running: true
                         interval: banner.notification.expireTimeout > 0
                                   ? banner.notification.expireTimeout
-                                  : 1000 * (root.choices?.value("notifications", "banner_seconds")
-                                            ?? root.wishes.banner_seconds ?? 5)
+                                  : 1000 * (root.choices?.value("notifications", "banner_seconds") ?? 5)
                         onTriggered: banner.leave(false)
                     }
                     Timer {

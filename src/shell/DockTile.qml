@@ -199,8 +199,22 @@ Item {
     readonly property bool hovered: pointerOver && press.enabled
     onHoveredChanged: {
         if (hovered) {
-            const active = ToplevelManager.activeToplevel
-            frontWindow = active !== null && windows.includes(active) ? active : null
+            noteFrontWindow()
+        }
+    }
+    function noteFrontWindow() {
+        const active = ToplevelManager.activeToplevel
+        frontWindow = active !== null && windows.includes(active) ? active : null
+    }
+    // Another window may come forward (Alt-Tab) while the pointer rests here.
+    // A press takes the focus from the window before the click is seen, so a
+    // window losing it to none is not noted.
+    Connections {
+        target: ToplevelManager
+        function onActiveToplevelChanged() {
+            if (tile.hovered && ToplevelManager.activeToplevel !== null) {
+                tile.noteFrontWindow()
+            }
         }
     }
 

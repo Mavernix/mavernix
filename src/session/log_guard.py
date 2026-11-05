@@ -9,9 +9,9 @@ lives in memory ($XDG_RUNTIME_DIR), so a shell stuck in a loop that says the
 same thing thousands of times a second would otherwise fill it, as one did
 with "QSocketNotifier: Invalid socket" (a race at its start, 2026-11-05).
 
-The same line FLOOD_LINES times within FLOOD_SECONDS means the shell is
-stuck: it is ended (TERM, then KILL), and keep-running starts it again as
-after a crash. A shell at work never says one thing this often.
+FLOOD_LINES lines within FLOOD_SECONDS, the same or not, mean the shell is
+stuck in a loop: it is ended (TERM, then KILL), and keep-running starts it
+again as after a crash. A shell at work never says this much.
 
 Nothing may end this program early: the shell writes into the pipe it reads,
 and a shell whose reader is gone ends at its next line.
@@ -65,12 +65,11 @@ class Guard:
             self.report()
             self.log.write(line)
             self.last = line
-            self.flood_count = 0
-            return
+        else:
+            self.repeats += 1
+            if now - self.reported_at >= REPORT_EVERY_SECONDS:
+                self.report()
 
-        self.repeats += 1
-        if now - self.reported_at >= REPORT_EVERY_SECONDS:
-            self.report()
         if self.flood_count == 0 or now - self.flood_started > FLOOD_SECONDS:
             self.flood_started, self.flood_count = now, 0
         self.flood_count += 1
@@ -84,7 +83,7 @@ class Guard:
         if pid is None:
             return
         self.log.write(
-            f"log_guard: the shell said one line {FLOOD_LINES} times within {FLOOD_SECONDS} seconds "
+            f"log_guard: the shell said {FLOOD_LINES} lines within {FLOOD_SECONDS} seconds "
             "and seems stuck; starting it again\n".encode()
         )
         os.kill(pid, signal.SIGTERM)

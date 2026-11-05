@@ -34,7 +34,7 @@ Item {
     readonly property string themeDirectory: settings.theme_directory
 
     // The settings' Desktop pane can turn the icons off without a new login.
-    readonly property bool shown: looks !== null && (userChoices.value("desktop_files", "show") ?? wishes.show ?? false)
+    readonly property bool shown: looks !== null && (userChoices.value("desktop_files", "show") ?? false)
     visible: shown
 
     // The config's folder, "~" standing for the home folder.

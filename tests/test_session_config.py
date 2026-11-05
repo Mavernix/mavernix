@@ -957,6 +957,16 @@ class TestLogGuard(unittest.TestCase):
         self.assertIn("seems stuck; starting it again", log)
         self.assertLess(len(log), 1000)
 
+    def test_stuck_shell_saying_two_things_is_ended(self):
+        shell_program = Path(self.folder.name) / "qs"
+        shutil.copy(shutil.which("sleep"), shell_program)
+        shell = subprocess.Popen([shell_program, "60"])
+        self.addCleanup(shell.kill)
+        self.pid_file.write_text(f"{shell.pid}\n")
+        log = self.guard("Invalid socket 285\nInvalid socket 286\n" * 3000)
+        self.assertEqual(shell.wait(timeout=10), -15)
+        self.assertIn("seems stuck; starting it again", log)
+
     def test_other_program_is_left_alone(self):
         other = subprocess.Popen(["sleep", "60"])
         self.addCleanup(other.kill)

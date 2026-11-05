@@ -378,13 +378,18 @@ def lid_is_closed():
     return answer.stdout.strip() == "b true"
 
 
+def turned_off_in_config(config):
+    """The screens turned off in the config: [display.screens.NAME] enabled = false."""
+    single = config.get("display", {}).get("screens", {})
+    return {name for name, own in single.items() if own.get("enabled", True) is False}
+
+
 def screens_off(config, plugged_in):
     """The screens to turn off: those turned off in the config
     ([display.screens.NAME] enabled = false) and, with [power]
     lid_turns_off_screen, a built-in one while the lid is shut. One plugged
     in screen always stays on, one the user did not turn off if they can."""
-    single = config.get("display", {}).get("screens", {})
-    chosen = {name for name, own in single.items() if own.get("enabled", True) is False}
+    chosen = turned_off_in_config(config)
     off = set(chosen)
     if config.get("power", {}).get("lid_turns_off_screen", False) and lid_is_closed():
         off |= {name for name in plugged_in if name.startswith(BUILT_IN_PREFIXES)}
@@ -623,11 +628,12 @@ def display_sections(config):
             continue
     # Plugged in: those the compositor shows, if it answers, else those the
     # kernel reports; and those it does not show because they were turned
-    # off here (by the config, or a built-in one by the closed lid). A
-    # connector the compositor does not show otherwise (a nested session's
-    # host screens) is not one of ours.
-    turned_off_here = {name for name, own in single.items() if own.get("enabled", True) is False}
-    turned_off_here |= {name for name in screens if name.startswith(BUILT_IN_PREFIXES)}
+    # off here (by the config, or a built-in one by the closed lid, if the
+    # user wants that). A connector the compositor does not show otherwise (a
+    # nested session's host screens) is not one of ours.
+    turned_off_here = turned_off_in_config(config)
+    if config.get("power", {}).get("lid_turns_off_screen", False):
+        turned_off_here |= {name for name in screens if name.startswith(BUILT_IN_PREFIXES)}
     plugged = [name for name in names
                if name in (shown or screens) or (name in screens and name in turned_off_here)]
     off = screens_off(config, plugged)

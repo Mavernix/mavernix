@@ -151,9 +151,10 @@ class plugin_t : public wf::plugin_interface_t
     // The screen holding the middle of what the window asked for, else its
     // own. X11's positions are the desktop's unless X11 programs are drawn
     // sharp; then they are in pixels of each screen, and its own is taken.
-    static wf::output_t* asked_screen(wayfire_toplevel_view view, const wf::geometry_t& asked)
+    wf::option_wrapper_t<bool> sharp_x11{"workarounds/force_xwayland_scaling"};
+
+    wf::output_t* asked_screen(wayfire_toplevel_view view, const wf::geometry_t& asked)
     {
-        static wf::option_wrapper_t<bool> sharp_x11{"workarounds/force_xwayland_scaling"};
         if (!sharp_x11)
         {
             const wf::pointf_t middle{asked.x + asked.width / 2, asked.y + asked.height / 2};
@@ -169,9 +170,8 @@ class plugin_t : public wf::plugin_interface_t
     }
 
     // Whether the size asked for is at least the screen's, in X11's units.
-    static bool covers(wf::output_t* output, const wf::geometry_t& asked)
+    bool covers(wf::output_t* output, const wf::geometry_t& asked)
     {
-        static wf::option_wrapper_t<bool> sharp_x11{"workarounds/force_xwayland_scaling"};
         const wf::geometry_t screen = output->get_layout_geometry();
         const double units = sharp_x11 ? output->handle->scale : 1.0;
         return (asked.width >= std::floor(screen.width * units)) && (asked.height >= std::floor(screen.height * units));
