@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="x11-primary">
+		<_short>X11 Primary Screen</_short>
+		<_long>Makes the screen with the menu bar and dock X11's primary screen, so that games and other X11 programs open there and offer its resolutions.</_long>
+		<category>General</category>
+		<option name="enabled" type="bool">
+			<_short>Enabled</_short>
+			<_long>Off leaves X11 without a primary screen.</_long>
+			<default>true</default>
+		</option>
+	</plugin>
+</wayfire>

@@ -624,6 +624,8 @@ mouse_scroll_speed = "Scrolling speed:"
 mouse_primary = "Primary mouse button:"
 mouse_primary_left = "Left"
 mouse_primary_right = "Right"
+mouse_middle_click_paste = "Paste the selected text with the middle button"
+mouse_middle_click_paste_note = "Takes effect the next time you log in."
 display_title = "Display"
 display_brightness = "Brightness:"
 display_arrangement_note = "Click a screen to change its settings below. Drag the screens to stand as they do on your desk, and drag the bar along the top of one to move the menu bar and dock to another screen."
@@ -636,6 +638,10 @@ display_resolution = "Resolution:"
 display_refresh = "Refresh rate:"
 display_recommended = "%1 (recommended)"
 display_hertz = "%1 Hz"
+display_vrr = "Variable refresh rate:"
+display_vrr_off = "Off"
+display_vrr_games = "For full-screen games"
+display_vrr_always = "Always"
 display_keep = "Keep this resolution?"
 display_keep_countdown = "The screen goes back to the earlier resolution in %1 seconds."
 display_keep_button = "Keep"
@@ -690,10 +696,16 @@ volume_step = 0.0625
 scale = "auto"
 # The screen for the panel and dock (default: the first listed):
 # main_screen = "eDP-1"
+# X11 programs (games under Xwayland, Steam, Wine) take that screen as their
+# primary one; false leaves X11 without one.
+# x11_primary = true
 # Per-screen settings, by name (`wlr-randr` lists them):
 # [display.screens."HDMI-A-1"]
 # scale = 1
 # position = "2560,0"
+# Variable refresh rate: "off", "games" (while a window is full screen) or
+# "always"; left out: off.
+# vrr = "games"
 
 [input]
 # Keyboard layouts (xkeyboard-config names), comma-separated with variants
@@ -715,6 +727,9 @@ natural_scroll = false
 # mouse_scroll_speed = 1.0
 # The primary button on the right, for the left hand; left out: false.
 # left_handed = false
+# Pasting the selected text with the middle button, in every program; takes
+# effect at the next login. Left out: true.
+# middle_click_paste = true
 
 [lock]
 # The lock screen checks the password with PAM, using this /etc/pam.d/

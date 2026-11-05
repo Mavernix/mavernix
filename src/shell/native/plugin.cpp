@@ -16,6 +16,7 @@
 #include "held-keys.hpp"
 #include "icon-files.hpp"
 #include "lid-watch.hpp"
+#include "main-screen.hpp"
 #include "menu-registrar.hpp"
 #include "session-watch.hpp"
 #include "sound-pack.hpp"
@@ -39,6 +40,7 @@ void ShellNativePlugin::registerTypes(const char* uri)
     qmlRegisterType<HeldKeys>(uri, major_version, minor_version, "HeldKeys");
     qmlRegisterType<IconFiles>(uri, major_version, minor_version, "IconFiles");
     qmlRegisterType<LidWatch>(uri, major_version, minor_version, "LidWatch");
+    qmlRegisterType<MainScreen>(uri, major_version, minor_version, "MainScreen");
     qmlRegisterType<MenuRegistrar>(uri, major_version, minor_version, "MenuRegistrar");
     qmlRegisterType<SessionWatch>(uri, major_version, minor_version, "SessionWatch");
     qmlRegisterType<SoundPack>(uri, major_version, minor_version, "SoundPack");

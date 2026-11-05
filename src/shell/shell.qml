@@ -29,6 +29,11 @@ ShellRoot {
         return screens.find(screen => screen.name === wanted) ?? screens[0] ?? null
     }
 
+    // X11 programs, games above all, take the main screen for their own.
+    MainScreen {
+        name: shell.mainScreen ? shell.mainScreen.name : ""
+    }
+
     Variants {
         model: Quickshell.screens
         DesktopBackground {

@@ -23,6 +23,7 @@ BuildRequires:  pkgconfig(wayfire) = %{wayfire_version}
 BuildRequires:  pkgconfig(tomlplusplus)
 BuildRequires:  pkgconfig(gio-unix-2.0)
 BuildRequires:  pkgconfig(librsvg-2.0)
+BuildRequires:  pkgconfig(xcb-randr)
 BuildRequires:  qt6-qtbase-devel
 BuildRequires:  qt6-qtbase-private-devel
 BuildRequires:  qt6-qtdeclarative-devel

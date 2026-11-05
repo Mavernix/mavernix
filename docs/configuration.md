@@ -46,6 +46,29 @@ A screen built into the computer (eDP, LVDS, DSI) often reports only its own siz
 
 With more than one screen, the panel and dock go on the screen named in `[display] main_screen`, or on the first one if that isn't set.
 
+X11 programs (Steam, games under Proton or Wine, most SDL games) treat that same screen as their main one: they open on it and offer its resolutions. Without this, Xwayland names no main screen and games pick whichever one comes first. To turn it off, set `[display] x11_primary = false`.
+
+A screen that supports variable refresh rate (VRR, also sold as FreeSync or G-Sync Compatible) gets a choice in Settings, Displays. It's saved as `[display.screens.NAME] vrr`:
+
+- `"off"`, the default
+- `"games"`: on only while a full-screen window shows on that screen. That's how games run, and the desktop doesn't flicker on screens that do so when their refresh rate drops.
+- `"always"`
+
+## Middle-click paste
+
+By default, selecting text and pressing the middle mouse button pastes it, as on other Linux desktops. To turn that off everywhere, untick it in Settings, Mouse, or set `[input] middle_click_paste = false`. It takes effect the next time you log in. X11 programs still paste among themselves.
+
+## Wayfire's own settings
+
+The session writes Wayfire's settings file anew at every login and on every change, so editing it by hand doesn't last. Put your own Wayfire settings in `~/.config/mavernix/wayfire.ini` instead. It's added after everything the session writes, and Wayfire takes the last value it reads, so yours win. For example:
+
+```ini
+[output:DP-1]
+vrr = true
+```
+
+A mistake there can break the session, and these settings aren't supported the way the desktop's own are. If something goes wrong, move the file away first.
+
 ## Locking
 
 These lock the screen:

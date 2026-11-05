@@ -6,6 +6,9 @@ Joins the config (behaviour and layout) and the theme (looks) into Wayfire's
 one ini file. `--extra FILE` appends sections unchanged, `--extra-plugins`
 adds plugin names (both for dev/run-in-container), and `--autostart
 NAME=COMMAND` (repeatable) starts a program with the session.
+
+The user's own Wayfire settings, in ~/.config/mavernix/wayfire.ini, come
+last: Wayfire takes the last value given for an option, so they win.
 """
 
 import argparse
@@ -22,7 +25,7 @@ from pathlib import Path
 
 from paths import SESSION_DIR, SHELL_DIR
 from themes import find_theme
-from user_choices import load_desktop_config, with_user_choices
+from user_choices import load_desktop_config, settings_home, with_user_choices
 
 # Plugins every session loads; the order has no meaning to Wayfire.
 BASE_PLUGINS = [
@@ -48,6 +51,7 @@ BASE_PLUGINS = [
     "desktop-aside",
     "window-attention",
     "game-keys",
+    "x11-primary",
 ]
 
 
@@ -596,6 +600,8 @@ def display_sections(config):
         for key in ("mode", "transform"):
             if key in own:
                 lines.append(f"{key} = {own[key]}")
+        if screen_vrr(name, own) == "always":
+            lines.append("vrr = true")
         if name in places and len(places[name]) == 2:
             lines.append(f"position = {places[name][0]},{places[name][1]}")
         elif "position" in own:
@@ -605,6 +611,52 @@ def display_sections(config):
             lines.append(f"custom_mode = {modeline}")
         sections.append(lines)
     return sections
+
+
+# [display.screens.NAME] vrr: never, while a full-screen window shows (the
+# game-vrr plugin), or always (Wayfire's own).
+VRR_CHOICES = ("off", "games", "always")
+
+
+def screen_vrr(name, own):
+    """One screen's variable refresh rate choice, "off" if it has none."""
+    vrr = own.get("vrr", "off")
+    if vrr not in VRR_CHOICES:
+        fail(f'[display.screens.{name}] vrr is "{vrr}"; it must be one of {", ".join(VRR_CHOICES)}')
+    return vrr
+
+
+def game_vrr_section(config):
+    """The screens with variable refresh rate only for full-screen windows.
+    Returns (section or None, plugins)."""
+    single = config.get("display", {}).get("screens", {})
+    names = sorted(name for name, own in single.items() if screen_vrr(name, own) == "games")
+    if not names:
+        return None, []
+    return ["[game-vrr]", f"screens = {' '.join(names)}"], ["game-vrr"]
+
+
+def x11_primary_section(config):
+    """The x11-primary plugin makes the main screen Xwayland's primary one,
+    unless [display] x11_primary is false. It is told when Xwayland is ready
+    (the [core] line xwayland_ready_line())."""
+    follows = config.get("display", {}).get("x11_primary", True)
+    if not isinstance(follows, bool):
+        fail("[display] x11_primary must be true or false")
+    return ["[x11-primary]", f"enabled = {yes_or_no(follows)}"]
+
+
+def xwayland_ready_line():
+    return f"xwayland_startup_script = python3 {SESSION_DIR / 'compositor_call.py'} x11-primary/xwayland-ready"
+
+
+def workarounds_section(config):
+    """[input] middle_click_paste: false takes the primary selection away,
+    which Wayfire reads only when it starts."""
+    paste = config.get("input", {}).get("middle_click_paste", True)
+    if not isinstance(paste, bool):
+        fail("[input] middle_click_paste must be true or false")
+    return ["[workarounds]", f"disable_primary_selection = {yes_or_no(not paste)}"]
 
 
 def yes_or_no(value):
@@ -1066,6 +1118,12 @@ def main():
     sections.append(input_section(config, theme))
     sections.append(idle_section(config))
     sections += display_sections(config)
+    vrr, vrr_plugins = game_vrr_section(config)
+    if vrr:
+        sections.append(vrr)
+    plugins += vrr_plugins
+    sections.append(x11_primary_section(config))
+    sections.append(workarounds_section(config))
     gestures, gesture_plugins = gesture_section(config, theme)
     if gestures:
         sections.append(gestures)
@@ -1073,7 +1131,7 @@ def main():
     compositor_keys = compositor_key_sections(config)
     desktop_core, desktop_parts, desktop_plugins = desktop_sections(
         config, theme, compositor_keys.pop("vswitch", []))
-    compositor_keys.setdefault("core", []).extend(desktop_core + uncovered_color_lines(theme))
+    compositor_keys.setdefault("core", []).extend(desktop_core + uncovered_color_lines(theme) + [xwayland_ready_line()])
     sections += desktop_parts
     plugins += desktop_plugins
     grid_section = next(section for section in sections if section[0] == "[grid]")
@@ -1113,6 +1171,13 @@ def main():
     text = "\n".join(lines) + "\n"
     if arguments.extra is not None:
         text += "\n" + arguments.extra.read_text()
+    own = settings_home() / "wayfire.ini"
+    try:
+        text += f"\n# The user's own, from {own}\n" + own.read_text()
+    except FileNotFoundError:
+        pass
+    except (OSError, UnicodeDecodeError) as error:
+        print(f"make_wayfire_config: left out {own}: {error}", file=sys.stderr)
 
     arguments.output.parent.mkdir(parents=True, exist_ok=True)
     # Wayfire reloads the file as soon as it changes; written in place, it

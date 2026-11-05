@@ -5,6 +5,10 @@
 // seconds, so a mode the screen cannot show undoes itself. Without the
 // compositor's answer, or for a virtual screen with no modes, the rows stay
 // hidden. A built-in panel is offered smaller sizes too (panel-modes.hpp).
+//
+// A screen that can change its refresh rate as a game draws gets a choice
+// of when to: [display.screens.NAME] vrr, "off", "games" (while a window is
+// full screen) or "always".
 
 #pragma once
 
@@ -27,6 +31,7 @@ struct ModedScreen
     QString description;
     ScreenMode current;
     QList<ScreenMode> modes;
+    bool vrrSupported = false;
 };
 
 class DisplayModes : public QObject
@@ -59,6 +64,9 @@ class DisplayModes : public QObject
     // The user's [display.screens.NAME] mode; empty for the screen's own.
     QString writtenMode(const QString& name) const;
     void writeMode(const QString& name, const QString& mode);
+    // [display.screens.NAME] KEY; an empty value removes it.
+    QString screenValue(const QString& name, const QString& key) const;
+    void writeScreenValue(const QString& name, const QString& key, const QString& value);
     // Asks whether to keep the mode just written; no answer in time is no.
     bool keepAsked();
     QString word(const char* key, const char* fallback) const;
@@ -70,5 +78,6 @@ class DisplayModes : public QObject
     QString shown_name;
     QComboBox* resolution_list;
     QComboBox* refresh_list;
+    QComboBox* vrr_list;
     QList<ModedScreen> screens;
 };

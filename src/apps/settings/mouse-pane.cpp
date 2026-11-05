@@ -78,6 +78,15 @@ MousePane::MousePane(Choices& choices, QWidget* parent) : QWidget(parent), choic
     connect(
         acceleration, &QCheckBox::toggled, this, [this](bool on) { change(QStringLiteral("mouse_acceleration"), on); });
 
+    // Pasting what was last selected with the middle button. The compositor
+    // reads it only when it starts.
+    const QVariant pastes = choices.value(table, QStringLiteral("middle_click_paste"));
+    auto* middle_paste =
+        new QCheckBox(word("mouse_middle_click_paste", "Paste the selected text with the middle button"));
+    middle_paste->setChecked(!pastes.isValid() || pastes.toBool());
+    connect(
+        middle_paste, &QCheckBox::toggled, this, [this](bool on) { change(QStringLiteral("middle_click_paste"), on); });
+
     auto* left = new QRadioButton(word("mouse_primary_left", "Left"));
     auto* right = new QRadioButton(word("mouse_primary_right", "Right"));
     auto* buttons = new QButtonGroup(this);
@@ -105,6 +114,8 @@ MousePane::MousePane(Choices& choices, QWidget* parent) : QWidget(parent), choic
     form->addRow(word("mouse_scroll_speed", "Scrolling speed:"), scrolling_row);
     form->addRow(QString(), with_note(acceleration, word("mouse_acceleration_note", "")));
     form->addRow(word("mouse_primary", "Primary mouse button:"), primary);
+    form->addRow(QString(),
+        with_note(middle_paste, word("mouse_middle_click_paste_note", "Takes effect the next time you log in.")));
     rows->addLayout(form);
     rows->addStretch();
 }

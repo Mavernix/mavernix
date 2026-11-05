@@ -3,7 +3,7 @@
 // A mode is chosen in the config ([display.screens.NAME] mode), not here.
 //
 // IPC: screen-modes/list answers { "screens": [ { "name", "description",
-// "current": MODE, "modes": [MODE...] } ] }, a MODE being { "width",
+// "current": MODE, "modes": [MODE...], "vrr_supported" } ] }, a MODE being { "width",
 // "height", "refresh" (millihertz), "preferred" }.
 
 #include <wayfire/core.hpp>
@@ -44,6 +44,8 @@ static wf::json_t screen_to_json(wlr_output* handle)
         modes.append(mode_to_json(mode->width, mode->height, mode->refresh, mode->preferred));
     }
     screen["modes"] = modes;
+    // Whether it can change its refresh rate as a game draws (VRR).
+    screen["vrr_supported"] = handle->adaptive_sync_supported;
     return screen;
 }
 

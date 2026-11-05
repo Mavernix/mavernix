@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="game-vrr">
+		<_short>Variable Refresh Rate for Games</_short>
+		<_long>Turns on variable refresh rate on a screen only while a full-screen window shows there, as games run.</_long>
+		<category>General</category>
+		<option name="screens" type="string">
+			<_short>Screens</_short>
+			<_long>The names of the screens to do this for, separated by spaces, such as "DP-1 HDMI-A-1".</_long>
+			<default></default>
+		</option>
+	</plugin>
+</wayfire>

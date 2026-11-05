@@ -42,12 +42,21 @@ DisplayModes::DisplayModes(Choices& choices, QWidget* pane) : QObject(pane), cho
 
     resolution_list = new QComboBox;
     refresh_list = new QComboBox;
+    vrr_list = new QComboBox;
+    vrr_list->addItem(word("display_vrr_off", "Off"), QStringLiteral("off"));
+    vrr_list->addItem(word("display_vrr_games", "For full-screen games"), QStringLiteral("games"));
+    vrr_list->addItem(word("display_vrr_always", "Always"), QStringLiteral("always"));
 
     connect(resolution_list, &QComboBox::activated, this, [this]() {
         showRefreshRates();
         choose();
     });
     connect(refresh_list, &QComboBox::activated, this, &DisplayModes::choose);
+    // Takes hold at once; "off" is the default, so it is not written.
+    connect(vrr_list, &QComboBox::activated, this, [this]() {
+        const QString vrr = vrr_list->currentData().toString();
+        writeScreenValue(shown_name, QStringLiteral("vrr"), vrr == QStringLiteral("off") ? QString() : vrr);
+    });
     ask();
 }
 
@@ -74,6 +83,7 @@ void DisplayModes::ask()
                 reported.append(mode_from_json(mode.toObject()));
             }
             screen.modes = offered_modes(screen.name, screen.current, reported);
+            screen.vrrSupported = json.value(QStringLiteral("vrr_supported")).toBool();
             found.append(screen);
         }
         showScreens(found);
@@ -85,13 +95,15 @@ void DisplayModes::addRowsTo(QFormLayout* rows)
     form = rows;
     form->addRow(word("display_resolution", "Resolution:"), resolution_list);
     form->addRow(word("display_refresh", "Refresh rate:"), refresh_list);
+    form->addRow(word("display_vrr", "Variable refresh rate:"), vrr_list);
     form->setRowVisible(resolution_list, false);
     form->setRowVisible(refresh_list, false);
+    form->setRowVisible(vrr_list, false);
 }
 
 QList<QWidget*> DisplayModes::lists() const
 {
-    return {resolution_list, refresh_list};
+    return {resolution_list, refresh_list, vrr_list};
 }
 
 void DisplayModes::showScreenNamed(const QString& name)
@@ -133,12 +145,14 @@ void DisplayModes::showScreen()
     {
         form->setRowVisible(resolution_list, index >= 0);
         form->setRowVisible(refresh_list, index >= 0);
+        form->setRowVisible(vrr_list, index >= 0 && screens[index].vrrSupported);
     }
     if (index < 0)
     {
         return;
     }
     const ModedScreen& screen = screens[index];
+    vrr_list->setCurrentIndex(qMax(0, vrr_list->findData(screenValue(screen.name, QStringLiteral("vrr")))));
     const QString recommended = word("display_recommended", "%1 (recommended)");
 
     // Each size once, the most pixels first.
@@ -266,22 +280,32 @@ void DisplayModes::choose()
 
 QString DisplayModes::writtenMode(const QString& name) const
 {
-    const QVariantMap all = choices.value(QStringLiteral("display"), QStringLiteral("screens")).toMap();
-    return all.value(name).toMap().value(QStringLiteral("mode")).toString();
+    return screenValue(name, QStringLiteral("mode"));
 }
 
 void DisplayModes::writeMode(const QString& name, const QString& mode)
 {
+    writeScreenValue(name, QStringLiteral("mode"), mode);
+}
+
+QString DisplayModes::screenValue(const QString& name, const QString& key) const
+{
+    const QVariantMap all = choices.value(QStringLiteral("display"), QStringLiteral("screens")).toMap();
+    return all.value(name).toMap().value(key).toString();
+}
+
+void DisplayModes::writeScreenValue(const QString& name, const QString& key, const QString& value)
+{
     // The whole table is written: a screen's other keys stay as they are.
     QVariantMap all = choices.value(QStringLiteral("display"), QStringLiteral("screens")).toMap();
     QVariantMap own = all.value(name).toMap();
-    if (mode.isEmpty())
+    if (value.isEmpty())
     {
-        own.remove(QStringLiteral("mode"));
+        own.remove(key);
     }
     else
     {
-        own.insert(QStringLiteral("mode"), mode);
+        own.insert(key, value);
     }
     all.insert(name, own);
     choices.set(QStringLiteral("display"), QStringLiteral("screens"), all);

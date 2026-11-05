@@ -95,6 +95,16 @@ class TestWrittenSettings(SessionTestCase):
                 self.assertIn("themed-decoration", settings["core"]["plugins"].split())
                 self.assertEqual(Path(settings["themed-decoration"]["theme"]).name, desktop)
 
+    def test_the_users_own_wayfire_settings_come_last(self):
+        own = self.home / ".config" / "mavernix" / "wayfire.ini"
+        own.parent.mkdir(parents=True)
+        own.write_text("[workarounds]\ndisable_primary_selection = true\n")
+        written = self.home / "plain.ini"
+        self.run_script("make_wayfire_config.py", CONFIG_DIR / "plain.toml", written)
+        text = written.read_text()
+        self.assertIn("disable_primary_selection = false", text)
+        self.assertTrue(text.rstrip().endswith("disable_primary_selection = true"))
+
     def test_shell_settings(self):
         for desktop in DESKTOPS:
             with self.subTest(desktop=desktop):
@@ -669,6 +679,39 @@ class TestPointerSettings(SessionTestCase):
         self.assertIn("left_handed_mode = true", more)
         with self.assertRaises(SystemExit):
             make_wayfire_config.input_section({"input": {"mouse_speed": 2}}, {})
+
+
+class TestGameSettings(SessionTestCase):
+    def setUp(self):
+        super().setUp()
+        sys.path[:0] = [self.folder.name, str(SESSION_SOURCE_DIR)]
+        try:
+            import make_wayfire_config
+        finally:
+            del sys.path[:2]
+        self.make = make_wayfire_config
+
+    def test_variable_refresh_rate_per_screen(self):
+        screens = {"DP-1": {"vrr": "always"}, "DP-2": {"vrr": "games"}, "HDMI-A-1": {}}
+        config = {"display": {"screens": screens}}
+        with unittest.mock.patch.object(self.make, "connected_screens", return_value={}):
+            sections = {section[0]: section for section in self.make.display_sections(config)}
+        self.assertIn("vrr = true", sections["[output:DP-1]"])
+        self.assertNotIn("vrr = true", sections["[output:DP-2]"])
+        self.assertNotIn("vrr = true", sections["[output:HDMI-A-1]"])
+        self.assertEqual(self.make.game_vrr_section(config), (["[game-vrr]", "screens = DP-2"], ["game-vrr"]))
+        self.assertEqual(self.make.game_vrr_section({}), (None, []))
+        with self.assertRaises(SystemExit):
+            self.make.game_vrr_section({"display": {"screens": {"DP-1": {"vrr": "sometimes"}}}})
+
+    def test_x11_primary_and_middle_click_paste(self):
+        self.assertIn("enabled = true", self.make.x11_primary_section({}))
+        self.assertIn("enabled = false", self.make.x11_primary_section({"display": {"x11_primary": False}}))
+        self.assertIn("disable_primary_selection = false", self.make.workarounds_section({}))
+        self.assertIn("disable_primary_selection = true",
+                      self.make.workarounds_section({"input": {"middle_click_paste": False}}))
+        with self.assertRaises(SystemExit):
+            self.make.workarounds_section({"input": {"middle_click_paste": "no"}})
 
 
 class TestGameKeys(SessionTestCase):

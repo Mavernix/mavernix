@@ -11,7 +11,7 @@ depends=(
   'wayfire>=0.11.0' 'wayfire<0.12'
   'quickshell'
   'qt6-base' 'qt6-declarative' 'qt6-multimedia' 'qt6-wayland' 'qt6-svg'
-  'librsvg' 'glib2' 'tomlplusplus'
+  'librsvg' 'glib2' 'tomlplusplus' 'libxcb'
   'python' 'python-pillow'
   'kvantum'
   'gsettings-desktop-schemas'
