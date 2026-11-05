@@ -104,7 +104,9 @@ Item {
         const text = JSON.stringify(part)
         if (givenToCompositor !== undefined && text !== givenToCompositor) {
             const before = JSON.parse(givenToCompositor)
-            const blurChanged = JSON.stringify(before.blur ?? ({})) !== JSON.stringify(part.blur ?? ({}))
+            // Which surfaces blur, not how much: a slider's step needs no new shell.
+            const blurred = blur => JSON.stringify(["panel", "dock", "menu_bar", "dock_shelf"].map(key => (blur ?? ({}))[key]))
+            const blurChanged = blurred(before.blur) !== blurred(part.blur)
                 || before.panel_translucency !== part.panel_translucency
                 || before.dock_reflections !== part.dock_reflections
             Quickshell.execDetached(blurChanged

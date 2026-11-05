@@ -84,6 +84,19 @@ DockPane::DockPane(Choices& choices, QWidget* parent) : QWidget(parent), choices
         [this](bool on) { this->choices.set(QStringLiteral("dock"), QStringLiteral("window_reflections"), on); });
     form->addRow(QString(), reflections);
 
+    // How strongly windows show in the glass ([dock] window_reflection_opacity); the shell follows.
+    const QVariant chosen_reflection =
+        choices.value(QStringLiteral("dock"), QStringLiteral("window_reflection_opacity"));
+    auto* reflection_strength = stops_slider({0.15, 0.25, 0.35, 0.45, 0.55, 0.65, 0.75},
+        chosen_reflection.isValid() ? chosen_reflection.toDouble() : 0.35, [this](double value) {
+        this->choices.set(QStringLiteral("dock"), QStringLiteral("window_reflection_opacity"), value);
+    });
+    auto* reflection_row = with_end_words(
+        reflection_strength, word("dock_reflection_faint", "Faint"), word("dock_reflection_strong", "Strong"));
+    reflection_row->setEnabled(reflections->isChecked());
+    connect(reflections, &QCheckBox::toggled, reflection_row, &QWidget::setEnabled);
+    form->addRow(word("dock_reflection_strength", "Reflections:"), reflection_row);
+
     auto* dock_blur = new QCheckBox(word("dock_blur", "Blur behind the Dock"));
     dock_blur->setChecked(choices.value(QStringLiteral("blur"), QStringLiteral("dock_shelf")).toBool());
     connect(dock_blur, &QCheckBox::toggled, this,
@@ -164,6 +177,39 @@ DockPane::DockPane(Choices& choices, QWidget* parent) : QWidget(parent), choices
     connect(menu_bar_blur, &QCheckBox::toggled, this,
         [this](bool on) { this->choices.set(QStringLiteral("blur"), QStringLiteral("menu_bar"), on); });
     form->addRow(QString(), menu_bar_blur);
+
+    // How far both blurs reach ([blur] offset); the theme's until chosen.
+    const QVariant chosen_blur = choices.value(QStringLiteral("blur"), QStringLiteral("offset"));
+    const double blur_reach =
+        chosen_blur.isValid()
+            ? chosen_blur.toDouble()
+            : choices.themeTable(QStringLiteral("blur")).value(QStringLiteral("offset"), 1.7).toDouble();
+    auto* blur_amount = stops_slider({0.5, 1.0, 1.7, 2.5, 3.5, 5.0, 7.0}, blur_reach,
+        [this](double value) { this->choices.set(QStringLiteral("blur"), QStringLiteral("offset"), value); });
+    auto* blur_row = with_end_words(blur_amount, word("blur_light", "Light"), word("blur_strong", "Strong"));
+    const auto show_blur_row = [blur_row, dock_blur, menu_bar_blur]() {
+        blur_row->setEnabled(dock_blur->isChecked() || menu_bar_blur->isChecked());
+    };
+    show_blur_row();
+    connect(dock_blur, &QCheckBox::toggled, blur_row, show_blur_row);
+    connect(menu_bar_blur, &QCheckBox::toggled, blur_row, show_blur_row);
+    form->addRow(word("blur_amount", "Blur:"), blur_row);
+    // Only where the desktop lets that surface blur ([blur] panel and dock,
+    // Sea Lion's); elsewhere the boxes would change nothing.
+    const bool panel_can_blur = choices.value(QStringLiteral("blur"), QStringLiteral("panel")).toBool();
+    const bool dock_can_blur = choices.value(QStringLiteral("blur"), QStringLiteral("dock")).toBool();
+    form->setRowVisible(menu_bar_blur, panel_can_blur);
+    form->setRowVisible(dock_blur, dock_can_blur);
+    form->setRowVisible(blur_row, panel_can_blur || dock_can_blur);
+
+    // How long a notification's banner stays ([notifications] banner_seconds); the shell follows.
+    const QVariant chosen_seconds = choices.value(QStringLiteral("notifications"), QStringLiteral("banner_seconds"));
+    auto* banner_time = stops_slider(
+        {2, 3, 4, 5, 7, 10, 15, 20}, chosen_seconds.isValid() ? chosen_seconds.toDouble() : 5, [this](double value) {
+        this->choices.set(QStringLiteral("notifications"), QStringLiteral("banner_seconds"), qRound(value));
+    });
+    form->addRow(word("banner_time", "Notification banners stay:"),
+        with_end_words(banner_time, word("banner_time_short", "Briefly"), word("banner_time_long", "Long")));
 
     // The folder is watched too, for a choices file replaced whole or not
     // there yet (as in the Extensions pane).

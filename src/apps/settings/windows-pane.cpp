@@ -4,6 +4,7 @@
 #include <QComboBox>
 #include <QFormLayout>
 #include <QProcess>
+#include <QSlider>
 
 #include "choices.hpp"
 #include "pane-parts.hpp"
@@ -63,6 +64,21 @@ WindowsPane::WindowsPane(Choices& choices, QWidget* parent) : QWidget(parent), c
     borderless->setChecked(!borderless_chosen.isValid() || borderless_chosen.toBool());
     connect(borderless, &QCheckBox::toggled, this,
         [this, table](bool on) { this->choices.set(table, QStringLiteral("borderless_full_screen"), on); });
+
+    // How close to a side a dragged window snaps ([window] snap_distance), and
+    // how far outside its edge a window can be taken to resize it
+    // ([window] resize_reach), in pixels.
+    const QVariant chosen_snap = choices.value(table, QStringLiteral("snap_distance"));
+    auto* snap_distance = stops_slider({4, 8, 12, 16, 24, 32, 48}, chosen_snap.isValid() ? chosen_snap.toDouble() : 12,
+        [this, table](double value) { this->choices.set(table, QStringLiteral("snap_distance"), qRound(value)); });
+    auto* snap_row = with_end_words(snap_distance, word("windows_snap_near", "Close"), word("windows_snap_far", "Far"));
+    snap_row->setEnabled(snap->isChecked());
+    connect(snap, &QCheckBox::toggled, snap_row, &QWidget::setEnabled);
+    const QVariant chosen_reach = choices.value(table, QStringLiteral("resize_reach"));
+    auto* resize_reach = stops_slider({2, 4, 6, 8, 12, 16, 24}, chosen_reach.isValid() ? chosen_reach.toDouble() : 8,
+        [this, table](double value) { this->choices.set(table, QStringLiteral("resize_reach"), qRound(value)); });
+    auto* reach_row =
+        with_end_words(resize_reach, word("windows_reach_narrow", "Narrow"), word("windows_reach_wide", "Wide"));
 
     // The key held to move a window by dragging anywhere on it, and to
     // resize it with the secondary button; written as the compositor
@@ -152,6 +168,8 @@ WindowsPane::WindowsPane(Choices& choices, QWidget* parent) : QWidget(parent), c
     form->addRow(QString(),
         with_note(borderless, word("windows_borderless_note",
                                   "Games open full screen on the screen they chose, so borderless ones fill it too.")));
+    form->addRow(word("windows_snap_distance", "Snap when this close:"), snap_row);
+    form->addRow(word("windows_resize_reach", "Edge to resize by:"), reach_row);
     form->addRow(word("windows_drag_key", "Move and resize a window by holding:"), drag_key);
     form->addRow(word("windows_double_click", "A double click on a title bar:"), double_click);
     form->addRow(word("windows_buttons", "Window buttons:"), button_side);

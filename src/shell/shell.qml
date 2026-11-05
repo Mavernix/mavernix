@@ -93,6 +93,7 @@ ShellRoot {
         id: banners
         screen: shell.mainScreen
         settings: shell.settings
+        choices: userChoices
         sounds: sounds
         onMinimizedWindowWanted: window => dock.bringBack(window)
     }

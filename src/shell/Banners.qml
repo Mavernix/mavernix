@@ -25,6 +25,8 @@ Scope {
     readonly property var theme: settings.theme
     readonly property var looks: (theme.notifications ?? ({})).banner ?? ({})
     readonly property var wishes: settings.config.notifications ?? ({})
+    // The shell's UserChoices, for the banner time chosen in Settings.
+    property var choices: null
     readonly property string themeDirectory: settings.theme_directory
 
     // Each of `arrive` and `leave` (or one for both): { kind, duration_ms, curve,
@@ -290,7 +292,8 @@ Scope {
                         running: true
                         interval: banner.notification.expireTimeout > 0
                                   ? banner.notification.expireTimeout
-                                  : 1000 * (root.wishes.banner_seconds ?? 5)
+                                  : 1000 * (root.choices?.value("notifications", "banner_seconds")
+                                            ?? root.wishes.banner_seconds ?? 5)
                         onTriggered: banner.leave(false)
                     }
                     Timer {
