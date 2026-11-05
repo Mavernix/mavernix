@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.9 (2026-11-05)
+
+### Fixed
+
+- With more than one screen, the Dock and menu bar no longer disappear or slide aside while desktops switch, when the main screen isn't the one at the top left.
+
+Log out and back in once after updating.
+
 ## 0.5.8 (2026-11-04)
 
 ### Added
