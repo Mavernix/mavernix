@@ -922,5 +922,48 @@ class TestKdeColours(SessionTestCase):
                 self.assertEqual(colours(schemes / f"{name}.colors"), theme)
 
 
+class TestLogGuard(unittest.TestCase):
+    """The shell's log keeps repeated lines short, and a shell stuck saying
+    one line over and over is ended so keep-running starts it again."""
+
+    def setUp(self):
+        self.folder = tempfile.TemporaryDirectory()
+        self.addCleanup(self.folder.cleanup)
+        self.log = Path(self.folder.name) / "login.log"
+        self.pid_file = Path(self.folder.name) / "shell.pid"
+
+    def guard(self, text):
+        subprocess.run([sys.executable, SESSION_SOURCE_DIR / "log_guard.py", self.log, self.pid_file],
+                       input=text.encode(), check=True, timeout=30)
+        return self.log.read_text()
+
+    def test_repeated_lines_are_counted(self):
+        log = self.guard("starting\n" + "same\n" * 4 + "done\n")
+        self.assertEqual(log, "starting\nsame\nlog_guard: the line above came 3 more times\ndone\n")
+
+    def test_count_comes_at_the_end_too(self):
+        log = self.guard("same\n" * 3)
+        self.assertEqual(log, "same\nlog_guard: the line above came 2 more times\n")
+
+    def test_stuck_shell_is_ended(self):
+        # A stand-in shell: a program named qs, as the real one is.
+        shell_program = Path(self.folder.name) / "qs"
+        shutil.copy(shutil.which("sleep"), shell_program)
+        shell = subprocess.Popen([shell_program, "60"])
+        self.addCleanup(shell.kill)
+        self.pid_file.write_text(f"{shell.pid}\n")
+        log = self.guard("Invalid socket 285\n" * 6000)
+        self.assertEqual(shell.wait(timeout=10), -15)
+        self.assertIn("seems stuck; starting it again", log)
+        self.assertLess(len(log), 1000)
+
+    def test_other_program_is_left_alone(self):
+        other = subprocess.Popen(["sleep", "60"])
+        self.addCleanup(other.kill)
+        self.pid_file.write_text(f"{other.pid}\n")
+        self.guard("Invalid socket 285\n" * 6000)
+        self.assertIsNone(other.poll())
+
+
 if __name__ == "__main__":
     unittest.main()
