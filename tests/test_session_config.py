@@ -736,6 +736,8 @@ class TestGameSettings(SessionTestCase):
         self.assertIn("binding_quit_app = <super> KEY_Q", command)
 
     def test_x11_primary_and_middle_click_paste(self):
+        self.assertIn("enabled = true", self.make.borderless_section({}))
+        self.assertIn("enabled = false", self.make.borderless_section({"window": {"borderless_full_screen": False}}))
         self.assertIn("enabled = true", self.make.x11_primary_section({}))
         self.assertIn("enabled = false", self.make.x11_primary_section({"display": {"x11_primary": False}}))
         self.assertIn("disable_primary_selection = false", self.make.workarounds_section({}))

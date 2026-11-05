@@ -53,6 +53,7 @@ BASE_PLUGINS = [
     "window-attention",
     "game-keys",
     "x11-primary",
+    "borderless-full-screen",
 ]
 
 
@@ -673,6 +674,16 @@ def game_vrr_section(config):
     return ["[game-vrr]", f"screens = {' '.join(names)}"], ["game-vrr"]
 
 
+def borderless_section(config):
+    """[window] borderless_full_screen: a frameless X11 window that asks to
+    cover a screen (a game's "borderless full screen") is made full screen,
+    not fitted between the menu bar and the dock."""
+    wanted = config.get("window", {}).get("borderless_full_screen", True)
+    if not isinstance(wanted, bool):
+        fail("[window] borderless_full_screen must be true or false")
+    return ["[borderless-full-screen]", f"enabled = {yes_or_no(wanted)}"]
+
+
 def x11_primary_section(config):
     """The x11-primary plugin makes the main screen Xwayland's primary one,
     unless [display] x11_primary is false. It is told when Xwayland is ready
@@ -1173,6 +1184,7 @@ def main():
         sections.append(vrr)
     plugins += vrr_plugins
     sections.append(x11_primary_section(config))
+    sections.append(borderless_section(config))
     sections.append(workarounds_section(config))
     gestures, gesture_plugins = gesture_section(config, theme)
     if gestures:

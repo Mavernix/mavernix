@@ -55,6 +55,8 @@ To turn a screen off, pick it in Settings, Displays and untick Use this screen. 
 
 X11 programs (Steam, games under Proton or Wine, most SDL games) treat that same screen as their main one: they open on it and offer its resolutions. Without this, Xwayland names no main screen and games pick whichever one comes first. To turn it off, set `[display] x11_primary = false`.
 
+Many games, and Wine or Proton in "borderless window" mode, open a window without a frame that covers the whole screen, instead of asking to be full screen. Mavernix makes such a window full screen on that screen, as KWin and GNOME do. Without that, the compositor would fit it between the menu bar and the Dock, and the game would be cut short. To turn this off, untick it in Settings, Windows, or set `[window] borderless_full_screen = false`.
+
 A screen that supports variable refresh rate (VRR, also sold as FreeSync or G-Sync Compatible) gets a choice in Settings, Displays. It's saved as `[display.screens.NAME] vrr`:
 
 - `"off"`, the default

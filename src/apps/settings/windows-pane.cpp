@@ -56,6 +56,13 @@ WindowsPane::WindowsPane(Choices& choices, QWidget* parent) : QWidget(parent), c
     connect(quit_all, &QCheckBox::toggled, this,
         [this, table](bool on) { this->choices.set(table, QStringLiteral("quit_closes_app"), on); });
 
+    // Games' "borderless full screen", which Wayfire would fit between the menu bar and the dock.
+    const QVariant borderless_chosen = choices.value(table, QStringLiteral("borderless_full_screen"));
+    auto* borderless = new QCheckBox(word("windows_borderless", "Games without a frame fill the whole screen"));
+    borderless->setChecked(!borderless_chosen.isValid() || borderless_chosen.toBool());
+    connect(borderless, &QCheckBox::toggled, this,
+        [this, table](bool on) { this->choices.set(table, QStringLiteral("borderless_full_screen"), on); });
+
     // The key held to move a window by dragging anywhere on it, and to
     // resize it with the secondary button; written as the compositor
     // writes keys.
@@ -141,6 +148,9 @@ WindowsPane::WindowsPane(Choices& choices, QWidget* parent) : QWidget(parent), c
     form->addRow(QString(), with_note(quit_all, word("windows_quit_closes_app_note",
                                                     "Quit in the menu bar, and the Close Window key, close every "
                                                     "window of the program, not only the front one.")));
+    form->addRow(QString(), with_note(borderless, word("windows_borderless_note",
+                                                      "An X11 window without a frame that asks to cover a screen "
+                                                      "(“borderless full screen”) is made full screen there.")));
     form->addRow(word("windows_drag_key", "Move and resize a window by holding:"), drag_key);
     form->addRow(word("windows_double_click", "A double click on a title bar:"), double_click);
     form->addRow(word("windows_buttons", "Window buttons:"), button_side);
