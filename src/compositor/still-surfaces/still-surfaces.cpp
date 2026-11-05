@@ -13,11 +13,13 @@
 // from "vswitch/duration"; under vswipe it cannot be known, and such a
 // surface stays in the row.
 //
-// Assumes one screen at the scene's origin: at the front of the tree,
-// positions are global rather than per output.
+// A layer's surfaces are placed relative to their screen, the tree's front
+// in global coordinates; held surfaces go into a node per screen that
+// shifts them by the screen's position.
 
 #include <algorithm>
 #include <cmath>
+#include <map>
 #include <sstream>
 #include <vector>
 
@@ -33,6 +35,7 @@
 #include <wayfire/view-transform.hpp>
 #include <wayfire/workspace-set.hpp>
 #include <wayfire/signal-definitions.hpp>
+#include <wayfire/unstable/translation-node.hpp>
 #include <wayfire/util.hpp>
 #include <wayfire/view.hpp>
 
@@ -127,6 +130,8 @@ class plugin_t : public wf::plugin_interface_t
         std::weak_ptr<wf::scene::floating_inner_node_t> layer;
     };
     std::vector<held_t> held;
+    // Per screen, the node at the tree's front holding its surfaces.
+    std::map<wf::output_t*, std::shared_ptr<wf::scene::translation_node_t>> holders;
 
     struct slid_t
     {
@@ -146,6 +151,21 @@ class plugin_t : public wf::plugin_interface_t
     // Plugins named in "during" active now; a swipe can end in a slide.
     int active_count = 0;
 
+    std::shared_ptr<wf::scene::translation_node_t> holder_for(wf::output_t* output)
+    {
+        auto& holder = holders[output];
+        if (!holder)
+        {
+            holder = std::make_shared<wf::scene::translation_node_t>();
+            if (output != nullptr)
+            {
+                holder->set_offset(wf::origin(output->get_layout_geometry()));
+            }
+            wf::scene::add_front(wf::get_core().scene(), holder);
+        }
+        return holder;
+    }
+
     void hold_one(wayfire_view view)
     {
         const wf::scene::floating_inner_ptr surface = view->get_root_node();
@@ -157,7 +177,7 @@ class plugin_t : public wf::plugin_interface_t
 
         held.push_back(
             {surface, std::dynamic_pointer_cast<wf::scene::floating_inner_node_t>(layer->shared_from_this())});
-        wf::scene::readd_front(wf::get_core().scene(), surface);
+        wf::scene::readd_front(holder_for(view->get_output()), surface);
     }
 
     // Where a node is in the scene: its place among its siblings at each
@@ -242,7 +262,7 @@ class plugin_t : public wf::plugin_interface_t
             hold_one(entry.view);
             entry.shift = std::make_shared<wf::scene::view_2d_transformer_t>(entry.view);
             entry.view->get_transformed_node()->add_transformer(entry.shift, wf::TRANSFORMER_2D, SHIFT_NAME);
-            wf::scene::add_front(wf::get_core().scene(), entry.picture);
+            wf::scene::add_front(holder_for(sliding_output), entry.picture);
         }
 
         row_progress.animate(0, 1);
@@ -298,12 +318,18 @@ class plugin_t : public wf::plugin_interface_t
         {
             const auto layer = entry.layer.lock();
             // A surface that went away meanwhile was removed by its owner.
-            if (layer && (entry.surface->parent() == wf::get_core().scene().get()))
+            const auto holder = dynamic_cast<wf::scene::translation_node_t*>(entry.surface->parent());
+            if (layer && (holder != nullptr) && (holder->parent() == wf::get_core().scene().get()))
             {
                 wf::scene::readd_front(layer, entry.surface);
             }
         }
         held.clear();
+        for (auto& [output, holder] : holders)
+        {
+            wf::scene::remove_child(holder);
+        }
+        holders.clear();
     }
 
     wf::signal::connection_t<wf::output_plugin_activated_changed_signal> on_plugin_activity =
