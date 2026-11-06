@@ -55,6 +55,8 @@ class HeldKeys : public QObject
     // One question at a time; answers to a finished watch are dropped.
     bool waitingForAnswer = false;
     int watchNumber = 0;
-    // The compositor has no "held-modifiers" plugin.
+    // The compositor has no "held-modifiers" plugin, as found in this watch.
     bool compositorCannotTell = false;
+    // Said once, not at every opening of the switcher.
+    bool warnedCannotTell = false;
 };

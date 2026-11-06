@@ -55,7 +55,15 @@ void HeldKeys::setWatching(bool watching)
         ++watchNumber;
         letGoSent = false;
         waitingForAnswer = false;
+        // Asked again each time: the plugin may have been loaded since, as
+        // after an update while the session runs.
+        compositorCannotTell = false;
         sinceWatchStarted.start();
+        // One try per watch: a failed connection is not retried each frame.
+        if (!compositor.isConnected() && !compositor.isConnecting())
+        {
+            compositor.open();
+        }
         ask();
     }
 }
@@ -68,10 +76,6 @@ void HeldKeys::ask()
     }
     if (compositorCannotTell || !compositor.isConnected())
     {
-        if (!compositorCannotTell && !compositor.isConnecting())
-        {
-            compositor.open();
-        }
         if (sinceWatchStarted.elapsed() < QT_VIEW_AFTER_MS)
         {
             nextQuestion.start();
@@ -91,9 +95,13 @@ void HeldKeys::ask()
         waitingForAnswer = false;
         if (answer.contains("error"))
         {
-            qWarning().noquote() << "Shell.Native: the compositor cannot tell which keys are held:"
-                                 << answer.value("error").toString()
-                                 << "(is its \"held-modifiers\" plugin loaded?); the shell's own view is used";
+            if (!warnedCannotTell)
+            {
+                qWarning().noquote() << "Shell.Native: the compositor cannot tell which keys are held:"
+                                     << answer.value("error").toString()
+                                     << "(is its \"held-modifiers\" plugin loaded?); the shell's own view is used";
+                warnedCannotTell = true;
+            }
             compositorCannotTell = true;
             ask();
             return;

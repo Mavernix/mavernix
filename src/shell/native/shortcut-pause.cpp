@@ -2,15 +2,15 @@
 
 #include <QDebug>
 #include <QJsonObject>
+#include <QTimer>
 
 ShortcutPause::ShortcutPause(QObject* parent) : QObject(parent)
 {
     connect(&compositor, &CompositorSocket::connected, this, &ShortcutPause::send);
     // The compositor switches the shortcuts on again for a closed connection.
-    connect(&compositor, &CompositorSocket::disconnected, this, [this] {
-        asked = false;
-        setHolding(false);
-    });
+    connect(&compositor, &CompositorSocket::disconnected, this, [this] { asked = false; });
+    // Connected before the first pause, so the first Tab is not late.
+    QTimer::singleShot(0, &compositor, &CompositorSocket::open);
 }
 
 void ShortcutPause::setPaused(bool paused)
@@ -24,24 +24,14 @@ void ShortcutPause::setPaused(bool paused)
     send();
 }
 
-void ShortcutPause::setHolding(bool holding)
-{
-    if (holding == held)
-    {
-        return;
-    }
-    held = holding;
-    emit holdingChanged();
-}
-
 void ShortcutPause::send()
 {
     if (wanted == asked)
     {
         return;
     }
-    // Connected on the first pause and kept open: closing it would switch
-    // the shortcuts on. `connected` sends what is wanted then.
+    // Kept open: closing it would switch the shortcuts on. If it is not
+    // there yet, `connected` sends what is wanted then.
     if (!compositor.isConnected())
     {
         if (!compositor.isConnecting())
@@ -52,24 +42,26 @@ void ShortcutPause::send()
     }
 
     asked = wanted;
+    const int sent = ++requestNumber;
     if (wanted)
     {
-        compositor.request("shortcut-capture/start", {}, [this](const QJsonObject& answer) {
-            if (answer.contains("error"))
+        compositor.request("shortcut-capture/start", {}, [this, sent](const QJsonObject& answer) {
+            if (!answer.contains("error"))
             {
-                // Not ours to stop; Tab then still comes as a shortcut.
-                asked = false;
-                qInfo().noquote() << "Shell.Native: the compositor's shortcuts stay on:"
-                                  << answer.value("error").toString();
                 return;
             }
-            // Asked to stop meanwhile: that request is already on its way.
-            setHolding(asked);
+            // Not ours to stop; Tab then still comes as a shortcut. A later
+            // request has its own answer.
+            if (sent == requestNumber)
+            {
+                asked = false;
+            }
+            qInfo().noquote() << "Shell.Native: the compositor's shortcuts stay on:"
+                              << answer.value("error").toString();
         });
     }
     else
     {
-        setHolding(false);
         compositor.request("shortcut-capture/stop", {}, [](const QJsonObject& answer) {
             if (answer.contains("error"))
             {

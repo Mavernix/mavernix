@@ -176,16 +176,28 @@ PanelWindow {
     }
 
     // Once the switcher has the keyboard, the compositor's shortcuts are
-    // paused, so Tab comes to this window instead of as a new shortcut.
+    // paused, so Tab comes to this window instead of as a new shortcut. Only
+    // for the keys this window knows, Tab and Shift+Tab: a switcher put on
+    // other keys keeps them as shortcuts.
     ShortcutPause {
-        paused: switcher.open && keyTaker.activeFocus
+        paused: switcher.open && keyTaker.activeFocus && switcher.keysAreTab
+    }
+
+    // A shortcut as the config gives it, such as "<super> KEY_TAB"; "" for none.
+    function shortcut(action) {
+        return (choices !== null
+            ? choices.value("shortcuts", action)
+            : (settings.config.shortcuts ?? ({}))[action]) ?? ""
+    }
+    readonly property bool keysAreTab: {
+        const back = shortcut("switch_program_back")
+        return shortcut("switch_program").endsWith("KEY_TAB")
+            && (back === "" || (back.endsWith("KEY_TAB") && back.includes("<shift>")))
     }
 
     // The modifier of the switching shortcut ("super" for "<super> KEY_TAB").
     readonly property string heldModifier: {
-        const key = (choices !== null
-            ? choices.value("shortcuts", "switch_program")
-            : (settings.config.shortcuts ?? ({})).switch_program) ?? ""
+        const key = shortcut("switch_program")
         for (const modifier of ["super", "alt", "ctrl"]) {
             if (key.includes("<" + modifier + ">")) {
                 return modifier
@@ -338,16 +350,18 @@ PanelWindow {
 
     readonly property real iconGap: looks?.icon_gap ?? 8
     readonly property var padding: looks?.padding ?? [16, 16, 16, 16]   // top, right, bottom, left
-    // The theme's size, smaller when that many icons would not fit: the plate
-    // stays inside the screen by its own padding on each side.
+    // The theme's sizes, icons and gaps both smaller when that many would not
+    // fit: the plate stays inside the screen by its own padding on each side.
     readonly property real plateRoom: (screen?.width ?? width) - 2 * (padding[1] + padding[3])
-    readonly property real iconSize: {
-        const wanted = looks?.icon_size ?? 64
+    readonly property real iconFit: {
         const count = Math.max(1, shownPrograms.count)
-        return Math.max(1, Math.min(wanted, Math.floor((plateRoom - (count - 1) * iconGap) / count)))
+        const wantedWidth = count * (looks?.icon_size ?? 64) + (count - 1) * iconGap
+        return Math.min(1, plateRoom / wantedWidth)
     }
+    readonly property real iconSize: Math.max(1, Math.floor((looks?.icon_size ?? 64) * iconFit))
+    readonly property real iconSpacing: iconGap * iconFit
     readonly property real iconRowWidth: shownPrograms.count * iconSize
-        + Math.max(0, shownPrograms.count - 1) * iconGap
+        + Math.max(0, shownPrograms.count - 1) * iconSpacing
 
     // The row of windows: pictures this high, all smaller if they would not
     // fit; pictures are taken twice as large, for sharpness on any screen.
@@ -388,7 +402,7 @@ PanelWindow {
                 readonly property bool isMarked: index === switcher.marked
 
                 x: switcher.padding[3] + (switcher.plateContentWidth - switcher.iconRowWidth) / 2
-                    + index * (switcher.iconSize + switcher.iconGap)
+                    + index * (switcher.iconSize + switcher.iconSpacing)
                 y: switcher.padding[0]
                 width: switcher.iconSize
                 height: switcher.iconSize
