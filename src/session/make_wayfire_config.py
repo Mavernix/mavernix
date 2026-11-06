@@ -47,6 +47,7 @@ BASE_PLUGINS = [
     "shared-edges",
     "reachable-title-bars",
     "shortcut-capture",
+    "held-modifiers",
     "screen-modes",
     "desktop-focus",
     "desktop-aside",
@@ -1203,6 +1204,29 @@ def window_overview_section(config, theme):
     return lines
 
 
+def take_out_plugins(text):
+    """Takes `plugins` lines out of [core] in the user's own Wayfire settings.
+
+    Returns (the rest of the text, the plugin names). Left in, the line would
+    replace the session's whole list, and the desktop would not start; the
+    names are added to the list instead.
+    """
+    kept = []
+    names = []
+    section = None
+    for line in text.splitlines(keepends=True):
+        header = re.fullmatch(r"\s*\[([^\]]*)\]\s*", line)
+        if header:
+            section = header.group(1).strip()
+        elif section == "core":
+            key, separator, value = line.partition("=")
+            if separator and key.strip() == "plugins":
+                names += value.split()
+                continue
+        kept.append(line)
+    return "".join(kept), names
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("config", type=Path, help="desktop config, e.g. data/config/plain.toml")
@@ -1276,6 +1300,18 @@ def main():
         sections.append(["[dock-window-reflections]", f"blur = {spread}"])
     plugins += arguments.extra_plugins.split()
 
+    own = settings_home() / "wayfire.ini"
+    own_text = None
+    try:
+        own_text = own.read_text()
+    except FileNotFoundError:
+        pass
+    except (OSError, UnicodeDecodeError) as error:
+        print(f"make_wayfire_config: left out {own}: {error}", file=sys.stderr)
+    if own_text is not None:
+        own_text, own_plugins = take_out_plugins(own_text)
+        plugins += [name for name in own_plugins if name not in plugins]
+
     lines = [
         f"# Written by make_wayfire_config.py from {arguments.config.name}",
         f"# and the theme in {theme_dir}. Do not edit; change those instead.",
@@ -1299,13 +1335,8 @@ def main():
     text = "\n".join(lines) + "\n"
     if arguments.extra is not None:
         text += "\n" + arguments.extra.read_text()
-    own = settings_home() / "wayfire.ini"
-    try:
-        text += f"\n# The user's own, from {own}\n" + own.read_text()
-    except FileNotFoundError:
-        pass
-    except (OSError, UnicodeDecodeError) as error:
-        print(f"make_wayfire_config: left out {own}: {error}", file=sys.stderr)
+    if own_text is not None:
+        text += f"\n# The user's own, from {own}\n" + own_text
 
     arguments.output.parent.mkdir(parents=True, exist_ok=True)
     # Wayfire reloads the file as soon as it changes; written in place, it

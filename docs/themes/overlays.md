@@ -10,7 +10,7 @@ program_switcher = { family = "DejaVu Sans", size = 12 }   # the marked program'
 
 [program_switcher]
 background = { color = "#f4f4f4f0", radius = 10 }   # any fill: the plate, in the screen's middle
-icon_size = 64
+icon_size = 64                      # smaller when that many icons would not fit on the screen
 icon_gap = 12
 padding = [18, 18, 40, 18]          # around the row of icons: top, right, bottom, left
 mark = { color = "#3a6ea540", radius = 8 }          # any fill: the box around the marked program's icon
@@ -20,6 +20,7 @@ mark_reach = 6                      # how far it reaches beyond the icon
 # space beside the name).
 name = { color = "#202020", gap = 10, padding = 6 }
 appear_after_ms = 150               # the plate only shows once the key has been held this long
+window_picture_height = 120         # Down on a program: its windows' pictures this high, smaller if they would not fit
 ```
 
 ## Notifications

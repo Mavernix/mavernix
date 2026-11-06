@@ -42,7 +42,9 @@ In a game, F3, F4 and F11 are the game's. Sea Lion's function keys go to the win
 
 Screenshots are saved to the desktop and also copied, so you can paste them right away. The screenshot keys need `grim`, `slurp` and `wl-clipboard`. If pressing them does nothing, one of those is probably missing.
 
-The program switcher works like it does elsewhere. Hold Super, press Tab until the program you want is highlighted, then let go. Shift+Tab goes backwards, and a quick tap takes you back to the program you used last.
+The program switcher works like it does elsewhere. Hold Super, press Tab until the program you want is highlighted, then let go. Shift+Tab goes backwards, the arrow keys and the pointer work too, Escape closes it without switching, and a quick tap takes you back to the program you used last. With many programs open the icons get smaller so they all fit.
+
+To pick one window of a program, for example one of several browser windows, press Down while its icon is highlighted. Its windows appear in a row below, the most recently used first. Tab, Shift+Tab or the arrow keys move between them, Up goes back to the programs, and letting go brings the highlighted window forward. For the program in front, which is the first icon (Shift+Tab gets back to it), its next window is highlighted, since you're in its front one already.
 
 ## Touchpad
 

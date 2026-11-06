@@ -39,6 +39,8 @@ Closing and quitting work like this:
 - `quit_app` closes every window of the front program. It has no key unless you give it one.
 - With `[window] quit_closes_app = true` (Settings, Windows), the `close_window` key and Quit in the menu bar close all of the program's windows, as on OS X.
 
+In the program switcher, Down on the marked program shows its windows, most recently used first, and letting go of the key goes to the marked one. `[window] switcher_windows = false` (Settings, Windows) turns that off.
+
 Two keys belong to the compositor, so they work even when nothing else does: Super+Enter opens a terminal, and Ctrl+Alt+Backspace ends the session right away. [Using the desktop](usage.md) lists the keys for each desktop.
 
 The keyboard layout is your system's (see `localectl status`) until you pick one in Settings, Keyboard, Input Sources.
@@ -91,6 +93,16 @@ The session writes Wayfire's settings file anew at every login and on every chan
 ```ini
 [output:DP-1]
 vrr = true
+```
+
+To load another of Wayfire's plugins, name it under `[core]` there. It's added to the desktop's own plugins rather than replacing them. For example, to move a window to the next screen:
+
+```ini
+[core]
+plugins = oswitch
+
+[oswitch]
+next_output_with_win = <shift> <super> KEY_RIGHT
 ```
 
 A mistake there can break the session, and these settings aren't supported the way the desktop's own are. If something goes wrong, move the file away first.

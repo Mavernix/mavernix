@@ -57,6 +57,13 @@ WindowsPane::WindowsPane(Choices& choices, QWidget* parent) : QWidget(parent), c
     connect(quit_all, &QCheckBox::toggled, this,
         [this, table](bool on) { this->choices.set(table, QStringLiteral("quit_closes_app"), on); });
 
+    // Down on a program in the program switcher shows its windows.
+    const QVariant switcher_chosen = choices.value(table, QStringLiteral("switcher_windows"));
+    auto* switcher_windows = new QCheckBox(word("windows_switcher_windows", "Choose a window in the program switcher"));
+    switcher_windows->setChecked(!switcher_chosen.isValid() || switcher_chosen.toBool());
+    connect(switcher_windows, &QCheckBox::toggled, this,
+        [this, table](bool on) { this->choices.set(table, QStringLiteral("switcher_windows"), on); });
+
     // X11 games on the screen they ask for, and their "borderless full screen"
     // full screen instead of fitted between the menu bar and the dock.
     const QVariant borderless_chosen = choices.value(table, QStringLiteral("borderless_full_screen"));
@@ -165,6 +172,10 @@ WindowsPane::WindowsPane(Choices& choices, QWidget* parent) : QWidget(parent), c
         QString(), with_note(quit_all,
                        word("windows_quit_closes_app_note",
                            "The Close Window shortcut quits the program too, so all of its windows close at once.")));
+    form->addRow(QString(),
+        with_note(switcher_windows,
+            word("windows_switcher_windows_note", "Press Down on a program in the switcher, so you can pick one of its "
+                                                  "windows instead of the last one used.")));
     form->addRow(QString(),
         with_note(borderless, word("windows_borderless_note",
                                   "Games open full screen on the screen they chose, so borderless ones fill it too.")));

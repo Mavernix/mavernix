@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="held-modifiers">
+		<_short>Held Modifiers</_short>
+		<_long>Tells the shell which modifier keys are held down, so the program switcher closes when its key is let go.</_long>
+		<category>Desktop</category>
+	</plugin>
+</wayfire>

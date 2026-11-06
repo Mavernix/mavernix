@@ -105,6 +105,21 @@ class TestWrittenSettings(SessionTestCase):
         self.assertIn("disable_primary_selection = false", text)
         self.assertTrue(text.rstrip().endswith("disable_primary_selection = true"))
 
+    def test_the_users_own_plugins_are_added_to_the_list(self):
+        own = self.home / ".config" / "mavernix" / "wayfire.ini"
+        own.parent.mkdir(parents=True)
+        own.write_text("[core]\nplugins = oswitch move\n\n[oswitch]\nnext_output_with_win = <shift> <super> KEY_RIGHT\n")
+        written = self.home / "plain.ini"
+        self.run_script("make_wayfire_config.py", CONFIG_DIR / "plain.toml", written)
+        settings = configparser.ConfigParser(interpolation=None, strict=False)
+        settings.read(written)
+        plugins = settings["core"]["plugins"].split()
+        self.assertIn("themed-decoration", plugins)
+        self.assertIn("oswitch", plugins)
+        self.assertEqual(plugins.count("move"), 1)
+        self.assertEqual(written.read_text().count("plugins ="), 1)
+        self.assertEqual(settings["oswitch"]["next_output_with_win"], "<shift> <super> KEY_RIGHT")
+
     def test_shell_settings(self):
         for desktop in DESKTOPS:
             with self.subTest(desktop=desktop):
