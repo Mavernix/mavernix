@@ -93,6 +93,16 @@ The session writes Wayfire's settings file anew at every login and on every chan
 vrr = true
 ```
 
+To load another of Wayfire's plugins, name it under `[core]` there. It's added to the desktop's own plugins rather than replacing them. For example, to move a window to the next screen:
+
+```ini
+[core]
+plugins = oswitch
+
+[oswitch]
+next_output_with_win = <shift> <super> KEY_RIGHT
+```
+
 A mistake there can break the session, and these settings aren't supported the way the desktop's own are. If something goes wrong, move the file away first.
 
 ## Locking
