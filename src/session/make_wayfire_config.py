@@ -47,6 +47,7 @@ BASE_PLUGINS = [
     "shared-edges",
     "reachable-title-bars",
     "shortcut-capture",
+    "held-modifiers",
     "screen-modes",
     "desktop-focus",
     "desktop-aside",

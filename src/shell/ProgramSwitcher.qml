@@ -74,6 +74,39 @@ PanelWindow {
     property var programs: []
     property int marked: 0
     property bool open: false
+    // Where the pointer was last seen over the plate since it opened.
+    property var restingPointer: null
+
+    // The icons on the plate, one row per entry of `programs`. Kept between
+    // openings and only reordered, so opening does not build every icon again.
+    ListModel {
+        id: shownPrograms
+    }
+    function show(list) {
+        for (let i = 0; i < list.length; i++) {
+            let found = -1
+            for (let k = i; k < shownPrograms.count; k++) {
+                if (shownPrograms.get(k).appId === list[i].appId) {
+                    found = k
+                    break
+                }
+            }
+            if (found === -1) {
+                shownPrograms.insert(i, { appId: list[i].appId })
+            } else if (found !== i) {
+                shownPrograms.move(found, i, 1)
+            }
+        }
+        if (shownPrograms.count > list.length) {
+            shownPrograms.remove(list.length, shownPrograms.count - list.length)
+        }
+    }
+
+    // Once the switcher has the keyboard, the compositor's shortcuts are
+    // paused, so Tab comes to this window instead of as a new shortcut.
+    ShortcutPause {
+        paused: switcher.open && keyTaker.activeFocus
+    }
 
     // The modifier of the switching shortcut ("super" for "<super> KEY_TAB").
     readonly property string heldModifier: {
@@ -97,12 +130,13 @@ PanelWindow {
             if (programs.length === 0) {
                 return
             }
+            show(programs)
+            restingPointer = null
             // The first press marks the program used before this one.
             marked = 0
             open = true
             plate.opacity = 0
             appearing.restart()
-            watchingKey.restart()
         }
         marked = (marked + direction + programs.length) % programs.length
     }
@@ -112,7 +146,9 @@ PanelWindow {
         if (!open) {
             return
         }
-        open = false
+        // Asked for before the plate closes: taking its window down takes
+        // a while (about 15 ms with software rendering), and the compositor
+        // gives the keyboard to the chosen window once it is gone.
         const program = programs[marked]
         if (program !== undefined && program.windows.length > 0) {
             const window = program.windows[0]
@@ -123,6 +159,7 @@ PanelWindow {
                 window.activate()
             }
         }
+        open = false
     }
 
     signal minimizedChosen(var window)
@@ -131,39 +168,33 @@ PanelWindow {
         open = false
     }
 
+    // Whether `key` is the held modifier, for its release.
+    function isHeldModifier(key) {
+        if (heldModifier === "super") {
+            return key === Qt.Key_Super_L || key === Qt.Key_Super_R || key === Qt.Key_Meta
+        }
+        if (heldModifier === "alt") {
+            return key === Qt.Key_Alt
+        }
+        if (heldModifier === "ctrl") {
+            return key === Qt.Key_Control
+        }
+        return false
+    }
+
+    // Goes once the modifier is let go. The compositor is asked, as a quick
+    // tap is over before this window has the keyboard, and then the release
+    // went to another window. While this window has the keyboard, the
+    // release also comes as a key (see the keys below), which is sooner.
     HeldKeys {
-        id: heldKeys
+        modifier: switcher.heldModifier
+        watching: switcher.open
+        onLetGo: switcher.go()
     }
 
     // Falls back to the generic program icon.
     function iconFor(entry) {
         return themeIcons.forEntry(entry, "application-x-executable")
-    }
-    // The modifier is polled instead of waiting for its release: after a quick
-    // tap the release goes to another window before this one has the keyboard,
-    // and the switcher would stay open. The first poll waits until the
-    // compositor has given us the keyboard and the held keys.
-    Timer {
-        id: watchingKey
-        interval: 120
-        repeat: true
-        running: false
-        onTriggered: {
-            if (!switcher.open) {
-                stop()
-                return
-            }
-            interval = 30
-            if (switcher.heldModifier === "" || !heldKeys.held(switcher.heldModifier)) {
-                stop()
-                switcher.go()
-            }
-        }
-        onRunningChanged: {
-            if (!running) {
-                interval = 120
-            }
-        }
     }
     // Only shown once the key is held this long, so a quick tap never flashes it.
     Timer {
@@ -197,22 +228,39 @@ PanelWindow {
     }
 
     Item {
+        id: keyTaker
         anchors.fill: parent
         focus: true
         Keys.onEscapePressed: switcher.cancel()
         Keys.onLeftPressed: switcher.step(-1)
         Keys.onRightPressed: switcher.step(1)
+        // While the compositor's shortcuts are paused, Tab comes here.
+        Keys.onTabPressed: switcher.step(1)
+        Keys.onBacktabPressed: switcher.step(-1)
+        Keys.onReleased: event => {
+            if (switcher.isHeldModifier(event.key)) {
+                switcher.go()
+            }
+        }
     }
 
-    readonly property real iconSize: looks?.icon_size ?? 64
     readonly property real iconGap: looks?.icon_gap ?? 8
     readonly property var padding: looks?.padding ?? [16, 16, 16, 16]   // top, right, bottom, left
+    // The theme's size, smaller when that many icons would not fit: the plate
+    // stays inside the screen by its own padding on each side.
+    readonly property real iconSize: {
+        const wanted = looks?.icon_size ?? 64
+        const count = Math.max(1, shownPrograms.count)
+        const screenWidth = screen?.width ?? width
+        const room = screenWidth - 2 * (padding[1] + padding[3]) - (count - 1) * iconGap
+        return Math.max(1, Math.min(wanted, Math.floor(room / count)))
+    }
 
     Item {
         id: plate
         anchors.centerIn: parent
-        width: switcher.padding[3] + switcher.programs.length * switcher.iconSize
-            + Math.max(0, switcher.programs.length - 1) * switcher.iconGap + switcher.padding[1]
+        width: switcher.padding[3] + shownPrograms.count * switcher.iconSize
+            + Math.max(0, shownPrograms.count - 1) * switcher.iconGap + switcher.padding[1]
         height: switcher.padding[0] + switcher.iconSize + switcher.padding[2]
 
         Fill {
@@ -222,13 +270,13 @@ PanelWindow {
         }
 
         Repeater {
-            model: switcher.programs
+            model: shownPrograms
 
             Item {
                 id: programItem
-                required property var modelData
+                required property string appId
                 required property int index
-                readonly property var entry: ApplicationEntry.of(DesktopEntries, modelData.appId)
+                readonly property var entry: ApplicationEntry.of(DesktopEntries, appId)
                 readonly property bool isMarked: index === switcher.marked
 
                 x: switcher.padding[3] + index * (switcher.iconSize + switcher.iconGap)
@@ -247,6 +295,8 @@ PanelWindow {
                 Image {
                     anchors.fill: parent
                     sourceSize: Qt.size(width * Screen.devicePixelRatio, height * Screen.devicePixelRatio)
+                    // Loaded once per program, as the icons are kept.
+                    asynchronous: true
                     source: switcher.iconFor(programItem.entry)
                 }
                 // The marked program's name, on a plate of its own if the theme gives one.
@@ -266,7 +316,7 @@ PanelWindow {
                     Text {
                         id: label
                         anchors.centerIn: parent
-                        text: ApplicationName.of(programItem.entry, switcher.choices) ?? programItem.modelData.appId
+                        text: ApplicationName.of(programItem.entry, switcher.choices) ?? programItem.appId
                         color: ThemeValues.color(parent.name.color ?? "#ffffff")
                         readonly property var face: switcher.fonts.program_switcher ?? switcher.fonts.interface
                         font.family: face.family
@@ -278,7 +328,17 @@ PanelWindow {
                 MouseArea {
                     anchors.fill: parent
                     hoverEnabled: true
-                    onEntered: switcher.marked = programItem.index
+                    // Only a moved pointer marks: one resting where the plate
+                    // appears would otherwise take the mark from the keys (Qt
+                    // reports a position for it as the plate appears).
+                    onPositionChanged: mouse => {
+                        const at = mapToItem(null, mouse.x, mouse.y)
+                        const resting = switcher.restingPointer
+                        switcher.restingPointer = at
+                        if (resting !== null && (resting.x !== at.x || resting.y !== at.y)) {
+                            switcher.marked = programItem.index
+                        }
+                    }
                     onClicked: {
                         switcher.marked = programItem.index
                         switcher.go()

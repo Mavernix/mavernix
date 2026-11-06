@@ -10,7 +10,7 @@ program_switcher = { family = "DejaVu Sans", size = 12 }   # the marked program'
 
 [program_switcher]
 background = { color = "#f4f4f4f0", radius = 10 }   # any fill: the plate, in the screen's middle
-icon_size = 64
+icon_size = 64                      # smaller when that many icons would not fit on the screen
 icon_gap = 12
 padding = [18, 18, 40, 18]          # around the row of icons: top, right, bottom, left
 mark = { color = "#3a6ea540", radius = 8 }          # any fill: the box around the marked program's icon
