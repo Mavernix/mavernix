@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.6.1 (unreleased)
+
+### Added
+
+- Press Down in the program switcher to choose one of the marked program's windows, latest first; Up goes back to the programs: Settings, Windows (toggleable, on by default).
+
+### Changed
+
+- The program switcher switches sooner, both on a quick Super+Tab and when you let go of Super.
+- With many programs open, the switcher's icons get smaller so the plate fits on the screen.
+
+### Fixed
+
+- A quick Super+Tab right after closing the switcher with Escape no longer leaves it open.
+- The pointer resting where the switcher appears no longer takes the mark from the keyboard.
+- Plugins in ~/.config/mavernix/wayfire.ini are now added to the desktop's own instead of replacing them.
+
+Log out and back in once after updating.
+
 ## 0.6.0 (2026-11-06)
 
 ### Added
