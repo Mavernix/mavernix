@@ -1,6 +1,8 @@
 // The program switcher: while a modifier is held, a plate shows the icons
 // of programs with windows, most recently used first; each press marks
 // the next, and releasing the modifier goes to the marked program.
+// Down on a program shows its windows in a second row, to choose one of
+// them instead ([window] switcher_windows); Up goes back to the programs.
 //
 // `step(1)` and `step(-1)` open it and move the mark (the actions
 // "switch_program" and "switch_program_back"). Theme: [program_switcher];
@@ -77,6 +79,77 @@ PanelWindow {
     // Where the pointer was last seen over the plate since it opened.
     property var restingPointer: null
 
+    // Down on the marked program: its windows to choose from, most recently
+    // used first, as [{ id, title, picture, aspect, minimized }]. `id` is the
+    // compositor's; `minimized` is the window (a toplevel) for minimised
+    // ones, which have no picture, else null.
+    property bool choosingWindow: false
+    property var windowChoices: []
+    property int markedWindow: 0
+    // The program whose windows were asked for, so a late answer for another
+    // one is not shown.
+    property string windowsAskedFor: ""
+    readonly property bool windowChoiceAllowed: choices?.value("window", "switcher_windows") ?? true
+
+    WindowPictures {
+        id: windowPictures
+        folder: Quickshell.env("XDG_RUNTIME_DIR") + "/mavernix/window-pictures"
+    }
+    Connections {
+        target: windowPictures
+        function onOverviewTaken(taken) {
+            switcher.showWindows(taken)
+        }
+    }
+
+    function chooseWindow() {
+        const program = programs[marked]
+        if (!open || choosingWindow || !windowChoiceAllowed || program === undefined) {
+            return
+        }
+        choosingWindow = true
+        windowChoices = []
+        windowsAskedFor = program.appId
+        windowPictures.takeOverview(windowPictureSide, program.appId)
+    }
+
+    function showWindows(taken) {
+        const program = programs[marked]
+        if (!choosingWindow || program === undefined || program.appId !== windowsAskedFor
+                || taken.some(window => window.appId !== windowsAskedFor)) {
+            return
+        }
+        // The compositor lists them most recently used last.
+        const shown = taken.slice().reverse().map(window => ({
+            id: window.id,
+            title: window.title,
+            picture: window.picture,
+            aspect: window.height > 0 ? window.width / window.height : 1,
+            minimized: null,
+        }))
+        const hidden = program.windows.filter(window => window.minimized).map(window => ({
+            id: -1,
+            title: window.title,
+            picture: "",
+            aspect: 1,
+            minimized: window,
+        }))
+        windowChoices = shown.concat(hidden)
+        if (windowChoices.length === 0) {
+            choosingWindow = false
+            return
+        }
+        // In the program in front, its front window is where you are already,
+        // so the next one is marked.
+        const inFront = program.windows.some(window => window.activated)
+        markedWindow = inFront && windowChoices.length > 1 ? 1 : 0
+    }
+
+    function backToPrograms() {
+        choosingWindow = false
+        windowChoices = []
+    }
+
     // The icons on the plate, one row per entry of `programs`. Kept between
     // openings and only reordered, so opening does not build every icon again.
     ListModel {
@@ -132,16 +205,24 @@ PanelWindow {
             }
             show(programs)
             restingPointer = null
+            backToPrograms()
             // The first press marks the program used before this one.
             marked = 0
             open = true
             plate.opacity = 0
             appearing.restart()
         }
+        if (choosingWindow) {
+            if (windowChoices.length > 0) {
+                markedWindow = (markedWindow + direction + windowChoices.length) % windowChoices.length
+            }
+            return
+        }
         marked = (marked + direction + programs.length) % programs.length
     }
 
-    // Activates the marked program's most recently used window.
+    // Activates the marked window, or else the marked program's most
+    // recently used window.
     function go() {
         if (!open) {
             return
@@ -150,7 +231,14 @@ PanelWindow {
         // a while (about 15 ms with software rendering), and the compositor
         // gives the keyboard to the chosen window once it is gone.
         const program = programs[marked]
-        if (program !== undefined && program.windows.length > 0) {
+        const choice = choosingWindow ? windowChoices[markedWindow] : undefined
+        if (choice !== undefined) {
+            if (choice.minimized !== null) {
+                minimizedChosen(choice.minimized)
+            } else {
+                windowPictures.focusWindow(choice.id)
+            }
+        } else if (program !== undefined && program.windows.length > 0) {
             const window = program.windows[0]
             if (window.minimized) {
                 // The receiver restores it, since it may be on another desktop.
@@ -160,12 +248,14 @@ PanelWindow {
             }
         }
         open = false
+        backToPrograms()
     }
 
     signal minimizedChosen(var window)
 
     function cancel() {
         open = false
+        backToPrograms()
     }
 
     // Whether `key` is the held modifier, for its release.
@@ -234,6 +324,8 @@ PanelWindow {
         Keys.onEscapePressed: switcher.cancel()
         Keys.onLeftPressed: switcher.step(-1)
         Keys.onRightPressed: switcher.step(1)
+        Keys.onDownPressed: switcher.chooseWindow()
+        Keys.onUpPressed: switcher.backToPrograms()
         // While the compositor's shortcuts are paused, Tab comes here.
         Keys.onTabPressed: switcher.step(1)
         Keys.onBacktabPressed: switcher.step(-1)
@@ -248,20 +340,36 @@ PanelWindow {
     readonly property var padding: looks?.padding ?? [16, 16, 16, 16]   // top, right, bottom, left
     // The theme's size, smaller when that many icons would not fit: the plate
     // stays inside the screen by its own padding on each side.
+    readonly property real plateRoom: (screen?.width ?? width) - 2 * (padding[1] + padding[3])
     readonly property real iconSize: {
         const wanted = looks?.icon_size ?? 64
         const count = Math.max(1, shownPrograms.count)
-        const screenWidth = screen?.width ?? width
-        const room = screenWidth - 2 * (padding[1] + padding[3]) - (count - 1) * iconGap
-        return Math.max(1, Math.min(wanted, Math.floor(room / count)))
+        return Math.max(1, Math.min(wanted, Math.floor((plateRoom - (count - 1) * iconGap) / count)))
     }
+    readonly property real iconRowWidth: shownPrograms.count * iconSize
+        + Math.max(0, shownPrograms.count - 1) * iconGap
+
+    // The row of windows: pictures this high, all smaller if they would not
+    // fit; pictures are taken twice as large, for sharpness on any screen.
+    readonly property real windowPictureHeight: looks?.window_picture_height ?? 120
+    readonly property int windowPictureSide: Math.round(2 * windowPictureHeight * (screen?.devicePixelRatio ?? 1))
+    // Very wide or tall windows get a box of a sensible shape.
+    readonly property var windowWidths: windowChoices.map(choice =>
+        windowPictureHeight * Math.max(0.5, Math.min(2.5, choice.aspect)))
+    readonly property real windowRowNaturalWidth: windowWidths.reduce((sum, one) => sum + one, 0)
+        + Math.max(0, windowChoices.length - 1) * iconGap
+    readonly property real windowScale: windowRowNaturalWidth > plateRoom ? plateRoom / windowRowNaturalWidth : 1
+    readonly property bool windowRowShown: choosingWindow && windowChoices.length > 0
+    readonly property real windowRowHeight: windowRowShown ? windowPictureHeight * windowScale : 0
+    readonly property real plateContentWidth: Math.max(iconRowWidth, windowRowShown ? windowRowNaturalWidth * windowScale : 0)
 
     Item {
         id: plate
         anchors.centerIn: parent
-        width: switcher.padding[3] + shownPrograms.count * switcher.iconSize
-            + Math.max(0, shownPrograms.count - 1) * switcher.iconGap + switcher.padding[1]
+        width: switcher.padding[3] + switcher.plateContentWidth + switcher.padding[1]
+        // The window row and its title go below the programs' names.
         height: switcher.padding[0] + switcher.iconSize + switcher.padding[2]
+            + (switcher.windowRowShown ? switcher.windowRowHeight + switcher.padding[2] : 0)
 
         Fill {
             anchors.fill: parent
@@ -279,7 +387,8 @@ PanelWindow {
                 readonly property var entry: ApplicationEntry.of(DesktopEntries, appId)
                 readonly property bool isMarked: index === switcher.marked
 
-                x: switcher.padding[3] + index * (switcher.iconSize + switcher.iconGap)
+                x: switcher.padding[3] + (switcher.plateContentWidth - switcher.iconRowWidth) / 2
+                    + index * (switcher.iconSize + switcher.iconGap)
                 y: switcher.padding[0]
                 width: switcher.iconSize
                 height: switcher.iconSize
@@ -302,6 +411,7 @@ PanelWindow {
                 // The marked program's name, on a plate of its own if the theme gives one.
                 Item {
                     visible: programItem.isMarked
+                    opacity: switcher.windowRowShown ? 0.6 : 1
                     readonly property var name: switcher.looks?.name ?? ({})
                     width: label.implicitWidth + 2 * (name.padding ?? 8)
                     height: name.height ?? (label.implicitHeight + 4)
@@ -345,6 +455,90 @@ PanelWindow {
                     }
                 }
             }
+        }
+
+        Row {
+            id: windowRow
+            visible: switcher.windowRowShown
+            x: switcher.padding[3] + (switcher.plateContentWidth - width) / 2
+            y: switcher.padding[0] + switcher.iconSize + switcher.padding[2]
+            spacing: switcher.iconGap * switcher.windowScale
+
+            Repeater {
+                model: switcher.windowChoices
+
+                Item {
+                    id: windowItem
+                    required property var modelData
+                    required property int index
+                    readonly property bool isMarked: index === switcher.markedWindow
+
+                    width: (switcher.windowWidths[index] ?? 0) * switcher.windowScale
+                    height: switcher.windowRowHeight
+
+                    Fill {
+                        readonly property real reach: switcher.looks?.mark_reach ?? 4
+                        visible: windowItem.isMarked
+                        anchors.fill: parent
+                        anchors.margins: -reach
+                        fill: switcher.looks?.mark ?? ({ color: "#ffffff30", radius: 8 })
+                        themeDirectory: switcher.themeDirectory
+                    }
+                    Image {
+                        visible: windowItem.modelData.picture !== ""
+                        anchors.fill: parent
+                        fillMode: Image.PreserveAspectFit
+                        asynchronous: true
+                        // Each opening takes new pictures under the same names.
+                        cache: false
+                        source: windowItem.modelData.picture
+                    }
+                    // A minimised window has no picture: the program's icon, paler.
+                    Image {
+                        visible: windowItem.modelData.picture === ""
+                        anchors.centerIn: parent
+                        width: Math.min(parent.width, parent.height) * 0.6
+                        height: width
+                        opacity: 0.6
+                        sourceSize: Qt.size(width * Screen.devicePixelRatio, height * Screen.devicePixelRatio)
+                        source: switcher.iconFor(ApplicationEntry.of(DesktopEntries, switcher.windowsAskedFor))
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        // As for the programs: only a moved pointer marks.
+                        onPositionChanged: mouse => {
+                            const at = mapToItem(null, mouse.x, mouse.y)
+                            const resting = switcher.restingPointer
+                            switcher.restingPointer = at
+                            if (resting !== null && (resting.x !== at.x || resting.y !== at.y)) {
+                                switcher.markedWindow = windowItem.index
+                            }
+                        }
+                        onClicked: {
+                            switcher.markedWindow = windowItem.index
+                            switcher.go()
+                        }
+                    }
+                }
+            }
+        }
+
+        // The marked window's title, under the row.
+        Text {
+            visible: switcher.windowRowShown
+            readonly property var name: switcher.looks?.name ?? ({})
+            width: Math.min(implicitWidth, switcher.plateContentWidth)
+            anchors.horizontalCenter: parent.horizontalCenter
+            y: windowRow.y + switcher.windowRowHeight + (name.gap ?? 6)
+            elide: Text.ElideMiddle
+            text: switcher.windowChoices[switcher.markedWindow]?.title ?? ""
+            color: ThemeValues.color(name.color ?? "#ffffff")
+            readonly property var face: switcher.fonts.program_switcher ?? switcher.fonts.interface
+            font.family: face.family
+            font.pixelSize: face.size
+            font.bold: face.bold ?? false
         }
     }
 }

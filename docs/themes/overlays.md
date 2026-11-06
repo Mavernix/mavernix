@@ -20,6 +20,7 @@ mark_reach = 6                      # how far it reaches beyond the icon
 # space beside the name).
 name = { color = "#202020", gap = 10, padding = 6 }
 appear_after_ms = 150               # the plate only shows once the key has been held this long
+window_picture_height = 120         # Down on a program: its windows' pictures this high, smaller if they would not fit
 ```
 
 ## Notifications

@@ -30,6 +30,9 @@ shared_edges = true
 # program, as on OS X; false closes only the front one. The quit_app
 # shortcut always quits the whole program.
 quit_closes_app = false
+# In the program switcher, Down on a program shows its windows to choose
+# from; false leaves Down unused there.
+switcher_windows = true
 # X11 games get the screen they ask for: a full-screen one opens on that
 # screen, not the focused one, and a window without a frame that asks to
 # cover a whole screen is made full screen there instead of being fitted
@@ -546,6 +549,8 @@ windows_quit_closes_app = "Quit closes all of a program's windows"
 windows_borderless = "Games fill the screen they ask for"
 windows_borderless_note = "Games open full screen on the screen they chose, so borderless ones fill it too."
 windows_quit_closes_app_note = "The Close Window shortcut quits the program too, so all of its windows close at once."
+windows_switcher_windows = "Choose a window in the program switcher"
+windows_switcher_windows_note = "Press Down on a program in the switcher, so you can pick one of its windows instead of the last one used."
 windows_drag_key = "Move and resize a window by holding:"
 windows_drag_key_none = "No key"
 windows_drag_key_super = "Super"

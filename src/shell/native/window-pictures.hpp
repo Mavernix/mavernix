@@ -47,8 +47,8 @@ class WindowPictures : public QObject
     // Emits `overviewTaken` with every visible window as { id, appId, title,
     // x, y, width, height, lastUsed, desktop, picture }, in screen points;
     // `picture` is an "image://window-picture/" address. Minimised windows
-    // are left out.
-    Q_INVOKABLE void takeOverview(int largestSide);
+    // are left out. With `appId`, only that program's windows.
+    Q_INVOKABLE void takeOverview(int largestSide, const QString& appId = QString());
     Q_INVOKABLE void focusWindow(int id);
 
     // Restores a minimised window, first switching to its desktop: the

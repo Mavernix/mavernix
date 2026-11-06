@@ -223,7 +223,7 @@ void WindowPictures::changed()
     emit revisionChanged();
 }
 
-void WindowPictures::takeOverview(int largestSide)
+void WindowPictures::takeOverview(int largestSide, const QString& appId)
 {
     overviewNumber += 1;
     const int this_overview = overviewNumber;
@@ -251,7 +251,8 @@ void WindowPictures::takeOverview(int largestSide)
         }
     });
 
-    compositor.request("window-rules/list-views", {}, [this, largestSide, this_overview](const QJsonObject& answer) {
+    compositor.request(
+        "window-rules/list-views", {}, [this, largestSide, appId, this_overview](const QJsonObject& answer) {
         overviewWindows.clear();
         overviewPicturesAwaited = 0;
 
@@ -261,6 +262,10 @@ void WindowPictures::takeOverview(int largestSide)
             // Panels and menus are "views" too.
             if ((window.value("role").toString() != "toplevel") || !window.value("mapped").toBool() ||
                 window.value("minimized").toBool())
+            {
+                continue;
+            }
+            if (!appId.isEmpty() && window.value("app-id").toString() != appId)
             {
                 continue;
             }
