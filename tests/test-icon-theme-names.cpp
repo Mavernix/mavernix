@@ -67,6 +67,30 @@ class TestIconThemeNames : public QObject
             icon_theme_names(), QStringList({QStringLiteral("folder"), QStringLiteral("web-browser"),
                                     QStringLiteral("akregator"), QStringLiteral("Zoom"), QStringLiteral("aardvark")}));
     }
+
+    void onlyThemesWithIconsAreOfferedByName()
+    {
+        QTemporaryDir first;
+        QTemporaryDir second;
+        QVERIFY(first.isValid() && second.isValid());
+        write_theme(first.path(), QStringLiteral("Papirus"), QString(), {QStringLiteral("48x48/apps")}, {});
+        write_theme(first.path(), QStringLiteral("hicolor"), QString(), {QStringLiteral("48x48/apps")}, {});
+        // Pointers alone: an index without icon folders.
+        write_theme(first.path(), QStringLiteral("Bibata"), QString(), {}, {});
+        // The same folder later in the search: the first one is Qt's.
+        write_theme(second.path(), QStringLiteral("Papirus"), QString(), {QStringLiteral("48x48/apps")}, {});
+        write_theme(second.path(), QStringLiteral("adwaita"), QString(), {QStringLiteral("48x48/apps")}, {});
+
+        QIcon::setThemeSearchPaths({first.path(), second.path()});
+
+        QStringList folders;
+        for (const InstalledIconTheme& theme : installed_icon_themes())
+        {
+            folders.append(theme.folder);
+        }
+        // Sorted by name whatever its case.
+        QCOMPARE(folders, QStringList({QStringLiteral("adwaita"), QStringLiteral("Papirus")}));
+    }
 };
 
 QTEST_GUILESS_MAIN(TestIconThemeNames)

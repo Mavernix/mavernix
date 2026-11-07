@@ -244,6 +244,11 @@ QString Choices::themeDirectory() const
     return settings.value(QStringLiteral("theme_directory")).toString();
 }
 
+QString Choices::themeIconTheme() const
+{
+    return settings.value(QStringLiteral("theme_icon_theme")).toString();
+}
+
 QStringList Choices::desktops() const
 {
     return settings.value(QStringLiteral("desktops")).toStringList();

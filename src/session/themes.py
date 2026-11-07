@@ -129,9 +129,12 @@ def icon_theme_folders(theme_dir):
     return folders
 
 
-def usable_icon_theme(theme, theme_dir):
-    """`theme` with its [icons] theme replaced by an installed one if the one
-    it names is missing, so that programs do not show empty squares."""
+def usable_icon_theme(theme, theme_dir, chosen=None):
+    """`theme` with its [icons] theme replaced by `chosen`, the one the user
+    picked (the config's [icons] theme), if any, and by an installed one if
+    the one wanted is missing, so that programs do not show empty squares."""
+    if chosen:
+        theme = dict(theme, icons=dict(theme.get("icons", {}), theme=chosen))
     wanted = theme.get("icons", {}).get("theme")
     if wanted is None:
         return theme

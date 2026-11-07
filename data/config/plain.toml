@@ -56,6 +56,12 @@ use_theme = true
 # see docs/configuration.md).
 use_theme = true
 
+# [icons]
+# An installed icon theme, by its folder name, in place of the theme's own:
+# for programs (GTK, Qt and KDE alike), the Dock and the menu bar. Left out:
+# the theme's [icons] theme. Settings, App Style, picks it.
+# theme = "Papirus"
+
 [panel]
 # Desktop settings: let wallpaper show through the menu bar. Off at first,
 # so the menu bar shows its picture as it is.
@@ -559,6 +565,9 @@ windows_buttons = "Window buttons:"
 windows_buttons_left = "At the left"
 windows_buttons_right = "At the right"
 toolkits_title = "App Style"
+toolkits_icons = "Icons:"
+toolkits_icons_own = "The theme's own"
+toolkits_icons_note = "The icons in programs, the Dock and the menu bar. Programs that are open keep theirs until they start again."
 toolkits_gtk = "GTK programs:"
 toolkits_gtk_theme = "Drawn in the desktop's look"
 toolkits_gtk_theme_note = "These programs use the desktop's look after you log in again, so they match the rest."

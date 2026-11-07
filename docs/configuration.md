@@ -192,6 +192,19 @@ An empty value, or Use Original, brings back the application's own.
 
 To take an application out of the app grid, right-click it there and choose Hide from the App Grid, or untick Show in the app grid in Settings, App Icons & Names. That's also where you bring it back. The search and the dock's Programs folder still list it. It's saved as `[app_grid] hidden = ["htop", ...]`, by desktop entry ID.
 
+## The icon theme
+
+Every theme brings an icon theme (its `[icons]` table, see [other applications](themes/other-applications.md#icons)). Settings, App Style, picks another one from those installed, for example Papirus or Breeze. It's saved by the icon theme's folder name:
+
+```toml
+[icons]
+theme = "Papirus"
+```
+
+It counts for GTK, Qt and KDE programs alike, and for the dock and the menu bar. Icons you gave single applications in App Icons & Names still win. Choosing it rewrites the desktop's settings the way switching desktops does: the dock and menu bar start again, and programs that are open keep their icons until you start them again. If the icon theme is uninstalled later, the desktop uses one that's there (Adwaita, Breeze, Papirus or hicolor).
+
+KDE programs such as Dolphin read their icon theme from `kdeglobals`. If you ever used Plasma, yours in `~/.config/kdeglobals` names Plasma's icon theme. So the session's own `kdeglobals` locks the choice (`[Icons][$i]`), and KDE programs show the same icons as everything else. That lock only applies inside this session; Plasma keeps its own choice.
+
 ## The desktop's menus
 
 When no window is active, the panel shows the desktop's own name and menus, just like a program would. That's where things like New Folder, Go to Home or Downloads, and Empty Wastebasket live. They're set up under `[desktop_menus]`:

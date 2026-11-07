@@ -101,7 +101,7 @@ static const KnownPane known_panes[] = {
     {"desktops", "preferences-desktop-virtual", "Desktops", "workspaces spaces virtual mission control"},
     {"windows", "preferences-system-windows", "Windows", "snap tile title bar buttons double click drag move resize"},
     {"extensions", "preferences-plugin", "Extensions", "plugins add-ons addons"},
-    {"toolkits", "preferences-system", "App Style", "gtk qt programs apps look theme"},
+    {"toolkits", "preferences-system", "App Style", "gtk qt kde programs apps look theme icons icon theme"},
     {"network", "preferences-system-network", "Network",
         "wifi wi-fi wlan wireless internet ethernet cable lan ip router password"},
     {"bluetooth", "preferences-system-bluetooth", "Bluetooth", "pair headphones keyboard mouse speaker devices"},
@@ -333,10 +333,17 @@ void SettingsWindow::restoreDefaults(const QString& name)
     {
         return;
     }
+    // The icon theme is the one choice here that the session must rewrite its
+    // files for at once; the others are read at the next login or by the shell.
+    const QVariant icon_theme = choices.current(QStringLiteral("icons"), QStringLiteral("theme"));
     const QString problem = choices.remove(pane_choices(name));
     if (!problem.isEmpty())
     {
         QMessageBox::warning(this, windowTitle(), problem);
+    }
+    if (choices.current(QStringLiteral("icons"), QStringLiteral("theme")) != icon_theme)
+    {
+        apply_icon_theme(choices);
     }
     remakePane(name);
 }

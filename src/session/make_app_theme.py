@@ -1,6 +1,8 @@
 """Writes themes for application toolkits from a desktop theme.
 
-    python make_app_theme.py THEME_DIRECTORY OUTPUT_DIRECTORY
+    python make_app_theme.py THEME_DIRECTORY OUTPUT_DIRECTORY [--icon-theme NAME]
+
+--icon-theme is the icon theme the user picked, in place of the theme's.
 
 Translates the theme's [controls] table into a Kvantum theme for Qt and a
 gtk.css for GTK 3 and 4, plus KDE and GTK settings, written to:
@@ -826,7 +828,10 @@ def write_kde_settings(theme, output_directory):
     lines = []
     icon_theme = theme.get("icons", {}).get("theme")
     if icon_theme is not None:
-        lines += ["[Icons]", f"Theme={icon_theme}", ""]
+        # Locked ($i), or a Plasma choice in ~/.config/kdeglobals wins over
+        # this file (an XDG_CONFIG_DIRS one) and KDE programs alone show
+        # other icons. Only this session lists the file, so Plasma keeps its own.
+        lines += ["[Icons][$i]", f"Theme={icon_theme}", ""]
 
     text = controls.get("text_color")
     # KDE colour set, background, foreground.
@@ -921,13 +926,14 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("theme", type=Path, help="desktop theme directory, holding theme.toml")
     parser.add_argument("output", type=Path, help="directory to write the toolkit themes into")
+    parser.add_argument("--icon-theme", default="", help="the icon theme the user picked, if any")
     arguments = parser.parse_args()
 
     theme_file = arguments.theme / "theme.toml"
     if not theme_file.is_file():
         fail(f"{theme_file} does not exist")
     with open(theme_file, "rb") as file:
-        theme = usable_icon_theme(tomllib.load(file), arguments.theme)
+        theme = usable_icon_theme(tomllib.load(file), arguments.theme, arguments.icon_theme)
 
     if "controls" not in theme:
         print(f"{theme_file} has no [controls] table; applications keep their own look")

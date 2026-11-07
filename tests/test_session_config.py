@@ -327,6 +327,27 @@ class TestThemes(SessionTestCase):
         self.run_script("make_shell_config.py", config, written)
         self.assertEqual(json.loads(written.read_text())["theme"]["icons"]["theme"], "breeze")
 
+    def icon_theme_picked(self, name):
+        """The shell's icon theme on plain when the user picked `name` (Settings, App Style)."""
+        for installed in ("breeze", "Papirus"):
+            icons = self.home / "data-dir" / "icons" / installed
+            icons.mkdir(parents=True, exist_ok=True)
+            (icons / "index.theme").write_text(f"[Icon Theme]\nName={installed}\n")
+        self.environment["XDG_DATA_DIRS"] = str(self.home / "data-dir")
+        choices = self.home / ".config" / "mavernix" / "plain.json"
+        choices.parent.mkdir(parents=True, exist_ok=True)
+        choices.write_text(json.dumps({"icons": {"theme": name}}))
+
+        written = self.home / "plain.json"
+        self.run_script("make_shell_config.py", CONFIG_DIR / "plain.toml", written)
+        return json.loads(written.read_text())["theme"]["icons"]["theme"]
+
+    def test_the_users_icon_theme_takes_the_themes_place(self):
+        self.assertEqual(self.icon_theme_picked("Papirus"), "Papirus")
+
+    def test_a_picked_icon_theme_that_is_gone_is_replaced(self):
+        self.assertEqual(self.icon_theme_picked("Uninstalled"), "breeze")
+
 
 class TestWindowAnimations(SessionTestCase):
     def test_pop_is_our_plugins_and_can_be_shortened(self):
@@ -935,6 +956,20 @@ class TestKdeColours(SessionTestCase):
         for name in ("BreezeLight", "BreezeDark"):
             with self.subTest(scheme=name):
                 self.assertEqual(colours(schemes / f"{name}.colors"), theme)
+
+    def test_the_picked_icon_theme_is_locked_over_plasmas(self):
+        # Unlocked, a Plasma user's ~/.config/kdeglobals wins and KDE programs
+        # alone show Plasma's icons.
+        icons = self.home / "data-dir" / "icons" / "Papirus"
+        icons.mkdir(parents=True)
+        (icons / "index.theme").write_text("[Icon Theme]\nName=Papirus\n")
+        self.environment["XDG_DATA_DIRS"] = str(self.home / "data-dir")
+        output = self.home / "app-theme"
+        self.run_script("make_app_theme.py", THEMES_DIR / "plain", output, "--icon-theme", "Papirus")
+        written = (output / "xdg" / "kdeglobals").read_text().splitlines()
+        self.assertEqual(written[:2], ["[Icons][$i]", "Theme=Papirus"])
+        self.assertIn("gtk-icon-theme-name=Papirus",
+                      (output / "xdg" / "gtk-3.0" / "settings.ini").read_text().splitlines())
 
 
 class TestLogGuard(unittest.TestCase):
