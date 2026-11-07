@@ -732,11 +732,16 @@ PanelWindow {
     }
 
     readonly property int windowCount: ToplevelManager.toplevels.values.length
-    // Later, not at once. When a window closes, Quickshell (0.3.2) lets go of
-    // its handle first, then says so and clears the active window, and only
-    // then takes it off its list. A row changed meanwhile would hand the
-    // closing window a rectangle, and that crashes the shell. Later, it is off
-    // the list. callLater also folds many changes into one call.
+    // Later, not at once, for two reasons:
+    // - At once, rowWithOneMore can still be the old row's: QML may tell `row`
+    //   of a change before it tells rowWithOneMore. A window minimised or
+    //   brought back then gave the others a place half a tile off, and the
+    //   minimise effect missed the new tile.
+    // - When a window closes, Quickshell (0.3.2) lets go of its handle first,
+    //   then says so and clears the active window, and only then takes it off
+    //   its list. A row changed meanwhile would hand the closing window a
+    //   rectangle, and that crashes the shell.
+    // Later, everything has settled. callLater also folds many changes into one call.
     onRowChanged: Qt.callLater(dock.tellWindowPlaces)
     onWindowCountChanged: Qt.callLater(dock.tellWindowPlaces)
 
