@@ -57,10 +57,12 @@ use_theme = true
 use_theme = true
 
 # [icons]
-# An installed icon theme, by its folder name, in place of the theme's own:
-# for programs (GTK, Qt and KDE alike), the Dock and the menu bar. Left out:
-# the theme's [icons] theme. Settings, App Style, picks it.
-# theme = "Papirus"
+# Installed icon themes, by their folder names, in place of the theme's own:
+# one for programs (GTK, Qt and KDE alike), one for the Dock, the menu bar
+# and the rest of the desktop's own parts. Left out: the theme's [icons]
+# theme. Settings, App Style, picks them.
+# programs = "Papirus"
+# dock_and_menu_bar = "Papirus"
 
 [panel]
 # Desktop settings: let wallpaper show through the menu bar. Off at first,
@@ -565,11 +567,13 @@ windows_buttons = "Window buttons:"
 windows_buttons_left = "At the left"
 windows_buttons_right = "At the right"
 toolkits_title = "App Style"
-toolkits_icons = "Icons:"
+toolkits_icons = "Icons in programs:"
+toolkits_icons_desktop = "Icons in the Dock\nand menu bar:"
 toolkits_icons_own = "The theme's own"
 toolkits_icons_plasma = "used by Plasma"
 toolkits_icons_gnome = "used by GNOME"
-toolkits_icons_note = "The icons in programs, the Dock and the menu bar. Programs that are open keep theirs until they start again."
+toolkits_icons_note = "GTK, Qt and KDE programs. Programs that are open keep theirs until they start again."
+toolkits_icons_desktop_note = "Also the app grid, the program switcher and the search."
 toolkits_gtk = "GTK programs:"
 toolkits_gtk_theme = "Drawn in the desktop's look"
 toolkits_gtk_theme_note = "These programs use the desktop's look after you log in again, so they match the rest."

@@ -327,8 +327,9 @@ class TestThemes(SessionTestCase):
         self.run_script("make_shell_config.py", config, written)
         self.assertEqual(json.loads(written.read_text())["theme"]["icons"]["theme"], "breeze")
 
-    def icon_theme_picked(self, name):
-        """The shell's icon theme on plain when the user picked `name` (Settings, App Style)."""
+    def icon_themes_picked(self, picked):
+        """The shell settings' icon themes on plain, for programs and for the
+        shell itself, when the user picked `picked` (Settings, App Style)."""
         for installed in ("breeze", "Papirus"):
             icons = self.home / "data-dir" / "icons" / installed
             icons.mkdir(parents=True, exist_ok=True)
@@ -336,17 +337,24 @@ class TestThemes(SessionTestCase):
         self.environment["XDG_DATA_DIRS"] = str(self.home / "data-dir")
         choices = self.home / ".config" / "mavernix" / "plain.json"
         choices.parent.mkdir(parents=True, exist_ok=True)
-        choices.write_text(json.dumps({"icons": {"theme": name}}))
+        choices.write_text(json.dumps({"icons": picked}))
 
         written = self.home / "plain.json"
         self.run_script("make_shell_config.py", CONFIG_DIR / "plain.toml", written)
-        return json.loads(written.read_text())["theme"]["icons"]["theme"]
+        settings = json.loads(written.read_text())
+        return settings["theme"]["icons"]["theme"], settings["shell_icon_theme"]
 
     def test_the_users_icon_theme_takes_the_themes_place(self):
-        self.assertEqual(self.icon_theme_picked("Papirus"), "Papirus")
+        self.assertEqual(self.icon_themes_picked({"programs": "Papirus", "dock_and_menu_bar": "breeze"}),
+                         ("Papirus", "breeze"))
+
+    def test_programs_icons_leave_the_docks_alone(self):
+        # plain's own is Adwaita; installed here only as the stand-in breeze.
+        self.assertEqual(self.icon_themes_picked({"programs": "Papirus"}), ("Papirus", "breeze"))
 
     def test_a_picked_icon_theme_that_is_gone_is_replaced(self):
-        self.assertEqual(self.icon_theme_picked("Uninstalled"), "breeze")
+        self.assertEqual(self.icon_themes_picked({"programs": "Uninstalled", "dock_and_menu_bar": "Gone"}),
+                         ("breeze", "breeze"))
 
 
 class TestWindowAnimations(SessionTestCase):

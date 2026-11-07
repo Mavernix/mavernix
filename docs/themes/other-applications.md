@@ -7,7 +7,7 @@
 theme = "Adwaita"         # the name of an icon theme
 ```
 
-Applications and the desktop's own parts (the dock) take their icons by name from this icon theme. It can be one that's installed on the system, or one your desktop theme brings along. A theme's `share/` folder is added to the folders where programs look these things up, so `share/icons/NAME/` gets found. If your theme leaves this table out, you get the system's icons. Users can pick another icon theme in Settings, App Style, which then takes this one's place (see [configuration](../configuration.md#the-icon-theme)).
+Applications and the desktop's own parts (the dock) take their icons by name from this icon theme. It can be one that's installed on the system, or one your desktop theme brings along. A theme's `share/` folder is added to the folders where programs look these things up, so `share/icons/NAME/` gets found. If your theme leaves this table out, you get the system's icons. Users can pick other icon themes in Settings, App Style, for programs and for the desktop's own parts, which then take this one's place (see [configuration](../configuration.md#the-icon-theme)).
 
 ## Mouse pointers
 

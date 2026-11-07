@@ -55,7 +55,7 @@ QList<Choices::Key> pane_choices(const QString& pane)
                 {QStringLiteral("gtk"), {QStringLiteral("button_side"), QStringLiteral("button_order")}}}},
         {QStringLiteral("toolkits"), {{QStringLiteral("gtk"), {QStringLiteral("use_theme")}},
                                          {QStringLiteral("qt"), {QStringLiteral("use_theme")}},
-                                         {QStringLiteral("icons"), {QStringLiteral("theme")}}}},
+                                         {QStringLiteral("icons"), {QStringLiteral("programs"), QStringLiteral("dock_and_menu_bar")}}}},
         {QStringLiteral("keyboard"),
             {{QStringLiteral("shortcuts"), {}}, {QStringLiteral("commands"), {}},
                 {QStringLiteral("game_keys"), {QStringLiteral("all_x11")}},

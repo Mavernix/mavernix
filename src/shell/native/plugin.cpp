@@ -2,6 +2,10 @@
 
 #include "plugin.hpp"
 
+#include <QFile>
+#include <QIcon>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QQmlEngine>
 #include <qqml.h>
 
@@ -25,8 +29,30 @@
 #include "window-picture-provider.hpp"
 #include "window-pictures.hpp"
 
+// The shell's own icon theme, which the user may pick apart from the
+// programs' (Settings, App Style). Set here, inside the shell alone: the
+// environment's QT_QPA_SYSTEM_ICON_THEME stays the programs', as the Dock
+// hands its environment to every program it starts. This runs as shell.qml
+// is read, before any icon is drawn.
+static void use_shell_icon_theme()
+{
+    QFile settings(qEnvironmentVariable("DESKTOP_SHELL_SETTINGS"));
+    if (!settings.open(QIODevice::ReadOnly))
+    {
+        return;
+    }
+    const QString theme =
+        QJsonDocument::fromJson(settings.readAll()).object().value(QStringLiteral("shell_icon_theme")).toString();
+    if (!theme.isEmpty())
+    {
+        QIcon::setThemeName(theme);
+    }
+}
+
 void ShellNativePlugin::registerTypes(const char* uri)
 {
+    use_shell_icon_theme();
+
     const int major_version = 1;
     const int minor_version = 0;
 

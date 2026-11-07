@@ -333,15 +333,15 @@ void SettingsWindow::restoreDefaults(const QString& name)
     {
         return;
     }
-    // The icon theme is the one choice here that the session must rewrite its
+    // The icon themes are the choices here that the session must rewrite its
     // files for at once; the others are read at the next login or by the shell.
-    const QVariant icon_theme = choices.current(QStringLiteral("icons"), QStringLiteral("theme"));
+    const QStringList icon_themes = icon_theme_choices(choices);
     const QString problem = choices.remove(pane_choices(name));
     if (!problem.isEmpty())
     {
         QMessageBox::warning(this, windowTitle(), problem);
     }
-    if (choices.current(QStringLiteral("icons"), QStringLiteral("theme")) != icon_theme)
+    if (icon_theme_choices(choices) != icon_themes)
     {
         apply_icon_theme(choices);
     }
