@@ -120,3 +120,4 @@ Anything that isn't in Settings is in the desktop's config. See [configuration](
 - **The panel or the dock is gone:** give it a few seconds, they restart on their own. If they keep failing, a notice tells you.
 - **The desktop won't start at all:** a notice tells you why, and a key takes you back to the login screen.
 - **Logs:** `$XDG_RUNTIME_DIR/mavernix/session.log` has the compositor's log. `login.log` next to it has the shell and everything started at login. Please include the end of both when you report a bug.
+- **A program closed by itself:** `journalctl --user -t mavernix-compositor` has a line for each program with a window that went away. It says whether the program closed its connection (it quit, crashed or was killed) or the compositor cut it off, how many windows were still open, and the error the compositor sent it, if any. `[session] note_closed_programs = false` turns these lines off.

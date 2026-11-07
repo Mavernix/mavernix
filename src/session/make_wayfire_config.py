@@ -1298,6 +1298,10 @@ def main():
             fail("dock.window_reflection_blur must be between 0 and 12")
         plugins.append("dock-window-reflections")
         sections.append(["[dock-window-reflections]", f"blur = {spread}"])
+    # [session] note_closed_programs: a line in the journal when a program
+    # with a window loses its connection (the closed-programs plugin).
+    if config.get("session", {}).get("note_closed_programs", True):
+        plugins.append("closed-programs")
     plugins += arguments.extra_plugins.split()
 
     own = settings_home() / "wayfire.ini"

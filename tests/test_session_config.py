@@ -120,6 +120,20 @@ class TestWrittenSettings(SessionTestCase):
         self.assertEqual(written.read_text().count("plugins ="), 1)
         self.assertEqual(settings["oswitch"]["next_output_with_win"], "<shift> <super> KEY_RIGHT")
 
+    def test_closed_programs_are_noted_unless_switched_off(self):
+        for note in (True, False):
+            with self.subTest(note=note):
+                text = (CONFIG_DIR / "plain.toml").read_text()
+                self.home.mkdir(parents=True, exist_ok=True)
+                desktop = self.home / "plain.toml"
+                desktop.write_text(text.replace("note_closed_programs = true",
+                                                f"note_closed_programs = {str(note).lower()}"))
+                written = self.home / "plain.ini"
+                self.run_script("make_wayfire_config.py", desktop, written)
+                settings = configparser.ConfigParser(interpolation=None, strict=False)
+                settings.read(written)
+                self.assertEqual("closed-programs" in settings["core"]["plugins"].split(), note)
+
     def test_shell_settings(self):
         for desktop in DESKTOPS:
             with self.subTest(desktop=desktop):

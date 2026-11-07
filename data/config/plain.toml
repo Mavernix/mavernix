@@ -880,6 +880,10 @@ reload_shell_on_change = false
 autostart = [["nm-applet", "--indicator"]]
 # Also start ~/.config/autostart entries (needs `dex`).
 users_autostart = true
+# Write one line to the journal when a program with a window closes or is
+# cut off, to find out later why it went away:
+#   journalctl --user -t mavernix-compositor
+note_closed_programs = true
 
 [commands]
 # Keys that run a command, bound in the compositor so they work even when

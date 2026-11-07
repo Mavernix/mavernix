@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="closed-programs">
+		<_short>Closed Programs</_short>
+		<_long>Writes one line to the journal when a program that had a window loses its connection, with whether it closed it or the compositor cut it off, and why.</_long>
+		<category>General</category>
+	</plugin>
+</wayfire>
