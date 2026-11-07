@@ -36,17 +36,33 @@ static QCheckBox* use_theme_box(Choices& choices, const QString& table, const QS
     return box;
 }
 
+// What the icon theme box says, from the config's words.
+struct IconThemeWords
+{
+    QString own;
+    QString used_by_plasma;
+    QString used_by_gnome;
+};
+
 // The icon theme: the theme's own first (no key in the user's file), then
-// every installed one.
-static QComboBox* icon_theme_box(Choices& choices, const QString& own_words)
+// every installed one. Those that Plasma or GNOME use say so, for people
+// coming from there who know their theme by its look, not its name.
+static QComboBox* icon_theme_box(Choices& choices, const IconThemeWords& words)
 {
     auto* box = new QComboBox;
     const QString own = choices.themeIconTheme();
-    box->addItem(own.isEmpty() ? own_words : QStringLiteral("%1 (%2)").arg(own_words, own), QString());
+    box->addItem(own.isEmpty() ? words.own : QStringLiteral("%1 (%2)").arg(words.own, own), QString());
     box->insertSeparator(1);
+    const QString plasma = plasma_icon_theme();
+    const QString gnome = gnome_icon_theme();
     for (const InstalledIconTheme& theme : installed_icon_themes())
     {
-        box->addItem(theme.name, theme.folder);
+        // Plasma copies its icon theme into GNOME's settings for GTK
+        // programs, so the same name in both is Plasma's.
+        const QString mark = theme.folder == plasma  ? words.used_by_plasma
+                             : theme.folder == gnome ? words.used_by_gnome
+                                                     : QString();
+        box->addItem(mark.isEmpty() ? theme.name : QStringLiteral("%1 — %2").arg(theme.name, mark), theme.folder);
     }
 
     // A picked theme that is gone since is still shown, so the box does not
@@ -84,7 +100,9 @@ ToolkitsPane::ToolkitsPane(Choices& choices, QWidget* parent) : QWidget(parent),
         return words.value(QLatin1String(key), QString::fromUtf8(fallback)).toString();
     };
 
-    auto* icon_theme = icon_theme_box(choices, word("toolkits_icons_own", "The theme's own"));
+    auto* icon_theme = icon_theme_box(
+        choices, {word("toolkits_icons_own", "The theme's own"), word("toolkits_icons_plasma", "used by Plasma"),
+                     word("toolkits_icons_gnome", "used by GNOME")});
 
     auto* gtk_theme = use_theme_box(choices, gtk_table, word("toolkits_gtk_theme", "Drawn in the desktop's look"));
 

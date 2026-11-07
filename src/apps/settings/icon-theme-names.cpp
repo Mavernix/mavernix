@@ -3,8 +3,10 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QIcon>
+#include <QProcess>
 #include <QSet>
 #include <QSettings>
+#include <QStandardPaths>
 
 #include <algorithm>
 
@@ -143,4 +145,40 @@ QList<InstalledIconTheme> installed_icon_themes()
         return one.name.compare(other.name, Qt::CaseInsensitive) < 0;
     });
     return themes;
+}
+
+QString plasma_icon_theme()
+{
+    const QString kdeglobals =
+        QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation) + QStringLiteral("/kdeglobals");
+    if (!QFileInfo::exists(kdeglobals))
+    {
+        return QString();
+    }
+    return QSettings(kdeglobals, QSettings::IniFormat).value(QStringLiteral("Icons/Theme")).toString();
+}
+
+QString gnome_icon_theme()
+{
+    // dconf answers in a moment; if it hangs, the pane must open anyway.
+    const int time_limit_ms = 2000;
+    QProcess dconf;
+    QProcessEnvironment environment = QProcessEnvironment::systemEnvironment();
+    environment.remove(QStringLiteral("DCONF_PROFILE"));
+    dconf.setProcessEnvironment(environment);
+    // "dconf read" prints only a value the user set, not the schema's default.
+    dconf.start(
+        QStringLiteral("dconf"), {QStringLiteral("read"), QStringLiteral("/org/gnome/desktop/interface/icon-theme")});
+    if (!dconf.waitForFinished(time_limit_ms) || dconf.exitCode() != 0)
+    {
+        dconf.kill();
+        return QString();
+    }
+    // Printed as a GVariant string: 'Papirus'
+    QString value = QString::fromUtf8(dconf.readAllStandardOutput()).trimmed();
+    if (value.size() >= 2 && value.startsWith(QLatin1Char('\'')) && value.endsWith(QLatin1Char('\'')))
+    {
+        value = value.mid(1, value.size() - 2);
+    }
+    return value;
 }

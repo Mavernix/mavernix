@@ -19,3 +19,10 @@ struct InstalledIconTheme
 // The icon themes a user can pick, sorted by name: those with icons, neither
 // hicolor nor "default" (a link to another theme).
 QList<InstalledIconTheme> installed_icon_themes();
+
+// The icon theme the user picked in another desktop, by folder name, or empty
+// if they never picked one there: Plasma's from ~/.config/kdeglobals, GNOME's
+// from dconf's "user" database (this session keeps its own, so it is asked
+// without DCONF_PROFILE).
+QString plasma_icon_theme();
+QString gnome_icon_theme();

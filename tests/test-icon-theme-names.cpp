@@ -91,6 +91,25 @@ class TestIconThemeNames : public QObject
         // Sorted by name whatever its case.
         QCOMPARE(folders, QStringList({QStringLiteral("adwaita"), QStringLiteral("Papirus")}));
     }
+
+    void plasmasIconThemeComesFromItsSettings()
+    {
+        QTemporaryDir config;
+        QVERIFY(config.isValid());
+        const QByteArray before = qgetenv("XDG_CONFIG_HOME");
+        qputenv("XDG_CONFIG_HOME", config.path().toUtf8());
+
+        // Never used Plasma: nothing to mark.
+        QCOMPARE(plasma_icon_theme(), QString());
+
+        QFile kdeglobals(config.filePath(QStringLiteral("kdeglobals")));
+        QVERIFY(kdeglobals.open(QIODevice::WriteOnly));
+        kdeglobals.write("[General]\nColorScheme=BreezeDark\n\n[Icons]\nTheme=breeze-dark\n");
+        kdeglobals.close();
+        QCOMPARE(plasma_icon_theme(), QStringLiteral("breeze-dark"));
+
+        qputenv("XDG_CONFIG_HOME", before);
+    }
 };
 
 QTEST_GUILESS_MAIN(TestIconThemeNames)

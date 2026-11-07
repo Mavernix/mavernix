@@ -194,7 +194,7 @@ To take an application out of the app grid, right-click it there and choose Hide
 
 ## The icon theme
 
-Every theme brings an icon theme (its `[icons]` table, see [other applications](themes/other-applications.md#icons)). Settings, App Style, picks another one from those installed, for example Papirus or Breeze. It's saved by the icon theme's folder name:
+Every theme brings an icon theme (its `[icons]` table, see [other applications](themes/other-applications.md#icons)). Settings, App Style, picks another one from those installed, for example Papirus or Breeze. The list marks the one you picked in Plasma (`~/.config/kdeglobals`) or GNOME (dconf), if it's installed, so you can find yours again. It's saved by the icon theme's folder name:
 
 ```toml
 [icons]
