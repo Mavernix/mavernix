@@ -254,6 +254,13 @@ QStringList Choices::desktops() const
     return settings.value(QStringLiteral("desktops")).toStringList();
 }
 
+QStringList Choices::desktopsSharingChoices() const
+{
+    // Written by sessions since 0.6.2; before, every desktop was offered.
+    const QVariant names = settings.value(QStringLiteral("desktops_sharing_choices"));
+    return names.isValid() ? names.toStringList() : desktops();
+}
+
 QString Choices::runningDesktop() const
 {
     return settings.value(QStringLiteral("desktop")).toString();

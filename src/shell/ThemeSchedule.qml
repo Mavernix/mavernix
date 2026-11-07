@@ -29,15 +29,19 @@ Scope {
     readonly property int nightFrom: minutesOf(wish("night_from", "19:00"))
     readonly property int dayFrom: minutesOf(wish("day_from", "07:00"))
     readonly property int warnMinutes: Math.max(0, wish("warn_minutes", 5))
+    // The schedule is kept in the running desktop's choices; a desktop that
+    // keeps its own elsewhere would not know it and never switch back.
+    readonly property var sharing: settings.desktops_sharing_choices ?? [day, night]
     readonly property bool works: enabled && day !== "" && night !== "" && day !== night
         && nightFrom >= 0 && dayFrom >= 0 && nightFrom !== dayFrom
+        && sharing.includes(day) && sharing.includes(night)
 
     // The desktop running now; a switch restarts the shell with the new one.
     readonly property string running: settings.desktop ?? ""
 
     // "19:30" -> 1170; -1 if it is not a time of day.
     function minutesOf(text) {
-        const parts = /^(\d{1,2}):(\d{2})$/.exec(String(text))
+        const parts = /^([0-9]{1,2}):([0-9]{2})$/.exec(String(text))
         if (parts === null || Number(parts[1]) > 23 || Number(parts[2]) > 59) {
             return -1
         }
@@ -66,13 +70,23 @@ Scope {
     property string lastWanted: ""
     // The switch to come: { desktop, at } (ms since 1970), or null.
     property var upcoming: null
+    // Its banner, taken back when the switch no longer comes.
+    property var notice: null
 
-    readonly property bool fullScreenWindow: ToplevelManager.toplevels.values.some(window => window.fullscreen)
+    // Only one in front: a minimised film or one on another desktop holds nothing up.
+    readonly property bool fullScreenWindow: ToplevelManager.toplevels.values.some(window =>
+        window.fullscreen && window.activated)
+
+    function forget() {
+        upcoming = null
+        notice?.dismiss()
+        notice = null
+    }
 
     function look() {
         if (!works) {
             lastWanted = ""
-            upcoming = null
+            forget()
             return
         }
         const now = new Date()
@@ -92,9 +106,10 @@ Scope {
                 announce(soon, at.getTime(), change)
             }
         }
-        // The change itself, also when the warning was missed (asleep then).
+        // The change itself, also when the warning was missed (asleep then):
+        // a banner announced before sleeping is long past, so a new one.
         if (lastWanted !== "" && wanted !== lastWanted && wanted !== running
-                && (upcoming === null || upcoming.desktop !== wanted)) {
+                && (upcoming === null || upcoming.desktop !== wanted || now.getTime() - upcoming.at > 60000)) {
             if (warnMinutes > 0) {
                 announce(wanted, now.getTime() + warnMinutes * 60000, minutes + warnMinutes)
             } else {
@@ -103,17 +118,24 @@ Scope {
         }
         lastWanted = wanted
 
-        if (upcoming !== null && now.getTime() >= upcoming.at && !fullScreenWindow) {
-            switchTo(upcoming.desktop)
+        if (upcoming !== null && now.getTime() >= upcoming.at) {
+            // Asleep through the time, or held up by a full screen window
+            // until the clock wanted the other again: that switch is past.
+            if (upcoming.desktop !== wanted || upcoming.desktop === running) {
+                forget()
+            } else if (!fullScreenWindow) {
+                switchTo(upcoming.desktop)
+            }
         }
     }
 
     function announce(desktop, at, minutes) {
+        forget()
         upcoming = { desktop: desktop, at: at }
         if (banners === null) {
             return
         }
-        const notice = noticeKind.createObject(schedule, {
+        notice = noticeKind.createObject(schedule, {
             appName: words.app_name ?? "Settings",
             appIcon: "preferences-system",
             summary: (words.soon_title ?? "%1 at %2").replace("%1", readable(desktop)).replace("%2", timeOf(minutes % 1440)),
@@ -121,11 +143,17 @@ Scope {
             pressed: () => schedule.switchTo(desktop)
         })
         notice.id = -Math.floor(at / 1000)
-        banners.showOwn(notice)
+        const shown = notice
+        shown.closed.connect(() => {
+            if (schedule.notice === shown) {
+                schedule.notice = null
+            }
+        })
+        banners.showOwn(shown)
     }
 
     function switchTo(desktop) {
-        upcoming = null
+        forget()
         if (desktop !== running) {
             Quickshell.execDetached(["mavernix-switch", desktop])
         }
@@ -148,7 +176,7 @@ Scope {
     readonly property string plan: [works, day, night, nightFrom, dayFrom, warnMinutes].join(" ")
     onPlanChanged: {
         lastWanted = ""
-        upcoming = null
+        forget()
         look()
     }
 }

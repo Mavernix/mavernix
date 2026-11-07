@@ -17,6 +17,7 @@ this resolves both and writes one JSON file:
       "user_choices_file": "/full/path/of/the/user's/changes.json",
       "desktop": "sea-lion",
       "desktops": ["plain", "sea-lion", "sea-lion-dark"],
+      "desktops_sharing_choices": ["sea-lion", "sea-lion-dark"],
       "default_desktop_file": "/full/path/of/the/user's/choice/of/desktop",
       "user": { "name": "me", "full_name": "My Name", "picture": "/home/me/.face" },
       "extensions": { "NAME": { "directory": "...", "manifest": { ... }, "looks": { ... }, "settings": { ... },
@@ -50,7 +51,8 @@ from pathlib import Path
 from make_wayfire_config import load_toml, system_keyboard
 from paths import EXTENSIONS_DIR
 from themes import find_theme, usable_icon_theme
-from user_choices import choices_path, default_desktop_path, desktop_names, load_desktop_config, with_user_choices
+from user_choices import (choices_path, default_desktop_path, desktop_names, desktops_sharing_choices, load_desktop_config,
+                          with_user_choices)
 
 
 def user_details():
@@ -152,6 +154,8 @@ def main():
         "user_choices_file": str(choices_path(arguments.config)),
         "desktop": arguments.config.stem,
         "desktops": desktop_names(),
+        # Those with the same user_choices_file: what [theme_schedule] can switch between.
+        "desktops_sharing_choices": desktops_sharing_choices(arguments.config),
         "default_desktop_file": str(default_desktop_path()),
         "user": user_details(),
         "extensions": found_extensions(config, theme_dir.name),

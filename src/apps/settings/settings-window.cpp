@@ -361,10 +361,17 @@ void SettingsWindow::resetAll()
     {
         return;
     }
+    // As in restoreDefaults; this also covers an icon theme picked just
+    // before, whose wait to apply ends with its pane.
+    const QStringList icon_themes = icon_theme_choices(choices);
     const QString problem = choices.removeAll();
     if (!problem.isEmpty())
     {
         QMessageBox::warning(this, windowTitle(), problem);
+    }
+    if (icon_theme_choices(choices) != icon_themes)
+    {
+        apply_icon_theme(choices);
     }
     for (const QString& name : pane_widgets.keys())
     {

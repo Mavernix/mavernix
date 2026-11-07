@@ -39,7 +39,8 @@ PanelWindow {
     // (0.11) then fits maximized windows to the larger space and, doing
     // so, takes them out of full screen. A browser's video left full
     // screen as soon as it got there.
-    WlrLayershell.layer: raised || (windowReflections && !fullscreenApplication) ? WlrLayer.Overlay : WlrLayer.Top
+    readonly property bool inOverlay: raised || (windowReflections && !fullscreenApplication)
+    WlrLayershell.layer: inOverlay ? WlrLayer.Overlay : WlrLayer.Top
     // Lets the compositor tell this surface from the shell's others.
     WlrLayershell.namespace: "mavernix-dock"
 
@@ -1091,7 +1092,8 @@ PanelWindow {
         WlrLayershell.layer: WlrLayer.Overlay
         color: "transparent"
         mask: Region {}
-        visible: dock.visible && dock.windowReflections && !dock.fullscreenApplication && glassKeepShown.canShow
+        // With the dock: under a fullscreen window, unless the dock is raised above it.
+        visible: dock.visible && dock.windowReflections && dock.inOverlay && glassKeepShown.canShow
         KeepShown { id: glassKeepShown; target: glassWindow }
         Binding {
             target: glassWindow.contentItem

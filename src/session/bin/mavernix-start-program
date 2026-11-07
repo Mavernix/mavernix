@@ -57,6 +57,13 @@ def unit_part(text):
                    for c in text) or "program"
 
 
+def exec_word(text):
+    """One word of an Exec line in unit file syntax, taken as it is: quoted,
+    with the backslash, the quote, "%" (a specifier) and "$" (a variable)
+    escaped."""
+    return '"' + text.replace("\\", "\\\\").replace('"', '\\"').replace("%", "%%").replace("$", "$$") + '"'
+
+
 def how_long(seconds):
     if seconds < 60:
         return f"{seconds} s"
@@ -97,9 +104,7 @@ def start(name, command):
     if wanted() and shutil.which("systemd-run"):
         unit = f"app-mavernix-{unit_part(name)}@{uuid.uuid4().hex}.service"
         myself = os.path.realpath(__file__)
-        # Exec lines use unit file syntax: quoted words, "%" doubled.
-        when_ended = " ".join('"' + word.replace("%", "%%").replace('"', '\\"') + '"'
-                              for word in (myself, "--ended", name, str(int(time.time()))))
+        when_ended = " ".join(exec_word(word) for word in (myself, "--ended", name, str(int(time.time()))))
         names = [n for n in os.environ
                  if re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", n) and n not in SYSTEMDS_OWN]
         result = subprocess.run(

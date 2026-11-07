@@ -64,6 +64,8 @@ class Choices
 
     // defaultDesktopFile() holds which desktop starts when none is named.
     QStringList desktops() const;
+    // Those keeping the user's changes in userChoicesFile(), as the running one does.
+    QStringList desktopsSharingChoices() const;
     QString runningDesktop() const;
     QString defaultDesktopFile() const;
 

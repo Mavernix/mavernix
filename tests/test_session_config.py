@@ -304,6 +304,12 @@ class TestPickedDesktop(SessionTestCase):
 
         self.assertEqual(at(22), "sea-lion-dark")
         self.assertEqual(at(12), "sea-lion")
+        # One keeping its choices in a file of its own would not see the
+        # schedule and never switch back: passed over.
+        shutil.copy(CONFIG_DIR / "plain.toml", self.home / ".local" / "share" / "mavernix" / "config" / "mine.toml")
+        choices.write_text(json.dumps({"theme_schedule": {**TestThemeSchedule.SCHEDULE, "night": "mine"}}))
+        self.assertEqual(at(22), "sea-lion")
+        choices.write_text(json.dumps({"theme_schedule": TestThemeSchedule.SCHEDULE}))
         # A night desktop that cannot start is passed over.
         shutil.rmtree(self.home / ".local" / "share" / "mavernix" / "themes" / "sea-lion-dark")
         self.assertEqual(at(22), "sea-lion")
@@ -343,8 +349,12 @@ class TestThemeSchedule(unittest.TestCase):
     def test_off_or_unclear_wants_nothing(self):
         self.assertIsNone(self.wanted("22:00", enabled=False))
         self.assertIsNone(self.wanted("22:00", night=""))
-        self.assertEqual(self.wanted("22:00", night_from="7 pm"), "sea-lion")
-        self.assertEqual(self.wanted("22:00", night_from="07:00"), "sea-lion")
+        self.assertIsNone(self.wanted("22:00", night="sea-lion"))
+        # As the shell: a time it can't read, or none between the two, turns it all off.
+        for odd in ("7 pm", "19:0", "7:5", " 19:00", "+19:00", "24:00"):
+            self.assertIsNone(self.wanted("22:00", night_from=odd), odd)
+        self.assertIsNone(self.wanted("22:00", night_from="07:00"))
+        self.assertEqual(self.wanted("22:00", night_from="7:30"), "sea-lion-dark")
 
 
 class TestThemes(SessionTestCase):
@@ -1133,6 +1143,7 @@ class TestStartProgram(unittest.TestCase):
         self.assertEqual(module.unit_part("org.kde.dolphin"), "org.kde.dolphin")
         self.assertEqual(module.unit_part("google-chrome"), "google\\x2dchrome")
         self.assertEqual(module.how_long(7500), "2 h 5 min")
+        self.assertEqual(module.exec_word('my$app "50%" \\'), '"my$$app \\"50%%\\" \\\\"')
 
 
 if __name__ == "__main__":

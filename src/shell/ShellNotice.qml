@@ -22,7 +22,12 @@ QtObject {
     readonly property var actions: [{ identifier: "default", invoke: () => pressed?.() }]
 
     signal closed()
+    // Once: its owner may take it back while a click on it is closing it.
+    property bool gone: false
     function dismiss() {
-        closed()
+        if (!gone) {
+            gone = true
+            closed()
+        }
     }
 }

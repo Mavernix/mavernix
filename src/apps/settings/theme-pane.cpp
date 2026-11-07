@@ -52,11 +52,13 @@ ThemePane::ThemePane(Choices& choices, QWidget* parent) : QWidget(parent)
         return words.value(QLatin1String(key), QString::fromUtf8(fallback)).toString();
     };
 
+    // The one running: at night the schedule may run another than the one
+    // the choice file names, and picking the other must switch to it.
     const QString choice_file = choices.defaultDesktopFile();
-    QString current = chosen_desktop(choice_file);
+    QString current = choices.runningDesktop();
     if (current.isEmpty())
     {
-        current = choices.runningDesktop();
+        current = chosen_desktop(choice_file);
     }
 
     // Shown by readable name; the item's data is the desktop's own name.
@@ -89,11 +91,12 @@ ThemePane::ThemePane(Choices& choices, QWidget* parent) : QWidget(parent)
         problem->setText(choices.set(schedule, QLatin1String(key), value));
     };
 
-    connect(desktop, &QComboBox::currentIndexChanged, this, [desktop, choice_file, problem, scheduled, save](int index) {
+    connect(desktop, &QComboBox::currentIndexChanged, this, [&choices, desktop, choice_file, problem, scheduled, save](int index) {
         const QString name = desktop->itemData(index).toString();
         // With the schedule on, a theme picked here other than the night's
-        // is the one for the day from now on.
-        if (scheduled("enabled", false).toBool() && name != scheduled("night", QString()).toString())
+        // is the one for the day from now on, if it keeps its choices here.
+        if (scheduled("enabled", false).toBool() && name != scheduled("night", QString()).toString() &&
+            choices.desktopsSharingChoices().contains(name))
         {
             save("day", name);
         }
@@ -143,10 +146,12 @@ ThemePane::ThemePane(Choices& choices, QWidget* parent) : QWidget(parent)
     QString night_name = scheduled("night", QString()).toString();
     if (night_name.isEmpty())
     {
-        night_name = choices.desktops().contains(current + QStringLiteral("-dark")) ? current + QStringLiteral("-dark")
+        night_name = choices.desktopsSharingChoices().contains(current + QStringLiteral("-dark")) ? current + QStringLiteral("-dark")
                                                                                      : QString();
     }
-    for (const QString& name : choices.desktops())
+    // Only those keeping their choices with this one: the schedule is kept
+    // there, and a desktop that cannot see it would never switch back.
+    for (const QString& name : choices.desktopsSharingChoices())
     {
         night->addItem(readable_name(name), name);
         if (night_name.isEmpty() && name != current)

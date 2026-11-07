@@ -12,8 +12,8 @@ import sys
 
 from themes import theme_available
 from theme_schedule import wanted_desktop
-from user_choices import (default_desktop_path, find_desktop_config, load_desktop_config, user_config_dir,
-                          with_user_choices)
+from user_choices import (default_desktop_path, desktops_sharing_choices, find_desktop_config, load_desktop_config,
+                          user_config_dir, with_user_choices)
 
 FALLBACK_DESKTOP = "plain"
 
@@ -43,12 +43,16 @@ def added_desktops():
 
 def for_time_of_day(name, now=None):
     """The desktop [theme_schedule] wants now, if `name`'s choices turn it on
-    and that desktop can start; else `name`."""
+    and that desktop can start and keeps its choices in the same file (else it
+    would not know the schedule, as the shell's ThemeSchedule.qml says); else
+    `name`."""
     config_path = find_desktop_config(name)
     config = with_user_choices(load_desktop_config(config_path), config_path)
     now = now or datetime.datetime.now()
     wanted = wanted_desktop(config.get("theme_schedule"), now.hour * 60 + now.minute)
-    return wanted if wanted is not None and can_start(wanted) else name
+    if wanted is None or wanted == name or not can_start(wanted) or wanted not in desktops_sharing_choices(config_path):
+        return name
+    return wanted
 
 
 def main():
