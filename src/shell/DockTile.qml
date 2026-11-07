@@ -8,6 +8,7 @@ import Quickshell
 import Quickshell.Wayland
 import "ApplicationEntry.js" as ApplicationEntry
 import "ApplicationName.js" as ApplicationName
+import "StartProgram.js" as StartProgram
 
 Item {
     id: tile
@@ -278,14 +279,14 @@ Item {
         if (entry === null) {
             return
         }
-        entry.execute()
+        StartProgram.start(Quickshell, entry, null)
         startBouncing()
     }
 
     // Runs one of the program's own entries (a desktop entry action, such as
     // "New Window"). One that starts the program bounces like a launch.
     function runAction(action) {
-        action.execute()
+        StartProgram.start(Quickshell, entry, action)
         if (!running) {
             startBouncing()
         }

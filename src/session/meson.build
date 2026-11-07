@@ -41,7 +41,7 @@ install_data(
     install_dir: session_dir,
 )
 install_data('bin/mavernix-dock-geometry', 'bin/mavernix-switch', 'bin/mavernix-reconfigure', 'bin/mavernix-file-action',
-    'bin/mavernix-check-theme', 'bin/mavernix-extensions-changed',
+    'bin/mavernix-check-theme', 'bin/mavernix-extensions-changed', 'bin/mavernix-start-program',
     install_dir: session_dir / 'bin', install_mode: 'rwxr-xr-x')
 install_data('notice/shell.qml', install_dir: session_dir / 'notice')
 install_data('portals/wayfire-portals.conf', install_dir: session_dir / 'portals')

@@ -884,6 +884,12 @@ users_autostart = true
 # cut off, to find out later why it went away:
 #   journalctl --user -t mavernix-compositor
 note_closed_programs = true
+# Start programs from the Dock, the app grid and the search as their own
+# systemd services, with a line in the journal when one starts and how it
+# ended (quit, error, killed, crashed). Their output goes there too, at most
+# 100 lines every 30 seconds each:
+#   journalctl --user -t mavernix-programs
+note_program_ends = true
 
 [commands]
 # Keys that run a command, bound in the compositor so they work even when

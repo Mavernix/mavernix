@@ -8,6 +8,8 @@ Run by `meson test`, which says where the sources are (tests/meson.build).
 
 import configparser
 import contextlib
+import importlib.machinery
+import importlib.util
 import io
 import json
 import os
@@ -1045,6 +1047,45 @@ class TestLogGuard(unittest.TestCase):
         self.pid_file.write_text(f"{other.pid}\n")
         self.guard("Invalid socket 285\n" * 6000)
         self.assertIsNone(other.poll())
+
+
+
+class TestStartProgram(unittest.TestCase):
+    """bin/mavernix-start-program, which starts programs as their own services."""
+
+    def setUp(self):
+        self.folder = tempfile.TemporaryDirectory()
+        self.script = SESSION_SOURCE_DIR / "bin" / "mavernix-start-program"
+
+    def tearDown(self):
+        self.folder.cleanup()
+
+    def run_it(self, note, *arguments):
+        settings = Path(self.folder.name) / "shell.json"
+        settings.write_text(json.dumps({"config": {"session": {"note_program_ends": note}}}))
+        return subprocess.run([sys.executable, str(self.script), *arguments], capture_output=True, text=True,
+                              env={**os.environ, "DESKTOP_SHELL_SETTINGS": str(settings)})
+
+    def test_switched_off_it_runs_the_program_itself(self):
+        result = self.run_it(False, "echo", "echo", "started")
+        self.assertEqual((result.returncode, result.stdout), (0, "started\n"))
+
+    def test_it_starts_in_the_entrys_folder(self):
+        result = self.run_it(False, "--in", self.folder.name, "pwd", "pwd")
+        self.assertEqual(result.stdout.strip(), str(Path(self.folder.name).resolve()))
+
+    def test_a_missing_program_is_not_tried(self):
+        result = self.run_it(True, "missing", "no-such-program-for-mavernix")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("was not found", result.stderr)
+
+    def test_ids_are_escaped_for_unit_names(self):
+        loader = importlib.machinery.SourceFileLoader("start_program", str(self.script))
+        module = importlib.util.module_from_spec(importlib.util.spec_from_loader(loader.name, loader))
+        loader.exec_module(module)
+        self.assertEqual(module.unit_part("org.kde.dolphin"), "org.kde.dolphin")
+        self.assertEqual(module.unit_part("google-chrome"), "google\\x2dchrome")
+        self.assertEqual(module.how_long(7500), "2 h 5 min")
 
 
 if __name__ == "__main__":
