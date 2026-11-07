@@ -890,6 +890,10 @@ note_closed_programs = true
 # 100 lines every 30 seconds each:
 #   journalctl --user -t mavernix-programs
 note_program_ends = true
+# When the session ends, put the last 100 lines of its logs (session.log and
+# login.log) in the journal, so they are still there after the next login:
+#   journalctl --user -t mavernix-session
+note_session_ends = true
 
 [commands]
 # Keys that run a command, bound in the compositor so they work even when

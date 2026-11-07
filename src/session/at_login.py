@@ -77,8 +77,10 @@ def services_environment():
     return environment
 
 
-def arrange_taking_settings_back():
-    """Starts after-session with the values the services had before."""
+def arrange_taking_settings_back(config, state_dir):
+    """Starts after-session with the values the services had before. With
+    [session] note_session_ends, it also hands the end of the session's logs
+    to the journal once the session is over."""
     before = services_environment()
     settings = []
     for name in SESSION_SETTINGS_FOR_SERVICES:
@@ -94,11 +96,14 @@ def arrange_taking_settings_back():
         say("DESKTOP_SESSION_PID is not set; this session's settings will stay with the services after it")
         return False
     script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "after-session")
+    logs = []
+    if config.get("session", {}).get("note_session_ends", True):
+        logs = [f"--setenv=DESKTOP_STATE_DIR={state_dir}"]
     result = subprocess.run(
         ["systemd-run", "--user", "--collect", "--quiet",
          "--unit", f"mavernix-after-{compositor}",
          "--description", "Takes the desktop session's settings back out after it",
-         script, compositor] + settings,
+         *logs, script, compositor] + settings,
         capture_output=True, text=True)
     if result.returncode != 0:
         say(f"could not arrange taking this session's settings back out: {result.stderr.strip()}")
@@ -106,7 +111,7 @@ def arrange_taking_settings_back():
     return True
 
 
-def tell_services():
+def tell_services(config, state_dir):
     names = [name for name in ENVIRONMENT_FOR_SERVICES if name in os.environ]
     if shutil.which("dbus-update-activation-environment") is None:
         say("dbus-update-activation-environment is not installed; services started on demand "
@@ -118,7 +123,7 @@ def tell_services():
     runtime_directory = os.environ.get("XDG_RUNTIME_DIR", "")
     if os.path.exists(os.path.join(runtime_directory, "systemd", "private")):
         command.append("--systemd")
-        if arrange_taking_settings_back():
+        if arrange_taking_settings_back(config, state_dir):
             names += [name for name in SESSION_SETTINGS_FOR_SERVICES if name in os.environ]
     result = subprocess.run(command + names, capture_output=True, text=True)
     if result.returncode != 0:
@@ -268,7 +273,7 @@ def main():
     place_launchers_once(config, sys.argv[1])
 
     hand_login_to_wallet()
-    tell_services()
+    tell_services(config, os.path.dirname(os.path.abspath(sys.argv[1])))
     start_listed_programs(config)
     if config.get("session", {}).get("users_autostart", True):
         start_users_programs()
