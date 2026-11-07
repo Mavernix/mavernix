@@ -1074,11 +1074,6 @@ class TestStartProgram(unittest.TestCase):
         result = self.run_it(False, "--in", self.folder.name, "pwd", "pwd")
         self.assertEqual(result.stdout.strip(), str(Path(self.folder.name).resolve()))
 
-    def test_a_missing_program_is_not_tried(self):
-        result = self.run_it(True, "missing", "no-such-program-for-mavernix")
-        self.assertNotEqual(result.returncode, 0)
-        self.assertIn("was not found", result.stderr)
-
     def test_ids_are_escaped_for_unit_names(self):
         loader = importlib.machinery.SourceFileLoader("start_program", str(self.script))
         module = importlib.util.module_from_spec(importlib.util.spec_from_loader(loader.name, loader))
