@@ -338,6 +338,24 @@ time_now = "now"
 time_minutes = "%1 min ago"
 time_hours = "%1 h ago"
 
+[theme_schedule]
+# One desktop by day and another at night (Settings, Theme). At the time the
+# desktop switches, but not while a window is full screen; warn_minutes
+# before, a banner says so, and a click on it switches at once. Times are
+# "HH:MM"; the night may run past midnight.
+enabled = false
+# day = "sea-lion"
+# night = "sea-lion-dark"
+night_from = "19:00"
+day_from = "07:00"
+warn_minutes = 5
+
+[theme_schedule.words]
+app_name = "Settings"
+# %1 is the desktop, %2 the time it comes.
+soon_title = "%1 at %2"
+soon_text = "Click to change it now. Open windows keep their look until reopened."
+
 [dock]
 groups = [[{ name = "Applications", icon = "view-app-grid", shell = "app_grid" }, { name = "Home", icon = "user-home", folder = "~", view = "list", order = "name" }, "foot", "mavernix-settings"], [{ name = "Programs", icon = "folder-applications", programs = true, view = "grid", subfolders = [{ name = "System Tools", icon = "folder", categories = ["System"] }] }, { name = "Downloads", icon = "folder-download", folder = "~/Downloads", view = "list", order = "added" }]]
 magnification = false
@@ -630,6 +648,11 @@ windows_double_click_maximize = "enlarges the window"
 theme_title = "Theme"
 theme_choice = "Theme:"
 theme_more = "Get more themes…"
+theme_schedule = "Schedule:"
+theme_night = "At night, use"
+theme_night_from = "from"
+theme_night_until = "until"
+theme_night_note = "A banner says so a few minutes before. A theme you pick in between stays until the next change."
 theme_more_note = "The Theme Installer can make more themes, such as Sea Lion, the look of OS X 10.9, from Apple's installer files."
 desktop_title = "Desktop"
 desktop_picture = "Picture:"

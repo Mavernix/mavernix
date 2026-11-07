@@ -1,13 +1,16 @@
 #include "theme-pane.hpp"
 
+#include <QCheckBox>
 #include <QComboBox>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
 #include <QFormLayout>
+#include <QHBoxLayout>
 #include <QLabel>
 #include <QProcess>
 #include <QPushButton>
+#include <QTimeEdit>
 
 #include "choices.hpp"
 #include "pane-parts.hpp"
@@ -75,8 +78,25 @@ ThemePane::ThemePane(Choices& choices, QWidget* parent) : QWidget(parent)
         note->fontMetrics(), note_width));
     auto* problem = new QLabel;
 
-    connect(desktop, &QComboBox::currentIndexChanged, this, [desktop, choice_file, problem](int index) {
+    // [theme_schedule]: another desktop at night (the shell's ThemeSchedule.qml
+    // switches, src/session/theme_schedule.py picks at login).
+    const QString schedule = QStringLiteral("theme_schedule");
+    const auto scheduled = [&choices, schedule](const char* key, const QVariant& fallback) {
+        const QVariant value = choices.value(schedule, QLatin1String(key));
+        return value.isValid() ? value : fallback;
+    };
+    const auto save = [&choices, schedule, problem](const char* key, const QVariant& value) {
+        problem->setText(choices.set(schedule, QLatin1String(key), value));
+    };
+
+    connect(desktop, &QComboBox::currentIndexChanged, this, [desktop, choice_file, problem, scheduled, save](int index) {
         const QString name = desktop->itemData(index).toString();
+        // With the schedule on, a theme picked here other than the night's
+        // is the one for the day from now on.
+        if (scheduled("enabled", false).toBool() && name != scheduled("night", QString()).toString())
+        {
+            save("day", name);
+        }
         // Inside the session the command does it all, the choice too.
         // Started elsewhere (to try the window), there is no session to
         // change: then the choice is only written down.
@@ -115,6 +135,89 @@ ThemePane::ThemePane(Choices& choices, QWidget* parent) : QWidget(parent)
     form->addRow(word("theme_choice", "Theme:"), desktop);
     form->addRow(QString(), note);
     form->addRow(QString(), problem);
+
+    auto* at_night = new QCheckBox(word("theme_night", "At night, use"));
+    auto* night = new QComboBox;
+    // The night's desktop: the one chosen before, else the dark one of the
+    // theme in use ("sea-lion-dark" for "sea-lion"), else another one.
+    QString night_name = scheduled("night", QString()).toString();
+    if (night_name.isEmpty())
+    {
+        night_name = choices.desktops().contains(current + QStringLiteral("-dark")) ? current + QStringLiteral("-dark")
+                                                                                     : QString();
+    }
+    for (const QString& name : choices.desktops())
+    {
+        night->addItem(readable_name(name), name);
+        if (night_name.isEmpty() && name != current)
+        {
+            night_name = name;
+        }
+    }
+    night->setCurrentIndex(std::max(0, night->findData(night_name)));
+    auto* night_row = new QHBoxLayout;
+    night_row->addWidget(at_night);
+    night_row->addWidget(night);
+    night_row->addStretch();
+
+    const QString time_format = QStringLiteral("HH:mm");
+    const auto time_box = [&](const char* key, const char* fallback) {
+        auto* box = new QTimeEdit(QTime::fromString(scheduled(key, QString::fromUtf8(fallback)).toString(), time_format));
+        box->setDisplayFormat(time_format);
+        if (!box->time().isValid())
+        {
+            box->setTime(QTime::fromString(QString::fromUtf8(fallback), time_format));
+        }
+        return box;
+    };
+    auto* night_from = time_box("night_from", "19:00");
+    auto* day_from = time_box("day_from", "07:00");
+    auto* hours_row = new QHBoxLayout;
+    hours_row->setSpacing(6);
+    hours_row->addWidget(new QLabel(word("theme_night_from", "from")));
+    hours_row->addWidget(night_from);
+    hours_row->addWidget(new QLabel(word("theme_night_until", "until")));
+    hours_row->addWidget(day_from);
+    hours_row->addStretch();
+
+    auto* night_note = new QLabel;
+    night_note->setText(in_lines_of(word("theme_night_note",
+                                        "A banner says so a few minutes before. A theme you pick in between stays "
+                                        "until the next change."),
+        night_note->fontMetrics(), note_width));
+
+    const auto show_on = [night, night_from, day_from, night_note](bool on) {
+        for (QWidget* part : std::initializer_list<QWidget*>{night, night_from, day_from, night_note})
+        {
+            part->setEnabled(on);
+        }
+    };
+    const bool on = scheduled("enabled", false).toBool();
+    at_night->setChecked(on);
+    show_on(on);
+
+    connect(at_night, &QCheckBox::toggled, this, [=](bool on) {
+        show_on(on);
+        if (on)
+        {
+            // Everything as shown, and the theme in use now is the day's.
+            save("day", desktop->currentData().toString());
+            save("night", night->currentData().toString());
+            save("night_from", night_from->time().toString(time_format));
+            save("day_from", day_from->time().toString(time_format));
+        }
+        save("enabled", on);
+    });
+    connect(night, &QComboBox::currentIndexChanged, this,
+        [=](int index) { save("night", night->itemData(index).toString()); });
+    connect(night_from, &QTimeEdit::timeChanged, this,
+        [=](const QTime& time) { save("night_from", time.toString(time_format)); });
+    connect(day_from, &QTimeEdit::timeChanged, this,
+        [=](const QTime& time) { save("day_from", time.toString(time_format)); });
+
     form->addRow(QString(), more);
     form->addRow(QString(), more_note);
+    form->addRow(word("theme_schedule", "Schedule:"), night_row);
+    form->addRow(QString(), hours_row);
+    form->addRow(QString(), night_note);
 }

@@ -33,6 +33,7 @@ install_data(
     'refresh_desktops.py',
     'refresh_extensions.py',
     'refresh_themes.py',
+    'theme_schedule.py',
     'themes.py',
     'toml_text.py',
     'user_choices.py',
