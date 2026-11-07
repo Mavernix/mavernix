@@ -31,15 +31,21 @@ PanelWindow {
     property bool raised: false
     // With window reflections the glass is a surface of its own in the
     // overlay layer, and the icons must stay above it there.
-    WlrLayershell.layer: raised || windowReflections ? WlrLayer.Overlay : WlrLayer.Top
+    //
+    // In the top layer the compositor puts a fullscreen window above the
+    // dock; the overlay layer is above it. So for a fullscreen window the
+    // dock goes back to the top layer (and the glass away), rather than
+    // hiding: a hidden dock gives its space back, and Wayfire's grid
+    // (0.11) then fits maximized windows to the larger space and, doing
+    // so, takes them out of full screen. A browser's video left full
+    // screen as soon as it got there.
+    WlrLayershell.layer: raised || (windowReflections && !fullscreenApplication) ? WlrLayer.Overlay : WlrLayer.Top
     // Lets the compositor tell this surface from the shell's others.
     WlrLayershell.namespace: "mavernix-dock"
 
     readonly property bool fullscreenApplication: ToplevelManager.toplevels.values.some(window =>
         window.fullscreen && window.activated && window.screens.some(screen => screen.name === dock.screen?.name))
-    // In the top layer the compositor puts a fullscreen window above the
-    // dock itself; the overlay layer is above it, so the dock steps aside.
-    visible: keepShown.canShow && !(windowReflections && fullscreenApplication)
+    visible: keepShown.canShow
     KeepShown {
         id: keepShown
         target: dock
@@ -1085,7 +1091,7 @@ PanelWindow {
         WlrLayershell.layer: WlrLayer.Overlay
         color: "transparent"
         mask: Region {}
-        visible: dock.visible && dock.windowReflections && glassKeepShown.canShow
+        visible: dock.visible && dock.windowReflections && !dock.fullscreenApplication && glassKeepShown.canShow
         KeepShown { id: glassKeepShown; target: glassWindow }
         Binding {
             target: glassWindow.contentItem
