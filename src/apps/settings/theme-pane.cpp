@@ -91,7 +91,8 @@ ThemePane::ThemePane(Choices& choices, QWidget* parent) : QWidget(parent)
         problem->setText(choices.set(schedule, QLatin1String(key), value));
     };
 
-    connect(desktop, &QComboBox::currentIndexChanged, this, [&choices, desktop, choice_file, problem, scheduled, save](int index) {
+    connect(desktop, &QComboBox::currentIndexChanged, this,
+        [&choices, desktop, choice_file, problem, scheduled, save](int index) {
         const QString name = desktop->itemData(index).toString();
         // With the schedule on, a theme picked here other than the night's
         // is the one for the day from now on, if it keeps its choices here.
@@ -146,8 +147,9 @@ ThemePane::ThemePane(Choices& choices, QWidget* parent) : QWidget(parent)
     QString night_name = scheduled("night", QString()).toString();
     if (night_name.isEmpty())
     {
-        night_name = choices.desktopsSharingChoices().contains(current + QStringLiteral("-dark")) ? current + QStringLiteral("-dark")
-                                                                                     : QString();
+        night_name = choices.desktopsSharingChoices().contains(current + QStringLiteral("-dark"))
+                         ? current + QStringLiteral("-dark")
+                         : QString();
     }
     // Only those keeping their choices with this one: the schedule is kept
     // there, and a desktop that cannot see it would never switch back.
@@ -167,7 +169,8 @@ ThemePane::ThemePane(Choices& choices, QWidget* parent) : QWidget(parent)
 
     const QString time_format = QStringLiteral("HH:mm");
     const auto time_box = [&](const char* key, const char* fallback) {
-        auto* box = new QTimeEdit(QTime::fromString(scheduled(key, QString::fromUtf8(fallback)).toString(), time_format));
+        auto* box =
+            new QTimeEdit(QTime::fromString(scheduled(key, QString::fromUtf8(fallback)).toString(), time_format));
         box->setDisplayFormat(time_format);
         if (!box->time().isValid())
         {
@@ -186,10 +189,10 @@ ThemePane::ThemePane(Choices& choices, QWidget* parent) : QWidget(parent)
     hours_row->addStretch();
 
     auto* night_note = new QLabel;
-    night_note->setText(in_lines_of(word("theme_night_note",
-                                        "A banner says so a few minutes before. A theme you pick in between stays "
-                                        "until the next change."),
-        night_note->fontMetrics(), note_width));
+    night_note->setText(
+        in_lines_of(word("theme_night_note", "A banner says so a few minutes before. A theme you pick in between stays "
+                                             "until the next change."),
+            night_note->fontMetrics(), note_width));
 
     const auto show_on = [night, night_from, day_from, night_note](bool on) {
         for (QWidget* part : std::initializer_list<QWidget*>{night, night_from, day_from, night_note})

@@ -43,7 +43,7 @@ class plugin_t;
 struct hook_t
 {
     wl_listener listener;
-    plugin_t *plugin;
+    plugin_t* plugin;
 };
 
 // One connected program.
@@ -83,7 +83,7 @@ std::string how_long(clock::duration taken)
 
 // Whether the program's end of the connection is closed. When the compositor
 // cuts a program off, the program's end is still open.
-bool program_hung_up(wl_client *client)
+bool program_hung_up(wl_client* client)
 {
     pollfd connection = {wl_client_get_fd(client), POLLRDHUP, 0};
     return (poll(&connection, 1, 0) > 0) && (connection.revents & (POLLRDHUP | POLLHUP | POLLERR));
@@ -93,17 +93,17 @@ class plugin_t : public wf::plugin_interface_t
 {
     std::map<wl_client*, std::unique_ptr<program_t>> programs;
     hook_t on_client_created = {{}, this};
-    wl_protocol_logger *error_listener = nullptr;
+    wl_protocol_logger* error_listener = nullptr;
 
     clock::time_point minute_began = clock::now();
     int lines_this_minute = 0;
     int left_out = 0;
 
-    void add(wl_client *client)
+    void add(wl_client* client)
     {
         auto program = std::make_unique<program_t>();
         program->on_destroy.plugin = this;
-        program->on_destroy.listener.notify = [](wl_listener *listener, void *data) {
+        program->on_destroy.listener.notify = [](wl_listener* listener, void* data) {
             reinterpret_cast<hook_t*>(listener)->plugin->closed(static_cast<wl_client*>(data));
         };
         wl_client_get_credentials(client, &program->pid, nullptr, nullptr);
@@ -112,7 +112,7 @@ class plugin_t : public wf::plugin_interface_t
         programs[client] = std::move(program);
     }
 
-    void closed(wl_client *client)
+    void closed(wl_client* client)
     {
         auto found = programs.find(client);
         if (found == programs.end())
@@ -169,17 +169,15 @@ class plugin_t : public wf::plugin_interface_t
 
     // Every message between the compositor and its programs passes here;
     // all but wl_display.error, the protocol error, leave at once.
-    static void on_message(void *data, wl_protocol_logger_type direction,
-        const wl_protocol_logger_message *message)
+    static void on_message(void* data, wl_protocol_logger_type direction, const wl_protocol_logger_message* message)
     {
         if ((direction != WL_PROTOCOL_LOGGER_EVENT) ||
-            (message->message != &wl_display_interface.events[WL_DISPLAY_ERROR]) ||
-            (message->arguments_count < 3))
+            (message->message != &wl_display_interface.events[WL_DISPLAY_ERROR]) || (message->arguments_count < 3))
         {
             return;
         }
 
-        auto *self = static_cast<plugin_t*>(data);
+        auto* self = static_cast<plugin_t*>(data);
         auto found = self->programs.find(wl_resource_get_client(message->resource));
         if (found == self->programs.end())
         {
@@ -187,10 +185,10 @@ class plugin_t : public wf::plugin_interface_t
         }
 
         // The arguments: the object at fault, the error's number, its text.
-        auto *object = reinterpret_cast<wl_resource*>(message->arguments[0].o);
-        std::string error = object ?
-            std::string(wl_resource_get_class(object)) + "#" + std::to_string(wl_resource_get_id(object)) + " " :
-            std::string();
+        auto* object = reinterpret_cast<wl_resource*>(message->arguments[0].o);
+        std::string error =
+            object ? std::string(wl_resource_get_class(object)) + "#" + std::to_string(wl_resource_get_id(object)) + " "
+                   : std::string();
         error += "error " + std::to_string(message->arguments[1].u);
         if (message->arguments[2].s)
         {
@@ -200,8 +198,7 @@ class plugin_t : public wf::plugin_interface_t
         found->second->error = error;
     }
 
-    wf::signal::connection_t<wf::view_mapped_signal> on_mapped = [this] (wf::view_mapped_signal *event)
-    {
+    wf::signal::connection_t<wf::view_mapped_signal> on_mapped = [this](wf::view_mapped_signal* event) {
         auto found = programs.find(event->view->get_client());
         if (found != programs.end())
         {
@@ -215,14 +212,14 @@ class plugin_t : public wf::plugin_interface_t
     {
         openlog("mavernix-compositor", 0, LOG_USER);
 
-        wl_display *display = wf::get_core().display;
-        wl_client *client;
+        wl_display* display = wf::get_core().display;
+        wl_client* client;
         wl_client_for_each(client, wl_display_get_client_list(display))
         {
             add(client);
         }
 
-        on_client_created.listener.notify = [](wl_listener *listener, void *data) {
+        on_client_created.listener.notify = [](wl_listener* listener, void* data) {
             reinterpret_cast<hook_t*>(listener)->plugin->add(static_cast<wl_client*>(data));
         };
         wl_display_add_client_created_listener(display, &on_client_created.listener);
