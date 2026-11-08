@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.6.2 (unreleased)
+
+### Added
+
+- Pick the icon theme in Settings, App Style: one for programs, and one for the Dock, the menu bar, the app grid, the program switcher and the search. KDE programs follow it too, and the list marks the themes Plasma and GNOME use.
+- Another theme at night, such as Sea Lion Dark after Sea Lion: Settings, Theme, Schedule (toggleable, off by default). A banner says so a few minutes before, and a click on it changes at once. It waits while a full-screen window is in front.
+- The journal says when a program with a window closes or is cut off: `journalctl --user -t mavernix-compositor` (toggleable in the config, on by default).
+- Programs started from the Dock, the app grid and the search run as their own services, and the journal says how each one ended: `journalctl --user -t mavernix-programs` (toggleable in the config, on by default).
+- The end of each session's logs goes to the journal, and the last session's logs stay next to the new ones as previous-session.log and previous-login.log.
+
+### Fixed
+
+- A maximized browser's video no longer leaves full screen at once when the Dock reflects windows.
+- Closing a window no longer crashes the shell, and a shell that crashed comes back with the desktop's look.
+- The minimize effect lands on the window's own Dock tile, not half a tile beside it.
+
+Log out and back in once after updating.
+
 ## 0.6.1 (2026-11-06)
 
 ### Added
