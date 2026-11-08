@@ -6,15 +6,44 @@
 # systemd service, since it must outlive the session.
 #
 #   after-session COMPOSITOR_PID NAME[=VALUE]...   (bare NAME: remove it)
+#
+# With DESKTOP_STATE_DIR set ([session] note_session_ends), it also hands
+# the last LOG_LINES lines of the session's logs to the journal once the
+# session is over, so what ended it is still there after the next login or
+# a restart:
+#
+#   journalctl --user -t mavernix-session
 set -u
 
 compositor_pid=$1
 shift
 
+LOG_LINES=100
+
+# Opened now, while the session runs: the next one moves these files aside
+# (start-desktop), so what is read later is still this session's.
+logs=()
+if [[ -n "${DESKTOP_STATE_DIR:-}" ]]; then
+    if [[ -r "$DESKTOP_STATE_DIR/session.log" ]]; then
+        exec 3< "$DESKTOP_STATE_DIR/session.log" && logs+=("3:session.log")
+    fi
+    if [[ -r "$DESKTOP_STATE_DIR/login.log" ]]; then
+        exec 4< "$DESKTOP_STATE_DIR/login.log" && logs+=("4:login.log")
+    fi
+fi
+
 # Polling is enough: two seconds late at logout harms nothing.
 while kill -0 "$compositor_pid" 2>/dev/null; do
     sleep 2
 done
+
+if command -v systemd-cat > /dev/null; then
+    for log in "${logs[@]}"; do
+        fd=${log%%:*}
+        { echo "The session's ${log#*:} ended with:"; tail -n "$LOG_LINES" <&"$fd"; } |
+            systemd-cat -t mavernix-session
+    done
+fi
 
 for setting in "$@"; do
     name=${setting%%=*}

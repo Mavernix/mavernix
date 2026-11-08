@@ -65,7 +65,9 @@ Scope {
                 action.invoke()
             }
         }
-        bringForward(notification)
+        if (!(notification.fromShell ?? false)) {
+            bringForward(notification)
+        }
     }
 
     // The program's window in view, or else a minimised one; a program
@@ -104,6 +106,17 @@ Scope {
         for (const notification of kept.filter(other => other.appName === name)) {
             dismiss(notification)
         }
+    }
+
+    // A notice of the shell's own (ShellNotice.qml), shown like a program's.
+    function showOwn(notice) {
+        arrivals[notice.id] = Date.now()
+        notice.closed.connect(() => {
+            root.kept = root.kept.filter(other => other !== notice)
+            root.remove(notice)
+            notice.destroy()
+        })
+        show(notice)
     }
 
     function show(notification) {

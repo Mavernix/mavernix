@@ -114,6 +114,15 @@ if [[ -n "${WAYLAND_DISPLAY:-}${DISPLAY:-}" ]]; then
     export DESKTOP_NESTED=1
 fi
 
+# The last session's logs stay next to the new ones, so a login right after
+# a failure does not wipe them. A move, not emptying: after-session may
+# still be reading the old ones.
+for log in session login; do
+    if [[ -f "$state_dir/$log.log" ]]; then
+        mv -f "$state_dir/$log.log" "$state_dir/previous-$log.log"
+    fi
+done
+
 # The helpers' log, since the compositor discards its children's output.
 : > "$state_dir/login.log"
 

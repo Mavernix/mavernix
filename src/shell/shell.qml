@@ -200,6 +200,12 @@ ShellRoot {
         lockScreen: lockScreen
     }
 
+    ThemeSchedule {
+        settings: shell.settings
+        choices: userChoices
+        banners: banners
+    }
+
     Authentication {
         settings: shell.settings
         dialog: confirmDialog

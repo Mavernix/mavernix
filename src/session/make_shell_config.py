@@ -10,11 +10,14 @@ this resolves both and writes one JSON file:
       "default_config": { ... the same without the user's changes, for Settings' resets ... },
       "shortcut_defaults": { "shortcuts": { ... }, "commands": { ... } },
       "system_keyboard": { "layout": "us", "variant": "intl", ... },
-      "theme": { ... the theme's theme.toml, unchanged ... },
+      "theme": { ... the theme's theme.toml, with the icon theme the user picked ... },
       "theme_directory": "/full/path/of/the/theme",
+      "theme_icon_theme": "SeaLion",
+      "shell_icon_theme": "SeaLion",
       "user_choices_file": "/full/path/of/the/user's/changes.json",
       "desktop": "sea-lion",
       "desktops": ["plain", "sea-lion", "sea-lion-dark"],
+      "desktops_sharing_choices": ["sea-lion", "sea-lion-dark"],
       "default_desktop_file": "/full/path/of/the/user's/choice/of/desktop",
       "user": { "name": "me", "full_name": "My Name", "picture": "/home/me/.face" },
       "extensions": { "NAME": { "directory": "...", "manifest": { ... }, "looks": { ... }, "settings": { ... },
@@ -22,6 +25,11 @@ this resolves both and writes one JSON file:
       "extensions_file": "/full/path/of/extensions.json"
     }
 
+The theme's [icons] theme is replaced by the one the user picked for
+programs (the config's [icons] programs); `shell_icon_theme` is the one for
+the shell itself, the Dock and menu bar ([icons] dock_and_menu_bar), and
+`theme_icon_theme` the theme's own, for Settings to offer. Both are empty if
+the theme names none and the user picked none.
 `config` includes the user's changes (user_choices.py); `shortcut_defaults`
 is without them, for "Restore Default". `extensions` lists every extension
 found, enabled or not (docs/extensions.md); each one's `decimal_settings` names the
@@ -43,7 +51,8 @@ from pathlib import Path
 from make_wayfire_config import load_toml, system_keyboard
 from paths import EXTENSIONS_DIR
 from themes import find_theme, usable_icon_theme
-from user_choices import choices_path, default_desktop_path, desktop_names, load_desktop_config, with_user_choices
+from user_choices import (choices_path, default_desktop_path, desktop_names, desktops_sharing_choices, load_desktop_config,
+                          with_user_choices)
 
 
 def user_details():
@@ -125,6 +134,10 @@ def main():
     if "theme" not in config:
         sys.exit(f"make_shell_config: {arguments.config} does not name a theme")
     theme_dir = find_theme(config["theme"])
+    theme = load_toml(theme_dir / "theme.toml")
+    # The icon themes picked in Settings, App Style, each in the theme's place.
+    picked_icons = config.get("icons", {})
+    shell_theme = usable_icon_theme(theme, theme_dir, picked_icons.get("dock_and_menu_bar"))
 
     settings = {
         "config": config,
@@ -134,11 +147,15 @@ def main():
             "commands": default_config.get("commands", {}),
         },
         "system_keyboard": system_keyboard(),
-        "theme": usable_icon_theme(load_toml(theme_dir / "theme.toml"), theme_dir),
+        "theme": usable_icon_theme(theme, theme_dir, picked_icons.get("programs")),
         "theme_directory": str(theme_dir),
+        "theme_icon_theme": theme.get("icons", {}).get("theme", ""),
+        "shell_icon_theme": shell_theme.get("icons", {}).get("theme", ""),
         "user_choices_file": str(choices_path(arguments.config)),
         "desktop": arguments.config.stem,
         "desktops": desktop_names(),
+        # Those with the same user_choices_file: what [theme_schedule] can switch between.
+        "desktops_sharing_choices": desktops_sharing_choices(arguments.config),
         "default_desktop_file": str(default_desktop_path()),
         "user": user_details(),
         "extensions": found_extensions(config, theme_dir.name),

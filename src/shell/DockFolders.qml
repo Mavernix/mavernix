@@ -18,6 +18,7 @@ import QtQuick
 import Quickshell
 import Shell.Native
 import "ApplicationName.js" as ApplicationName
+import "StartProgram.js" as StartProgram
 
 QtObject {
     id: folders
@@ -147,7 +148,7 @@ QtObject {
             return
         }
         const entry = DesktopEntries.applications.values.find(candidate => candidate.id === path)
-        entry?.execute()
+        StartProgram.start(Quickshell, entry, null)
     }
 
     // Opens the folder itself: in the file manager, or the application grid.

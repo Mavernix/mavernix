@@ -13,6 +13,7 @@ import Quickshell.Wayland
 import Shell.Native
 import "ApplicationMatch.js" as ApplicationMatch
 import "ApplicationName.js" as ApplicationName
+import "StartProgram.js" as StartProgram
 import "ThemeValues.js" as ThemeValues
 
 PanelWindow {
@@ -187,7 +188,7 @@ PanelWindow {
         add(wishes.applications_label ?? "Applications", foundApplications.map(entry => ({
             name: ApplicationName.of(entry, search.choices),
             icon: themeIcons.forEntry(entry, "application-x-executable"),
-            open: () => entry.execute()
+            open: () => StartProgram.start(Quickshell, entry, null)
         })))
         add(wishes.files_label ?? "Files", closestPaths(false).map(path => ({
             name: lastPart(path),

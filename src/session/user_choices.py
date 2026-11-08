@@ -109,6 +109,22 @@ def choices_path(config_path):
     return settings_home() / (root_config_path(config_path).stem + ".json")
 
 
+def desktops_sharing_choices(config_path):
+    """The desktops that keep their user's changes in the same file as the
+    one at `config_path` (based on the same one), itself included; one with
+    a broken chain of based_on is left out."""
+    own = choices_path(config_path)
+    names = []
+    for name in desktop_names():
+        try:
+            path = find_desktop_config(name)
+            if path is not None and choices_path(path) == own:
+                names.append(name)
+        except SystemExit:
+            pass
+    return names
+
+
 def laid_over(defaults, changes):
     """Returns `defaults` with `changes` laid over it.
 

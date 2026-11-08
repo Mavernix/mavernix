@@ -14,6 +14,24 @@ To pick one, use the Theme pane in Settings. The change happens right away and i
 
 Switching rewrites everything that depends on the desktop and restarts the panel and dock, and the compositor redraws every window frame. Programs that are already open keep their old look until you start them again. That's because a toolkit only reads its theme when a program starts.
 
+### One desktop by day, another at night
+
+Settings, Theme, **At night, use** switches to another desktop at night, for example from Sea Lion to Sea Lion Dark, and back in the morning. The times are yours (19:00 until 07:00 to begin with). The theme in use when you tick the box becomes the day's. The choice is kept in your choices file as a table:
+
+```toml
+[theme_schedule]
+enabled = true
+day = "sea-lion"
+night = "sea-lion-dark"
+night_from = "19:00"     # the night may run past midnight
+day_from = "07:00"
+warn_minutes = 5         # 0: no warning
+```
+
+A few minutes before a change, a banner says so ("Sea Lion Dark at 19:00"). A click on it changes right away. Otherwise the switch happens at the time, unless a window is full screen, such as a game or a video. Then it waits until there's none. A login starts the desktop for the time of day, so there's nothing to switch then.
+
+The schedule acts only when the clock passes one of the two times. A theme you pick yourself in between stays until the next change. The shell (`src/shell/ThemeSchedule.qml`) and the login (`src/session/theme_schedule.py`) share the rule.
+
 ### A desktop of your own
 
 Copy one of the config files into `~/.local/share/mavernix/config/` under a new name. You can also start one directly with `start-desktop /path/to/my.toml`. `plain.toml` explains each key whose meaning isn't obvious.
@@ -191,6 +209,20 @@ Both are kept by desktop entry ID, so they belong to a desktop like everything e
 An empty value, or Use Original, brings back the application's own.
 
 To take an application out of the app grid, right-click it there and choose Hide from the App Grid, or untick Show in the app grid in Settings, App Icons & Names. That's also where you bring it back. The search and the dock's Programs folder still list it. It's saved as `[app_grid] hidden = ["htop", ...]`, by desktop entry ID.
+
+## The icon theme
+
+Every theme brings an icon theme (its `[icons]` table, see [other applications](themes/other-applications.md#icons)). Settings, App Style, picks other ones from those installed, for example Papirus or Breeze: one for programs, and one for the dock, the menu bar and the rest of the desktop's own parts (the app grid, the program switcher, the search). So Dolphin can show Papirus while the dock keeps Sea Lion's icons. The lists mark the one you picked in Plasma (`~/.config/kdeglobals`) or GNOME (dconf), if it's installed, so you can find yours again. Each is saved by the icon theme's folder name:
+
+```toml
+[icons]
+programs = "Papirus"            # GTK, Qt and KDE programs alike
+dock_and_menu_bar = "SeaLion"   # the desktop's own parts
+```
+
+Icons you gave single applications in App Icons & Names still win in the dock. Choosing it rewrites the desktop's settings the way switching desktops does: the dock and menu bar start again, and programs that are open keep their icons until you start them again. If a picked icon theme is uninstalled later, the desktop uses one that's there (Adwaita, Breeze, Papirus or hicolor).
+
+KDE programs such as Dolphin read their icon theme from `kdeglobals`. If you ever used Plasma, yours in `~/.config/kdeglobals` names Plasma's icon theme. So the session's own `kdeglobals` locks the choice (`[Icons][$i]`), and KDE programs show the same icons as other programs. That lock only applies inside this session; Plasma keeps its own choice.
 
 ## The desktop's menus
 

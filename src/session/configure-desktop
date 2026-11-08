@@ -97,10 +97,12 @@ write_compositor_settings() {
 # Toolkit themes from the desktop theme (none without [controls]). Failing
 # here must not stop the desktop; applications then keep their own look.
 write_application_themes() {
-    local theme_directory
+    local theme_directory icon_theme
     theme_directory=$(setting theme_directory "")
+    # The icon theme picked for programs in Settings, App Style; empty for the theme's.
+    icon_theme=$(setting config icons programs "")
     rm -rf "$app_theme"
-    if ! python3 "$session_dir/make_app_theme.py" "$theme_directory" "$app_theme"; then
+    if ! python3 "$session_dir/make_app_theme.py" "$theme_directory" "$app_theme" --icon-theme "$icon_theme"; then
         echo "configure-desktop: could not write the themes for applications (message above)." >&2
         echo "configure-desktop: the desktop starts anyway; applications keep their own look." >&2
         rm -rf "$app_theme"

@@ -8,6 +8,8 @@ Run by `meson test`, which says where the sources are (tests/meson.build).
 
 import configparser
 import contextlib
+import importlib.machinery
+import importlib.util
 import io
 import json
 import os
@@ -119,6 +121,20 @@ class TestWrittenSettings(SessionTestCase):
         self.assertEqual(plugins.count("move"), 1)
         self.assertEqual(written.read_text().count("plugins ="), 1)
         self.assertEqual(settings["oswitch"]["next_output_with_win"], "<shift> <super> KEY_RIGHT")
+
+    def test_closed_programs_are_noted_unless_switched_off(self):
+        for note in (True, False):
+            with self.subTest(note=note):
+                text = (CONFIG_DIR / "plain.toml").read_text()
+                self.home.mkdir(parents=True, exist_ok=True)
+                desktop = self.home / "plain.toml"
+                desktop.write_text(text.replace("note_closed_programs = true",
+                                                f"note_closed_programs = {str(note).lower()}"))
+                written = self.home / "plain.ini"
+                self.run_script("make_wayfire_config.py", desktop, written)
+                settings = configparser.ConfigParser(interpolation=None, strict=False)
+                settings.read(written)
+                self.assertEqual("closed-programs" in settings["core"]["plugins"].split(), note)
 
     def test_shell_settings(self):
         for desktop in DESKTOPS:
@@ -272,11 +288,73 @@ class TestPickedDesktop(SessionTestCase):
         self.choose("plain")
         self.assertEqual(self.picked(), "plain")
 
+    def test_the_schedule_picks_by_the_time_of_login(self):
+        self.import_sea_lion()
+        self.choose("sea-lion")
+        choices = self.home / ".config" / "mavernix" / "plain.json"
+        choices.write_text(json.dumps({"theme_schedule": TestThemeSchedule.SCHEDULE}))
+
+        def at(hour):
+            asked = ("import datetime, sys; sys.path.insert(1, sys.argv[1]); import pick_desktop; "
+                     "print(pick_desktop.for_time_of_day('sea-lion', datetime.datetime(2026, 11, 7, int(sys.argv[2]))))")
+            result = subprocess.run([sys.executable, "-c", asked, str(SESSION_SOURCE_DIR), str(hour)],
+                                    env=self.environment, capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            return result.stdout.strip()
+
+        self.assertEqual(at(22), "sea-lion-dark")
+        self.assertEqual(at(12), "sea-lion")
+        # One keeping its choices in a file of its own would not see the
+        # schedule and never switch back: passed over.
+        shutil.copy(CONFIG_DIR / "plain.toml", self.home / ".local" / "share" / "mavernix" / "config" / "mine.toml")
+        choices.write_text(json.dumps({"theme_schedule": {**TestThemeSchedule.SCHEDULE, "night": "mine"}}))
+        self.assertEqual(at(22), "sea-lion")
+        choices.write_text(json.dumps({"theme_schedule": TestThemeSchedule.SCHEDULE}))
+        # A night desktop that cannot start is passed over.
+        shutil.rmtree(self.home / ".local" / "share" / "mavernix" / "themes" / "sea-lion-dark")
+        self.assertEqual(at(22), "sea-lion")
+
     def test_a_choice_whose_theme_is_missing_is_passed_over(self):
         self.choose("sea-lion")
         self.assertEqual(self.picked(), "plain")
         self.choose("no-such-desktop")
         self.assertEqual(self.picked(), "plain")
+
+
+class TestThemeSchedule(unittest.TestCase):
+    """theme_schedule.py: which desktop the clock wants."""
+
+    SCHEDULE = {"enabled": True, "day": "sea-lion", "night": "sea-lion-dark",
+                "night_from": "19:00", "day_from": "07:00"}
+
+    def wanted(self, time, **changes):
+        sys.path.insert(0, str(SESSION_SOURCE_DIR))
+        try:
+            import theme_schedule
+        finally:
+            del sys.path[0]
+        return theme_schedule.wanted_desktop({**self.SCHEDULE, **changes}, theme_schedule.minutes_of(time))
+
+    def test_a_night_that_runs_past_midnight(self):
+        self.assertEqual(self.wanted("06:59"), "sea-lion-dark")
+        self.assertEqual(self.wanted("07:00"), "sea-lion")
+        self.assertEqual(self.wanted("18:59"), "sea-lion")
+        self.assertEqual(self.wanted("19:00"), "sea-lion-dark")
+        self.assertEqual(self.wanted("00:00"), "sea-lion-dark")
+
+    def test_a_night_within_one_day(self):
+        self.assertEqual(self.wanted("01:00", night_from="00:30", day_from="06:00"), "sea-lion-dark")
+        self.assertEqual(self.wanted("12:00", night_from="00:30", day_from="06:00"), "sea-lion")
+
+    def test_off_or_unclear_wants_nothing(self):
+        self.assertIsNone(self.wanted("22:00", enabled=False))
+        self.assertIsNone(self.wanted("22:00", night=""))
+        self.assertIsNone(self.wanted("22:00", night="sea-lion"))
+        # As the shell: a time it can't read, or none between the two, turns it all off.
+        for odd in ("7 pm", "19:0", "7:5", " 19:00", "+19:00", "24:00"):
+            self.assertIsNone(self.wanted("22:00", night_from=odd), odd)
+        self.assertIsNone(self.wanted("22:00", night_from="07:00"))
+        self.assertEqual(self.wanted("22:00", night_from="7:30"), "sea-lion-dark")
 
 
 class TestThemes(SessionTestCase):
@@ -326,6 +404,35 @@ class TestThemes(SessionTestCase):
         written = self.home / "odd-icons.json"
         self.run_script("make_shell_config.py", config, written)
         self.assertEqual(json.loads(written.read_text())["theme"]["icons"]["theme"], "breeze")
+
+    def icon_themes_picked(self, picked):
+        """The shell settings' icon themes on plain, for programs and for the
+        shell itself, when the user picked `picked` (Settings, App Style)."""
+        for installed in ("breeze", "Papirus"):
+            icons = self.home / "data-dir" / "icons" / installed
+            icons.mkdir(parents=True, exist_ok=True)
+            (icons / "index.theme").write_text(f"[Icon Theme]\nName={installed}\n")
+        self.environment["XDG_DATA_DIRS"] = str(self.home / "data-dir")
+        choices = self.home / ".config" / "mavernix" / "plain.json"
+        choices.parent.mkdir(parents=True, exist_ok=True)
+        choices.write_text(json.dumps({"icons": picked}))
+
+        written = self.home / "plain.json"
+        self.run_script("make_shell_config.py", CONFIG_DIR / "plain.toml", written)
+        settings = json.loads(written.read_text())
+        return settings["theme"]["icons"]["theme"], settings["shell_icon_theme"]
+
+    def test_the_users_icon_theme_takes_the_themes_place(self):
+        self.assertEqual(self.icon_themes_picked({"programs": "Papirus", "dock_and_menu_bar": "breeze"}),
+                         ("Papirus", "breeze"))
+
+    def test_programs_icons_leave_the_docks_alone(self):
+        # plain's own is Adwaita; installed here only as the stand-in breeze.
+        self.assertEqual(self.icon_themes_picked({"programs": "Papirus"}), ("Papirus", "breeze"))
+
+    def test_a_picked_icon_theme_that_is_gone_is_replaced(self):
+        self.assertEqual(self.icon_themes_picked({"programs": "Uninstalled", "dock_and_menu_bar": "Gone"}),
+                         ("breeze", "breeze"))
 
 
 class TestWindowAnimations(SessionTestCase):
@@ -936,6 +1043,20 @@ class TestKdeColours(SessionTestCase):
             with self.subTest(scheme=name):
                 self.assertEqual(colours(schemes / f"{name}.colors"), theme)
 
+    def test_the_picked_icon_theme_is_locked_over_plasmas(self):
+        # Unlocked, a Plasma user's ~/.config/kdeglobals wins and KDE programs
+        # alone show Plasma's icons.
+        icons = self.home / "data-dir" / "icons" / "Papirus"
+        icons.mkdir(parents=True)
+        (icons / "index.theme").write_text("[Icon Theme]\nName=Papirus\n")
+        self.environment["XDG_DATA_DIRS"] = str(self.home / "data-dir")
+        output = self.home / "app-theme"
+        self.run_script("make_app_theme.py", THEMES_DIR / "plain", output, "--icon-theme", "Papirus")
+        written = (output / "xdg" / "kdeglobals").read_text().splitlines()
+        self.assertEqual(written[:2], ["[Icons][$i]", "Theme=Papirus"])
+        self.assertIn("gtk-icon-theme-name=Papirus",
+                      (output / "xdg" / "gtk-3.0" / "settings.ini").read_text().splitlines())
+
 
 class TestLogGuard(unittest.TestCase):
     """The shell's log keeps repeated lines short, and a shell stuck saying
@@ -988,6 +1109,41 @@ class TestLogGuard(unittest.TestCase):
         self.pid_file.write_text(f"{other.pid}\n")
         self.guard("Invalid socket 285\n" * 6000)
         self.assertIsNone(other.poll())
+
+
+
+class TestStartProgram(unittest.TestCase):
+    """bin/mavernix-start-program, which starts programs as their own services."""
+
+    def setUp(self):
+        self.folder = tempfile.TemporaryDirectory()
+        self.script = SESSION_SOURCE_DIR / "bin" / "mavernix-start-program"
+
+    def tearDown(self):
+        self.folder.cleanup()
+
+    def run_it(self, note, *arguments):
+        settings = Path(self.folder.name) / "shell.json"
+        settings.write_text(json.dumps({"config": {"session": {"note_program_ends": note}}}))
+        return subprocess.run([sys.executable, str(self.script), *arguments], capture_output=True, text=True,
+                              env={**os.environ, "DESKTOP_SHELL_SETTINGS": str(settings)})
+
+    def test_switched_off_it_runs_the_program_itself(self):
+        result = self.run_it(False, "echo", "echo", "started")
+        self.assertEqual((result.returncode, result.stdout), (0, "started\n"))
+
+    def test_it_starts_in_the_entrys_folder(self):
+        result = self.run_it(False, "--in", self.folder.name, "pwd", "pwd")
+        self.assertEqual(result.stdout.strip(), str(Path(self.folder.name).resolve()))
+
+    def test_ids_are_escaped_for_unit_names(self):
+        loader = importlib.machinery.SourceFileLoader("start_program", str(self.script))
+        module = importlib.util.module_from_spec(importlib.util.spec_from_loader(loader.name, loader))
+        loader.exec_module(module)
+        self.assertEqual(module.unit_part("org.kde.dolphin"), "org.kde.dolphin")
+        self.assertEqual(module.unit_part("google-chrome"), "google\\x2dchrome")
+        self.assertEqual(module.how_long(7500), "2 h 5 min")
+        self.assertEqual(module.exec_word('my$app "50%" \\'), '"my$$app \\"50%%\\" \\\\"')
 
 
 if __name__ == "__main__":

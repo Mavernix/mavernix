@@ -59,9 +59,13 @@ class Choices
     // Where the user's changes are kept, which the shell writes too.
     QString userChoicesFile() const;
     QString themeDirectory() const;
+    // The theme's own icon theme, before the user's pick; empty if it names none.
+    QString themeIconTheme() const;
 
     // defaultDesktopFile() holds which desktop starts when none is named.
     QStringList desktops() const;
+    // Those keeping the user's changes in userChoicesFile(), as the running one does.
+    QStringList desktopsSharingChoices() const;
     QString runningDesktop() const;
     QString defaultDesktopFile() const;
 

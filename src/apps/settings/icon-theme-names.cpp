@@ -3,8 +3,12 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QIcon>
+#include <QProcess>
 #include <QSet>
 #include <QSettings>
+#include <QStandardPaths>
+
+#include <algorithm>
 
 // Qt finds icons by the freedesktop icon theme rules but cannot list them,
 // so the folders are read here by the same rules.
@@ -102,4 +106,79 @@ QStringList icon_theme_names()
         listed += own;
     }
     return listed;
+}
+
+QList<InstalledIconTheme> installed_icon_themes()
+{
+    QList<InstalledIconTheme> themes;
+    QSet<QString> seen;
+    // Earlier search paths win, as they do when Qt looks a theme up.
+    for (const QString& search_path : QIcon::themeSearchPaths())
+    {
+        const QDir folder(search_path);
+        for (const QString& theme : folder.entryList(QDir::Dirs | QDir::NoDotAndDotDot))
+        {
+            const QString index_file = folder.filePath(theme + QStringLiteral("/index.theme"));
+            if (seen.contains(theme) || theme == last_theme || theme == QLatin1String("default") ||
+                !QFileInfo::exists(index_file))
+            {
+                continue;
+            }
+            const QSettings index(index_file, QSettings::IniFormat);
+            // A theme of mouse pointers alone lists no icon folders; an empty
+            // "Directories=" comes back as one empty name. Hidden=true is not
+            // heeded: Adwaita, GNOME's own icons, says it.
+            QStringList icon_folders = index.value(QStringLiteral("Icon Theme/Directories")).toStringList();
+            icon_folders.removeAll(QString());
+            if (icon_folders.isEmpty())
+            {
+                continue;
+            }
+            seen.insert(theme);
+            // A name with a comma comes back as a list.
+            const QString name =
+                index.value(QStringLiteral("Icon Theme/Name")).toStringList().join(QStringLiteral(", "));
+            themes.append({theme, name.isEmpty() ? theme : name});
+        }
+    }
+    std::sort(themes.begin(), themes.end(), [](const InstalledIconTheme& one, const InstalledIconTheme& other) {
+        return one.name.compare(other.name, Qt::CaseInsensitive) < 0;
+    });
+    return themes;
+}
+
+QString plasma_icon_theme()
+{
+    const QString kdeglobals =
+        QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation) + QStringLiteral("/kdeglobals");
+    if (!QFileInfo::exists(kdeglobals))
+    {
+        return QString();
+    }
+    return QSettings(kdeglobals, QSettings::IniFormat).value(QStringLiteral("Icons/Theme")).toString();
+}
+
+QString gnome_icon_theme()
+{
+    // dconf answers in a moment; if it hangs, the pane must open anyway.
+    const int time_limit_ms = 2000;
+    QProcess dconf;
+    QProcessEnvironment environment = QProcessEnvironment::systemEnvironment();
+    environment.remove(QStringLiteral("DCONF_PROFILE"));
+    dconf.setProcessEnvironment(environment);
+    // "dconf read" prints only a value the user set, not the schema's default.
+    dconf.start(
+        QStringLiteral("dconf"), {QStringLiteral("read"), QStringLiteral("/org/gnome/desktop/interface/icon-theme")});
+    if (!dconf.waitForFinished(time_limit_ms) || dconf.exitCode() != 0)
+    {
+        dconf.kill();
+        return QString();
+    }
+    // Printed as a GVariant string: 'Papirus'
+    QString value = QString::fromUtf8(dconf.readAllStandardOutput()).trimmed();
+    if (value.size() >= 2 && value.startsWith(QLatin1Char('\'')) && value.endsWith(QLatin1Char('\'')))
+    {
+        value = value.mid(1, value.size() - 2);
+    }
+    return value;
 }

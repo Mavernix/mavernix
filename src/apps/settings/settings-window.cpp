@@ -88,7 +88,8 @@ static const KnownPane known_panes[] = {
     {"dock", "preferences-dock", "Dock & Menu Bar",
         "taskbar launcher magnification hide autohide size menu bar clock time 24 hour status icons"},
     {"icons", "applications-other", "App Icons & Names", "application program icon picture change name rename"},
-    {"theme", "preferences-desktop-theme", "Theme", "look appearance dark light colours colors style"},
+    {"theme", "preferences-desktop-theme", "Theme",
+        "look appearance dark light colours colors style night day schedule"},
     {"desktop", "preferences-desktop-wallpaper", "Desktop", "wallpaper background picture image name icons files"},
     {"sound", "preferences-desktop-sound", "Sound",
         "volume audio speaker headphones microphone input output alert beep"},
@@ -101,7 +102,7 @@ static const KnownPane known_panes[] = {
     {"desktops", "preferences-desktop-virtual", "Desktops", "workspaces spaces virtual mission control"},
     {"windows", "preferences-system-windows", "Windows", "snap tile title bar buttons double click drag move resize"},
     {"extensions", "preferences-plugin", "Extensions", "plugins add-ons addons"},
-    {"toolkits", "preferences-system", "App Style", "gtk qt programs apps look theme"},
+    {"toolkits", "preferences-system", "App Style", "gtk qt kde programs apps look theme icons icon theme"},
     {"network", "preferences-system-network", "Network",
         "wifi wi-fi wlan wireless internet ethernet cable lan ip router password"},
     {"bluetooth", "preferences-system-bluetooth", "Bluetooth", "pair headphones keyboard mouse speaker devices"},
@@ -333,10 +334,17 @@ void SettingsWindow::restoreDefaults(const QString& name)
     {
         return;
     }
+    // The icon themes are the choices here that the session must rewrite its
+    // files for at once; the others are read at the next login or by the shell.
+    const QStringList icon_themes = icon_theme_choices(choices);
     const QString problem = choices.remove(pane_choices(name));
     if (!problem.isEmpty())
     {
         QMessageBox::warning(this, windowTitle(), problem);
+    }
+    if (icon_theme_choices(choices) != icon_themes)
+    {
+        apply_icon_theme(choices);
     }
     remakePane(name);
 }
@@ -354,10 +362,17 @@ void SettingsWindow::resetAll()
     {
         return;
     }
+    // As in restoreDefaults; this also covers an icon theme picked just
+    // before, whose wait to apply ends with its pane.
+    const QStringList icon_themes = icon_theme_choices(choices);
     const QString problem = choices.removeAll();
     if (!problem.isEmpty())
     {
         QMessageBox::warning(this, windowTitle(), problem);
+    }
+    if (icon_theme_choices(choices) != icon_themes)
+    {
+        apply_icon_theme(choices);
     }
     for (const QString& name : pane_widgets.keys())
     {

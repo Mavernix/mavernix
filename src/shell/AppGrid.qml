@@ -10,6 +10,7 @@ import Quickshell
 import Quickshell.Wayland
 import "ApplicationMatch.js" as ApplicationMatch
 import "ApplicationName.js" as ApplicationName
+import "StartProgram.js" as StartProgram
 import "ThemeValues.js" as ThemeValues
 
 PanelWindow {
@@ -528,7 +529,7 @@ PanelWindow {
                                             if (wasDragged || mouse.button === Qt.RightButton) {
                                                 return
                                             }
-                                            cell.modelData.execute()
+                                            StartProgram.start(Quickshell, cell.modelData, null)
                                             grid.close()
                                         }
                                     }
@@ -585,7 +586,7 @@ PanelWindow {
                     // Return starts the only application left.
                     onAccepted: {
                         if (grid.applications.length === 1) {
-                            grid.applications[0].execute()
+                            StartProgram.start(Quickshell, grid.applications[0], null)
                             grid.close()
                         }
                     }
@@ -694,7 +695,7 @@ PanelWindow {
                 return
             }
             if (id === grid.openId) {
-                entry.execute()
+                StartProgram.start(Quickshell, entry, null)
                 grid.close()
             } else if (id === grid.keepId) {
                 grid.dock.setKept(entry.id, !grid.dock.keeps(entry.id))

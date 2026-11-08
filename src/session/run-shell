@@ -11,6 +11,13 @@ state_dir=$(dirname "${DESKTOP_SHELL_SETTINGS:?run-shell: DESKTOP_SHELL_SETTINGS
 # shellcheck source=/dev/null
 source "$state_dir/desktop.env"
 
+# A crash ends the shell, and keep-running starts it again through this
+# script. Quickshell's own crash handler would restart it in place instead,
+# with the environment Quickshell changed for itself (no QT_STYLE_OVERRIDE),
+# which every program started afterwards inherits: they lose the look. A
+# plain crash also leaves its backtrace in the journal (systemd-coredump).
+export QS_DISABLE_CRASH_HANDLER=1
+
 # `exec` keeps this pid for the shell, so a switch can signal it. Wayfire
 # ignores SIGHUP and its children inherit that; bash cannot undo an ignore it
 # was started with, so env restores the default, or the shell would never end.

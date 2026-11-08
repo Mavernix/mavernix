@@ -1,0 +1,149 @@
+#!/usr/bin/env python3
+"""Starts a program from the Dock, the app grid or the search as its own
+systemd user service, so the journal tells when it started and how it ended:
+
+    journalctl --user -t mavernix-programs
+
+    mavernix-start-program [--in FOLDER] ID COMMAND...
+
+ID is the program's desktop entry id, such as "firefox"; FOLDER is where
+it starts, its entry's Path key. The service is
+named app-mavernix-ID@RANDOM.service, as the XDG desktop specification and
+KDE name theirs. It gets the shell's environment and folder, so the program
+starts just as it would without it.
+
+When it ends, systemd runs this again with --ended, which writes one line:
+whether the program quit, ended with an error, was killed or crashed, and
+after how long. The program's own output reaches the journal too, at most
+OUTPUT_LINES lines every OUTPUT_SECONDS seconds, so a chatty program can't
+fill it.
+
+With [session] note_program_ends = false, or without a systemd user
+manager, it just runs the command, as the shell did before.
+"""
+
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+import syslog
+import time
+import uuid
+
+OUTPUT_LINES = 100
+OUTPUT_SECONDS = 30
+TAG = "mavernix-programs"
+# What systemd sets for each service itself; the shell's own would be wrong.
+SYSTEMDS_OWN = {"INVOCATION_ID", "JOURNAL_STREAM", "SYSTEMD_EXEC_PID", "NOTIFY_SOCKET", "MANAGERPID",
+                "LISTEN_FDS", "LISTEN_PID", "LISTEN_FDNAMES", "WATCHDOG_PID", "WATCHDOG_USEC"}
+
+
+def wanted():
+    """[session] note_program_ends, true unless the user turned it off."""
+    try:
+        with open(os.environ["DESKTOP_SHELL_SETTINGS"]) as file:
+            config = json.load(file)["config"]
+        return config.get("session", {}).get("note_program_ends", True) is not False
+    except (KeyError, OSError, ValueError, AttributeError):
+        return True
+
+
+def unit_part(text):
+    """The id as a part of a unit name: what a unit name can't hold, escaped
+    the way systemd-escape does."""
+    return "".join(c if re.fullmatch(r"[A-Za-z0-9:_.]", c) else "".join(f"\\x{b:02x}" for b in c.encode())
+                   for c in text) or "program"
+
+
+def exec_word(text):
+    """One word of an Exec line in unit file syntax, taken as it is: quoted,
+    with the backslash, the quote, "%" (a specifier) and "$" (a variable)
+    escaped."""
+    return '"' + text.replace("\\", "\\\\").replace('"', '\\"').replace("%", "%%").replace("$", "$$") + '"'
+
+
+def how_long(seconds):
+    if seconds < 60:
+        return f"{seconds} s"
+    if seconds < 3600:
+        return f"{seconds // 60} min"
+    return f"{seconds // 3600} h {seconds // 60 % 60} min"
+
+
+def ended(name, started):
+    """Writes the line for a program that has ended, from what systemd
+    hands ExecStopPost."""
+    code = os.environ.get("EXIT_CODE", "")
+    status = os.environ.get("EXIT_STATUS", "")
+    result = os.environ.get("SERVICE_RESULT", "")
+    try:
+        after = " after " + how_long(max(0, int(time.time()) - int(started)))
+    except ValueError:
+        after = ""
+    if code == "exited" and status == "0":
+        line, priority = f"{name} quit{after}", syslog.LOG_INFO
+    elif code == "exited":
+        line, priority = f"{name} ended with exit code {status}{after}", syslog.LOG_WARNING
+    elif code == "killed":
+        line, priority = f"{name} was ended by signal {status}{after}", syslog.LOG_WARNING
+    elif code == "dumped":
+        line, priority = f"{name} crashed (signal {status}){after}", syslog.LOG_WARNING
+    else:
+        line, priority = f"{name} ended ({result or 'no reason given'}){after}", syslog.LOG_WARNING
+    syslog.openlog(TAG)
+    syslog.syslog(priority, line)
+
+
+def start(name, command):
+    if shutil.which(command[0]) is None:
+        syslog.openlog(TAG)
+        syslog.syslog(syslog.LOG_WARNING, f"{name} could not be started: {command[0]} was not found")
+        sys.exit(f"mavernix-start-program: {command[0]} was not found")
+    if wanted() and shutil.which("systemd-run"):
+        unit = f"app-mavernix-{unit_part(name)}@{uuid.uuid4().hex}.service"
+        myself = os.path.realpath(__file__)
+        when_ended = " ".join(exec_word(word) for word in (myself, "--ended", name, str(int(time.time()))))
+        names = [n for n in os.environ
+                 if re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", n) and n not in SYSTEMDS_OWN]
+        result = subprocess.run(
+            ["systemd-run", "--user", "--quiet", "--collect", "--same-dir", "--service-type=exec",
+             f"--unit={unit}",
+             "--property=ExitType=cgroup",
+             f"--property=LogRateLimitIntervalSec={OUTPUT_SECONDS}s",
+             f"--property=LogRateLimitBurst={OUTPUT_LINES}",
+             f"--property=ExecStopPost={when_ended}",
+             *(f"--setenv={n}" for n in names),
+             "--", *command],
+            stdin=subprocess.DEVNULL)
+        if result.returncode == 0:
+            syslog.openlog(TAG)
+            syslog.syslog(syslog.LOG_INFO, f"{name} started as {unit}")
+            return
+        print(f"mavernix-start-program: systemd-run could not start {name}; starting it directly",
+              file=sys.stderr)
+    try:
+        os.execvp(command[0], command)
+    except OSError as error:
+        sys.exit(f"mavernix-start-program: could not start {name}: {error}")
+
+
+def main():
+    if len(sys.argv) == 4 and sys.argv[1] == "--ended":
+        ended(sys.argv[2], sys.argv[3])
+        return
+    arguments = sys.argv[1:]
+    if arguments[:1] == ["--in"] and len(arguments) >= 2:
+        try:
+            os.chdir(arguments[1])
+        except OSError as error:
+            print(f"mavernix-start-program: starting in {os.getcwd()}: {error}", file=sys.stderr)
+        arguments = arguments[2:]
+    if len(arguments) < 2:
+        sys.exit("usage: mavernix-start-program [--in FOLDER] ID COMMAND...")
+    start(arguments[0], arguments[1:])
+
+
+if __name__ == "__main__":
+    main()

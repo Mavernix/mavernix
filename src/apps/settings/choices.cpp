@@ -244,9 +244,21 @@ QString Choices::themeDirectory() const
     return settings.value(QStringLiteral("theme_directory")).toString();
 }
 
+QString Choices::themeIconTheme() const
+{
+    return settings.value(QStringLiteral("theme_icon_theme")).toString();
+}
+
 QStringList Choices::desktops() const
 {
     return settings.value(QStringLiteral("desktops")).toStringList();
+}
+
+QStringList Choices::desktopsSharingChoices() const
+{
+    // Written by sessions since 0.6.2; before, every desktop was offered.
+    const QVariant names = settings.value(QStringLiteral("desktops_sharing_choices"));
+    return names.isValid() ? names.toStringList() : desktops();
 }
 
 QString Choices::runningDesktop() const
